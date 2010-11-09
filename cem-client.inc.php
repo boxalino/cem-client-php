@@ -156,6 +156,8 @@ class CEM_GatewayClient {
 		curl_close($h);
 
 		// debug
+//		echo($requestData."\n");
+//		echo($responseData."\n");
 //		echo("<pre>".htmlentities($requestData)."</pre>");
 //		echo("<pre>".htmlentities($responseData)."</pre>");
 

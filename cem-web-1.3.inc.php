@@ -284,6 +284,15 @@ class CEM_WebRequestHandler extends CEM_WebHandler {
 			}
 		}
 
+		$this->init();
+	}
+
+
+	/**
+	 * Called to initialize the handler
+	 *
+	 */
+	public function init() {
 		// decode context if available
 		if ($this->requestExists('context')) {
 			$this->decodeContext($this->requestString('context'));
@@ -962,6 +971,25 @@ class CEM_WebController {
 
 
 	/**
+	 * Get request handler
+	 *
+	 * @return CEM_WebRequestHandler request handler
+	 */
+	public function getRequestHandler() {
+		return $this->requestHandler;
+	}
+
+	/**
+	 * Get response handler
+	 *
+	 * @return CEM_WebResponseHandler response handler
+	 */
+	public function getResponseHandler() {
+		return $this->responseHandler;
+	}
+
+
+	/**
 	 * Get current client state
 	 *
 	 * @return CEM_GatewayState client state or NULL if none
@@ -972,6 +1000,7 @@ class CEM_WebController {
 		}
 		return NULL;
 	}
+
 
 	/**
 	 * Process client interaction
