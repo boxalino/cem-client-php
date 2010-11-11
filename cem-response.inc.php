@@ -18,12 +18,38 @@
  */
 abstract class CEM_GatewayResponse {
 	/**
+	 * Processing time
+	 *
+	 * @var float
+	 */
+	protected $time;	
+
+
+	/**
 	 * Constructor
 	 *
 	 */
 	public function __construct() {
 	}
 
+
+	/**
+	 * Get processing time
+	 *
+	 * @return float processing time (in seconds)
+	 */
+	public function getTime() {
+		return $this->time;
+	}
+
+	/**
+	 * Called to set processing time
+	 *
+	 * @param float $time processing time (in seconds)
+	 */
+	public function setTime($time) {
+		$this->time = $time;
+	}
 
 	/**
 	 * Called to read the response

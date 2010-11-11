@@ -912,9 +912,8 @@ class CEM_WebController14 {
 	/**
 	 * Recommend items (customized request&response wrappers)
 	 *
-	 * @param string $strategy recommendation strategy identifier
-	 * @param CEM_PR_AbstractQuery $request recommendation request
-	 * @param CEM_PR_SimpleResponse $response recommendation response
+	 * @param CEM_PR_AbstractQuery &$request recommendation request
+	 * @param CEM_PR_SimpleResponse &$response recommendation response
 	 * @param array &$options recommendation options
 	 * @return mixed wrapped cem response or FALSE on error
 	 */

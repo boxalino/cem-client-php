@@ -146,7 +146,9 @@ class CEM_GatewayClient {
 		// execute curl request/response
 		self::$STATES[$h] =& $state;
 
+		$time = microtime(TRUE);
 		$responseData = curl_exec($h);
+		$response->setTime(microtime(TRUE) - $time);
 		$code = curl_getinfo($h, CURLINFO_HTTP_CODE);
 		$error = curl_error($h);
 

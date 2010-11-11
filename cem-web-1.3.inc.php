@@ -283,7 +283,6 @@ class CEM_WebRequestHandler extends CEM_WebHandler {
 				$this->context[$key] = $value;
 			}
 		}
-
 		$this->init();
 	}
 
