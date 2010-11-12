@@ -25,13 +25,25 @@ class CEM_GatewayClient {
 	private static $STATES = array();
 
 	/**
+	 * @ignore Next CURL state id
+	 *
+	 * @var int
+	 */
+	private static $nextStateId = 0;
+
+	/**
 	 * @ignore Get active CURL state
 	 *
 	 * @param object $h CURL handle
 	 * @return CEM_GatewayState client state
 	 */
 	public static function &GetState($h) {
-		return self::$STATES[$h];
+		foreach (self::$STATES as $entry) {
+			if ($entry['h'] === $h) {
+				return $entry['s'];
+			}
+		}
+		return NULL;
 	}
 
 
@@ -144,7 +156,11 @@ class CEM_GatewayClient {
 		}
 
 		// execute curl request/response
-		self::$STATES[$h] =& $state;
+		$stateId = self::$nextStateId++;
+		self::$STATES[$stateId] = array(
+			'h' => &$h,
+			's' => &$state
+		);
 
 		$time = microtime(TRUE);
 		$responseData = curl_exec($h);
@@ -152,7 +168,7 @@ class CEM_GatewayClient {
 		$code = curl_getinfo($h, CURLINFO_HTTP_CODE);
 		$error = curl_error($h);
 
-		unset(self::$STATES[$h]);
+		unset(self::$STATES[$stateId]);
 
 		// close curl
 		curl_close($h);

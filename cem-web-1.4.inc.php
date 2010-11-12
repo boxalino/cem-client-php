@@ -390,6 +390,18 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 
 
 	/**
+	 * Set context variables
+	 *
+	 * @param array $context context variables
+	 */
+	public function setContext($context) {
+		foreach ($context as $key => $value) {
+			$this->context[$key] = $value;
+		}
+	}
+
+
+	/**
 	 * Called when client state needs to be initialized
 	 *
 	 * @param CEM_GatewayState &$state client state reference
