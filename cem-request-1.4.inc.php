@@ -343,6 +343,13 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 	 * @var array
 	 */
 	protected $excludedProperties;
+ 
+	/**
+	 * Filter properties
+	 *
+	 * @var array
+	 */
+	protected $filterProperties;
 
 
 	/**
@@ -351,7 +358,7 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 	 * @param string $strategy strategy identifier
 	 * @param string $operation operation identifier
 	 */
-	public function __construct($strategy, $operation, $index, $language, $filter, $queryText, $limit, $includedProperties = array(), $excludedProperties = array()) {
+	public function __construct($strategy, $operation, $index, $language, $filter, $queryText, $limit, $includedProperties = array(), $excludedProperties = array(), $filterProperties = array()) {
 		parent::__construct($strategy, $operation);
 		$this->index = $index;
 		$this->language = $language;
@@ -360,6 +367,7 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 		$this->limit = $limit;
 		$this->includedProperties = $includedProperties;
 		$this->excludedProperties = $excludedProperties;
+		$this->filterProperties = $filterProperties;
 	}
 
 
@@ -387,6 +395,7 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 		$query["limit"] = $this->limit;
 		$query["includedProperties"] = $this->includedProperties;
 		$query["excludedProperties"] = $this->excludedProperties;
+		$query["filterProperties"] = $this->filterProperties;
 		return $query;
 	}
 }

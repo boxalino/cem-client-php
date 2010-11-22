@@ -357,6 +357,7 @@ class CEM_GS_SimpleRequest extends CEM_GatewayRequest {
 				$context = $doc->createElement('context');
 				$context->setAttribute('id', $id);
 				$context->setAttribute('level', $item['level']);
+				$context->setAttribute('mode', $item['mode']);
 				$context->appendChild($doc->createCDATASection($item['data']));
 				$root->appendChild($context);
 			}

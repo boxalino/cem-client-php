@@ -74,13 +74,14 @@ class CEM_GatewayState {
 			if (strlen($context) > 0) {
 				$value = array();
 				foreach (explode(';', $context) as $item) {
-					list($name, $level, $data) = explode('=', $item);
+					list($name, $level, $mode, $data) = explode('=', $item);
 
 					$name = urldecode($name);
 					$level = urldecode($level);
+					$mode = urldecode($mode);
 					$data = urldecode($data);
 					if (strlen($name) > 0) {
-						$value[$name] = array('level' => $level, 'data' => $data);
+						$value[$name] = array('level' => $level, 'mode' => $mode, 'data' => $data);
 					}
 				}
 				$this->data['context'] = $value;
@@ -113,7 +114,7 @@ class CEM_GatewayState {
 				if ($i > 0) {
 					$text .= ';';
 				}
-				$text .= urlencode($key) . '=' . urlencode($value['level']) . '=' . urlencode($value['data']);
+				$text .= urlencode($key) . '=' . urlencode($value['level']) . '=' . urlencode($value['mode']) . '=' . urlencode($value['data']);
 				$i++;
 			}
 		}

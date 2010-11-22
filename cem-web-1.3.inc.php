@@ -728,17 +728,22 @@ class CEM_WebResponseHandler extends CEM_WebHandler {
 	}
 
 	/**
+	 * Get context scope names
+	 *
+	 * @return array context scope names
+	 */
+	public function getContextScopes() {
+		return $this->response->getContextScopes();
+	}
+
+	/**
 	 * Get context scope
 	 *
 	 * @param string $name context name
 	 * @return mixed context scope
 	 */
 	public function getContextScope($name) {
-		$scope = $this->response->getContextScope($name);
-		if ($scope) {
-			return json_decode($scope['data']);
-		}
-		return array();
+		return $this->response->getContextScope($name);
 	}
 
 	/**

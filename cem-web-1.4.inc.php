@@ -118,6 +118,7 @@ class CEM_WebStateCookieHandler14 extends CEM_WebStateHandler {
 					if (strlen($name) > 0) {
 						$context[CEM_WebStateCookieHandler14::unescapeValue($name)] = array(
 							'level' => 'visitor',
+							'mode' => 'aggregate',
 							'data' => CEM_WebStateCookieHandler14::unescapeValue($value)
 						);
 					}
@@ -130,6 +131,7 @@ class CEM_WebStateCookieHandler14 extends CEM_WebStateHandler {
 					if (strlen($name) > 0) {
 						$context[CEM_WebStateCookieHandler14::unescapeValue($name)] = array(
 							'level' => 'session',
+							'mode' => 'aggregate',
 							'data' => CEM_WebStateCookieHandler14::unescapeValue($value)
 						);
 					}
@@ -142,6 +144,7 @@ class CEM_WebStateCookieHandler14 extends CEM_WebStateHandler {
 					if (strlen($name) > 0) {
 						$context[CEM_WebStateCookieHandler14::unescapeValue($name)] = array(
 							'level' => 'search',
+							'mode' => 'aggregate',
 							'data' => CEM_WebStateCookieHandler14::unescapeValue($value)
 						);
 					}
@@ -185,27 +188,29 @@ class CEM_WebStateCookieHandler14 extends CEM_WebStateHandler {
 			$session = '';
 			$search = '';
 			foreach ($context as $key => $item) {
-				switch ($item['level']) {
-				case 'visitor':
-					if (strlen($visitor) > 0) {
-						$visitor .= ';';
-					}
-					$visitor .= CEM_WebStateCookieHandler14::escapeValue($key) . '=' . CEM_WebStateCookieHandler14::escapeValue($item['data']);
-					break;
+				if ($item['mode'] == 'aggregate') {
+					switch ($item['level']) {
+					case 'visitor':
+						if (strlen($visitor) > 0) {
+							$visitor .= ';';
+						}
+						$visitor .= CEM_WebStateCookieHandler14::escapeValue($key) . '=' . CEM_WebStateCookieHandler14::escapeValue($item['data']);
+						break;
 
-				case 'session':
-					if (strlen($session) > 0) {
-						$session .= ';';
-					}
-					$session .= CEM_WebStateCookieHandler14::escapeValue($key) . '=' . CEM_WebStateCookieHandler14::escapeValue($item['data']);
-					break;
+					case 'session':
+						if (strlen($session) > 0) {
+							$session .= ';';
+						}
+						$session .= CEM_WebStateCookieHandler14::escapeValue($key) . '=' . CEM_WebStateCookieHandler14::escapeValue($item['data']);
+						break;
 
-				case 'search':
-					if (strlen($search) > 0) {
-						$search .= ';';
+					case 'search':
+						if (strlen($search) > 0) {
+							$search .= ';';
+						}
+						$search .= CEM_WebStateCookieHandler14::escapeValue($key) . '=' . CEM_WebStateCookieHandler14::escapeValue($item['data']);
+						break;
 					}
-					$search .= CEM_WebStateCookieHandler14::escapeValue($key) . '=' . CEM_WebStateCookieHandler14::escapeValue($item['data']);
-					break;
 				}
 			}
 			if (strlen($visitor) > 0) {
@@ -321,7 +326,7 @@ class CEM_WebStateCookieHandler14 extends CEM_WebStateHandler {
 	 * @param string $value input value
 	 * @return escaped value
 	 */
-	protected static function escapeValue($value) {
+	public static function escapeValue($value) {
 		return str_replace(
 			array('%', ';', '='),
 			array('%25', '%3B', '%3D'),
@@ -335,7 +340,7 @@ class CEM_WebStateCookieHandler14 extends CEM_WebStateHandler {
 	 * @param string $value input value
 	 * @return escaped value
 	 */
-	protected static function unescapeValue($value) {
+	public static function unescapeValue($value) {
 		return str_replace(
 			array('%25', '%3B', '%3D'),
 			array('%', ';', '='),
@@ -372,6 +377,14 @@ abstract class CEM_WebHandler14 extends CEM_AbstractWebHandler {
  */
 class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 	/**
+	 * Sequential contexts
+	 *
+	 * @var array
+	 */
+	protected $sequentialContexts;
+
+
+	/**
 	 * Constructor
 	 *
 	 * @param CEM_WebEncryption &$crypto encryption facility
@@ -379,11 +392,32 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 	 */
 	public function __construct(&$crypto, $options = array()) {
 		parent::__construct($crypto, $options);
+		$this->sequentialContexts = array();
 
 		// initial context values if given
 		if (isset($options['context'])) {
 			foreach ($options['context'] as $key => $value) {
 				$this->context[$key] = $value;
+			}
+		}
+
+		// decode sequential context states
+		if ($this->requestExists('context')) {
+			$data = $this->crypto->decrypt(base64_decode($this->requestString('context')));
+			if ($data && strpos($data, 'cem') === 0) {
+				$data = gzinflate(substr($data, 3));
+				foreach (explode(';', $data) as $scope) {
+					list($name, $level, $data) = explode('=', $scope);
+
+					$name = CEM_WebStateCookieHandler14::unescapeValue($name);
+					$level = CEM_WebStateCookieHandler14::unescapeValue($level);
+					$data = CEM_WebStateCookieHandler14::unescapeValue($data);
+					$this->sequentialContexts[$name] = array(
+						'level' => $level,
+						'mode' => 'sequential',
+						'data' => $data
+					);
+				}
 			}
 		}
 	}
@@ -436,6 +470,13 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 	public function onInteraction(&$state, &$request, &$options) {
 		$variables = $this->buildInteractionVariables($options);
 
+		// merge contexts
+		$contexts = $state->get('context', array());
+		foreach ($this->sequentialContexts as $name => $value) {
+			$contexts[$name] = $value;
+		}
+		$state->set('context', $contexts);
+
 		// notify custom implementation
 		$jump = $this->onInteractionBefore($state, $request, 'none', $variables, $options);
 
@@ -476,6 +517,9 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 				$variables['property'] = $this->requestString('property');
 				$variables['value'] = $this->requestStringArray('value');
 			}
+		} else if ($this->requestExists('feedback')) {
+			$jump = 'feedback';
+			$variables['weight'] = $this->requestNumber('feedback');
 		}
 
 		// custom overrides
@@ -582,6 +626,13 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
 	protected $mainGroupId;
 
 	/**
+	 * Current request
+	 *
+	 * @var CEM_GS_SimpleRequest
+	 */
+	protected $request;
+ 
+	/**
 	 * Current response
 	 *
 	 * @var CEM_GS_SimpleResponse
@@ -605,10 +656,20 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
 	public function __construct(&$crypto, $options = array()) {
 		parent::__construct($crypto, $options);
 		$this->mainGroupId = isset($options['mainGroupId']) ? $options['mainGroupId'] : 'main';
+		$this->request = NULL;
 		$this->response = NULL;
 		$this->json = NULL;
 	}
 
+
+	/**
+	 * Get underlying request
+	 *
+	 * @return CEM_GS_SimpleRequest underlying request
+	 */
+	public function getRequest() {
+		return $this->request;
+	}
 
 	/**
 	 * Get underlying response
@@ -634,7 +695,10 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
 	 * @return array context scope names
 	 */
 	public function getContextScopes() {
-		return $this->response->getContextScopes();
+		if ($this->response) {
+			return $this->response->getContextScopes();
+		}
+		return array();
 	}
 
 	/**
@@ -644,7 +708,10 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
 	 * @return mixed context scope
 	 */
 	public function getContextScope($name) {
-		return $this->response->getContextScope($name);
+		if ($this->response) {
+			return $this->response->getContextScope($name);
+		}
+		return NULL;
 	}
 
 	/**
@@ -666,18 +733,6 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
 	}
 
 	/**
-	 * Get custom model
-	 *
-	 * @return object custom model or NULL if none
-	 */
-	public function getModel() {
-		if ($this->json && isset($this->json->model)) {
-			return $this->json->model;
-		}
-		return NULL;
-	}
-
-	/**
 	 * Get decoded raw json response
 	 *
 	 * @param string $widget widget identifier (template.instance)
@@ -694,6 +749,54 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
 
 
 	/**
+	 * Encode sequential context states into url
+	 *
+	 * @param array $parameters additional query parameters
+	 * @return string encoded url query
+	 */
+	public function encodeQuery($parameters = array()) {
+		if ($this->response) {
+			$data = '';
+			foreach ($this->response->getContextScopes() as $name) {
+				$scope = $this->response->getContextScope($name);
+				if ($scope['mode'] == 'sequential') {
+					if (strlen($data) > 0) {
+						$data .= ';';
+					}
+					$data .= CEM_WebStateCookieHandler14::escapeValue($name) . '=' . CEM_WebStateCookieHandler14::escapeValue($scope['level']) . '=' . CEM_WebStateCookieHandler14::escapeValue($scope['data']);
+				}
+			}
+			if (strlen($data) > 0) {
+				$data = $this->crypto->encrypt('cem'.gzdeflate($data, 9));
+				if ($data) {
+					$parameters['context'] = base64_encode($data);
+				}
+			}
+		}
+		$query = '';
+		foreach ($parameters as $key => $value) {
+			if (is_array($value)) {
+				foreach ($value as $item) {
+					if (strlen($query) > 0) {
+						$query .= '&';
+					}
+					$query .= urlencode($this->requestKey($key)).'[]='.urlencode($item);
+				}
+			} else {
+				if (strlen($query) > 0) {
+					$query .= '&';
+				}
+				$query .= urlencode($this->requestKey($key)).'='.urlencode($value);
+			}
+		}
+		if (strlen($query) > 0) {
+			return ('?'.$query);
+		}
+		return '';
+	}
+
+
+	/**
 	 * Called each client interaction to wrap the response
 	 *
 	 * @param CEM_GatewayState &$state client state reference
@@ -703,6 +806,7 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
 	 * @return mixed wrapped response on success or FALSE on error
 	 */
 	public function onInteraction(&$state, &$request, &$response, &$options) {
+		$this->request = $request;
 		$this->response = $response;
 
 		// decode json response
@@ -977,7 +1081,8 @@ class CEM_WebController14 {
 				$query,
 				$size,
 				array(),
-				array('title')
+				array('title'),
+				array('title', 'body')
 			)
 		);
 		$response = new CEM_PR_SimpleResponse();

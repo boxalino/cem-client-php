@@ -399,6 +399,7 @@ class CEM_GS_SimpleResponse extends CEM_GatewayResponse {
 				case 'context':
 					$this->context[$child->getAttribute('id')] = array(
 						'level' => $child->getAttribute('level'),
+						'mode' => $child->getAttribute('mode'),
 						'data' => $this->visitTexts($child)
 					);
 					break;
