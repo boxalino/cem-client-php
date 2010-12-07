@@ -232,10 +232,18 @@ abstract class CEM_PR_AbstractQuery {
 			);
 		}
 		$indexPreferences = array();
-/*		$profile = $state->get("ctx_profile");
-		if ($profile) {
-			$root['profile'] = json_decode($profile);
-		}*/
+		$context = $state->get('context');
+		if (is_array($context)) {
+			foreach ($context as $key => $item) {
+				if ($key == 'profile') {
+					$data = json_decode($item['data']);
+					if (isset($data->preferences)) {
+						$indexPreferences = $data->preferences;
+					}
+					break;
+				}
+			}
+		}
 		return array(
 			"strategy" => $this->strategy,
 			"operation" => $this->operation,
@@ -329,6 +337,13 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 	 * @var int
 	 */
 	protected $limit;
+ 
+	/**
+	 * Maximum amount of contextual recommendations
+	 *
+	 * @var int
+	 */
+	protected $resultsLimit;
 
 	/**
 	 * Included properties
@@ -351,6 +366,13 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 	 */
 	protected $filterProperties;
 
+	/**
+	 * Scorer properties
+	 *
+	 * @var array
+	 */
+	protected $scorerProperties;
+
 
 	/**
 	 * Constructor
@@ -358,16 +380,18 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 	 * @param string $strategy strategy identifier
 	 * @param string $operation operation identifier
 	 */
-	public function __construct($strategy, $operation, $index, $language, $filter, $queryText, $limit, $includedProperties = array(), $excludedProperties = array(), $filterProperties = array()) {
+	public function __construct($strategy, $operation, $index, $language, $filter, $queryText, $limit, $resultsLimit, $includedProperties = array(), $excludedProperties = array(), $filterProperties = array(), $scorerProperties = array()) {
 		parent::__construct($strategy, $operation);
 		$this->index = $index;
 		$this->language = $language;
 		$this->filter = $filter;
 		$this->queryText = $queryText;
 		$this->limit = $limit;
+		$this->resultsLimit = $resultsLimit;
 		$this->includedProperties = $includedProperties;
 		$this->excludedProperties = $excludedProperties;
 		$this->filterProperties = $filterProperties;
+		$this->scorerProperties = $scorerProperties;
 	}
 
 
@@ -393,9 +417,11 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 		$query["filter"] = $this->filter;
 		$query["queryText"] = $this->queryText;
 		$query["limit"] = $this->limit;
+		$query["resultsLimit"] = $this->resultsLimit;
 		$query["includedProperties"] = $this->includedProperties;
 		$query["excludedProperties"] = $this->excludedProperties;
 		$query["filterProperties"] = $this->filterProperties;
+		$query["scorerProperties"] = $this->scorerProperties;
 		return $query;
 	}
 }

@@ -760,10 +760,16 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
 			foreach ($this->response->getContextScopes() as $name) {
 				$scope = $this->response->getContextScope($name);
 				if ($scope['mode'] == 'sequential') {
-					if (strlen($data) > 0) {
-						$data .= ';';
+					switch ($scope['level']) {
+					case 'visitor':
+					case 'session':
+					case 'search':
+						if (strlen($data) > 0) {
+							$data .= ';';
+						}
+						$data .= CEM_WebStateCookieHandler14::escapeValue($name) . '=' . CEM_WebStateCookieHandler14::escapeValue($scope['level']) . '=' . CEM_WebStateCookieHandler14::escapeValue($scope['data']);
+						break;
 					}
-					$data .= CEM_WebStateCookieHandler14::escapeValue($name) . '=' . CEM_WebStateCookieHandler14::escapeValue($scope['level']) . '=' . CEM_WebStateCookieHandler14::escapeValue($scope['data']);
 				}
 			}
 			if (strlen($data) > 0) {
@@ -1062,14 +1068,12 @@ class CEM_WebController14 {
 	 * Do query completion suggestion
 	 *
 	 * @param string $query query prefix to complete
-	 * @param integer $size recommendation count (defaults to 5)
-	 * @param integer $contextual contextual product count (defaults to 3)
-	 * @param boolean $whitespace join words with whitespace (defaults to TRUE)
-	 * @param array $attributePriorities fixed attribute priorities for disambiguation
+	 * @param integer $size suggested query count (defaults to 10)
+	 * @param integer $contextual recommended item count (defaults to 3)
 	 * @param array &$options recommendation options
 	 * @return mixed wrapped cem response or FALSE on error
 	 */
-	public function suggest($query, $size = 5, $contextual = 3, $whitespace = TRUE, $attributePriorities = array(), &$options = array()) {
+	public function suggest($query, $size = 10, $contextual = 3, &$options = array()) {
 		$request = new CEM_PR_MultiRequest($this->customer);
 		$request->addRequest(
 			new CEM_PR_CompletionQuery(
@@ -1080,8 +1084,10 @@ class CEM_WebController14 {
 				'@type:instance',
 				$query,
 				$size,
+				$contextual,
 				array(),
 				array('title'),
+				array('title', 'body'),
 				array('title', 'body')
 			)
 		);
