@@ -288,6 +288,18 @@ class CEM_WebRequestHandler extends CEM_WebHandler {
 
 
 	/**
+	 * Set context variables
+	 *
+	 * @param array $context context variables
+	 */
+	public function setContext($context) {
+		foreach ($context as $key => $value) {
+			$this->context[$key] = $value;
+		}
+	}
+
+
+	/**
 	 * Called to initialize the handler
 	 *
 	 */
@@ -610,6 +622,13 @@ class CEM_WebResponseHandler extends CEM_WebHandler {
 	protected $mainGroupId;
 
 	/**
+	 * Current request
+	 *
+	 * @var CEM_GS_SimpleRequest
+	 */
+	protected $request;
+
+	/**
 	 * Current response
 	 *
 	 * @var CEM_GS_SimpleResponse
@@ -691,9 +710,9 @@ class CEM_WebResponseHandler extends CEM_WebHandler {
 			$parameters[$this->keys['offset']] = $this->context['offset'];
 		}
 		if (isset($parameters[$this->keys['sort']])) {
-			if ($parameters[$this->keys['sort']] == $this->defaultSort) {
+/*			if ($parameters[$this->keys['sort']] == $this->defaultSort) {
 				unset($parameters[$this->keys['sort']]);
-			}
+			}*/
 		} else if (isset($this->context['sort'])) {
 			$parameters[$this->keys['sort']] = $this->context['sort'];
 		}
@@ -708,6 +727,15 @@ class CEM_WebResponseHandler extends CEM_WebHandler {
 		return $query;
 	}
 
+
+	/**
+	 * Get underlying request
+	 *
+	 * @return CEM_GS_SimpleRequest underlying request
+	 */
+	public function getRequest() {
+		return $this->request;
+	}
 
 	/**
 	 * Get underlying response
@@ -811,11 +839,13 @@ class CEM_WebResponseHandler extends CEM_WebHandler {
 	 * Called each client interaction to wrap the response
 	 *
 	 * @param CEM_GatewayState &$state client state reference
+	 * @param CEM_GS_SimpleRequest &$request client request reference
 	 * @param CEM_GS_SimpleResponse &$response client response reference
 	 * @param array &$options options passed for interaction
 	 * @return mixed wrapped response on success or FALSE on error
 	 */
-	public function onInteraction(&$state, &$response, &$options) {
+	public function onInteraction(&$state, &$request, &$response, &$options) {
+		$this->request = $request;
 		$this->response = $response;
 
 		// decode json response
@@ -1052,7 +1082,7 @@ class CEM_WebController {
 
 		// notify response handler
 		if ($this->responseHandler) {
-			$this->lastInteraction = $this->responseHandler->onInteraction($state, $response, $options);
+			$this->lastInteraction = $this->responseHandler->onInteraction($state, $request, $response, $options);
 		} else {
 			$this->lastInteraction = $response;
 		}
@@ -1178,7 +1208,7 @@ class CEM_WebController {
 
 		// notify response handler
 		if ($this->responseHandler) {
-			$response = $this->responseHandler->onInteraction($state, $response, array());
+			$response = $this->responseHandler->onInteraction($state, $request, $response, array());
 		}
 
 		// clear client state
