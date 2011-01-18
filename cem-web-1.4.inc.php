@@ -424,6 +424,19 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 
 
 	/**
+	 * Get sequential context variables
+	 *
+	 * @param string $name context name
+	 * @return array context variables
+	 */
+	public function getSequentialContext($name) {
+		if (isset($this->sequentialContexts[$name])) {
+			return $this->sequentialContexts[$name]['data'];
+		}
+		return array();
+	}
+
+	/**
 	 * Set context variables
 	 *
 	 * @param array $context context variables
@@ -477,6 +490,9 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 		}
 		$state->set('context', $contexts);
 
+		// get cem model context
+		$model = isset($contexts['model']) ? json_decode($contexts['model']['data']) : array();
+
 		// notify custom implementation
 		$jump = $this->onInteractionBefore($state, $request, 'none', $variables, $options);
 
@@ -486,16 +502,28 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 		}
 		if ($this->requestExists('pageSize')) {
 			$variables['pageSize'] = $this->requestNumber('pageSize');
+		} else if (isset($model->pageSize)) {
+			$variables['pageSize'] = $model->pageSize;
 		}
 
 		// base context
-		if ($this->requestExists('filter') || $this->requestExists('scorer') || $this->requestExists('snippet') || $this->requestExists('ranking')) {
-			$variables['query'] = array(
-				'filter' => $this->requestString('filter'),
-				'scorer' => $this->requestString('scorer'),
-				'snippet' => $this->requestString('snippet'),
-				'ranking' => $this->requestString('ranking')
-			);
+		$query = array();
+		if ($this->requestExists('filter')) {
+			$query['filter'] = $this->requestString('filter');
+		}
+		if ($this->requestExists('scorer')) {
+			$query['scorer'] = $this->requestString('scorer');
+		}
+		if ($this->requestExists('snippet')) {
+			$query['snippet'] = $this->requestString('snippet');
+		}
+		if ($this->requestExists('ranking')) {
+			$query['ranking'] = $this->requestString('ranking');
+		} else if (isset($model->ranking)) {
+			$query['ranking'] = $model->ranking;
+		}
+		if (sizeof($query) > 0) {
+			$variables['query'] = $query;
 		}
 
 		// controller logic
@@ -508,12 +536,23 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 			$variables['property'] = $this->requestString('property');
 			$variables['value'] = $this->requestString('value');
 		} else if ($this->requestExists('guidance')) {
-			if (is_numeric($this->requestString('guidance'))) {
+			$guidance = $this->requestString('guidance');
+			if (is_numeric($guidance)) {
 				$jump = 'delGuidance';
 				$variables['guidance'] = $this->requestNumber('guidance');
-			} else {
+				$variables['property'] = '';
+			} else if (strpos($guidance, '-') === 0) {
+				$jump = 'delGuidance';
+				$variables['guidance'] = -1;
+				$variables['property'] = $this->requestString('property');
+			} else if (strpos($guidance, '+') === 0 || strpos($guidance, ' ') === 0) {
 				$jump = 'addGuidance';
-				$variables['type'] = $this->requestString('guidance');
+				$variables['type'] = substr($guidance, 1);
+				$variables['property'] = $this->requestString('property');
+				$variables['value'] = $this->requestStringArray('value');
+			} else {
+				$jump = 'setGuidance';
+				$variables['type'] = $guidance;
 				$variables['property'] = $this->requestString('property');
 				$variables['value'] = $this->requestStringArray('value');
 			}
@@ -959,6 +998,70 @@ class CEM_WebController14 {
 		$this->lastInteraction = NULL;
 	}
 
+	
+	/**
+	 * Get customer account identifier
+	 *
+	 * @return string customer account identifier
+	 */
+	public function getCustomer() {
+		return $this->customer;
+	}
+	
+	/**
+	 * Get index identifier
+	 *
+	 * @return string index identifier
+	 */
+	public function getIndex() {
+		return $this->index;
+	}
+	
+	/**
+	 * Get language identifier
+	 *
+	 * @return string language identifier
+	 */
+	public function getLanguage() {
+		return $this->language;
+	}
+	
+	/**
+	 * Get dialog identifier
+	 *
+	 * @return string dialog identifier
+	 */
+	public function getDialog() {
+		return $this->dialog;
+	}
+	
+	/**
+	 * Get state handler
+	 *
+	 * @return CEM_WebStateHandler state handler
+	 */
+	public function getStateHandler() {
+		return $this->stateHandler;
+	}
+	
+	/**
+	 * Get request handler
+	 *
+	 * @return CEM_WebRequestHandler14 request handler
+	 */
+	public function getRequestHandler() {
+		return $this->requestHandler;
+	}
+	
+	/**
+	 * Get response handler
+	 *
+	 * @return CEM_WebResponseHandler14 response handler
+	 */
+	public function getResponseHandler() {
+		return $this->responseHandler;
+	}
+
 
 	/**
 	 * Get current client state
@@ -1074,6 +1177,12 @@ class CEM_WebController14 {
 	 * @return mixed wrapped cem response or FALSE on error
 	 */
 	public function suggest($query, $size = 10, $contextual = 3, &$options = array()) {
+		$filter = isset($options['filter']) ? $options['filter'] : '@type:instance';
+		$includedProperties = isset($options['includedProperties']) ? $options['includedProperties'] : array();
+		$excludedProperties = isset($options['excludedProperties']) ? $options['excludedProperties'] : array('title');
+		$filterProperties = isset($options['filterProperties']) ? $options['filterProperties'] : array('title', 'body');
+		$scorerProperties = isset($options['scorerProperties']) ? $options['scorerProperties'] : array('title', 'body');
+
 		$request = new CEM_PR_MultiRequest($this->customer);
 		$request->addRequest(
 			new CEM_PR_CompletionQuery(
@@ -1081,14 +1190,14 @@ class CEM_WebController14 {
 				'complete',
 				$this->index,
 				$this->language,
-				'@type:instance',
+				$filter,
 				$query,
 				$size,
 				$contextual,
-				array(),
-				array('title'),
-				array('title', 'body'),
-				array('title', 'body')
+				$includedProperties,
+				$excludedProperties,
+				$filterProperties,
+				$scorerProperties
 			)
 		);
 		$response = new CEM_PR_SimpleResponse();
