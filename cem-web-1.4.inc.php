@@ -531,10 +531,14 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 			$jump = 'query';
 			$variables['queryText'] = $this->requestString('query');
 		} else if ($this->requestExists('refine')) {
-			$jump = 'refine';
-			$variables['refine'] = $this->requestNumber('refine');
-			$variables['property'] = $this->requestString('property');
-			$variables['value'] = $this->requestString('value');
+			if ($this->requestExists('clear')) {
+				$jump = 'clearQuery';
+			} else {
+				$jump = 'refine';
+				$variables['refine'] = $this->requestNumber('refine');
+				$variables['property'] = $this->requestString('property');
+				$variables['value'] = $this->requestString('value');
+			}
 		} else if ($this->requestExists('guidance')) {
 			$guidance = $this->requestString('guidance');
 			if (is_numeric($guidance)) {
@@ -544,17 +548,19 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 			} else if (strpos($guidance, '-') === 0) {
 				$jump = 'delGuidance';
 				$variables['guidance'] = -1;
-				$variables['property'] = $this->requestString('property');
+				$variables['property'] = substr($guidance, 1);
 			} else if (strpos($guidance, '+') === 0 || strpos($guidance, ' ') === 0) {
 				$jump = 'addGuidance';
 				$variables['type'] = substr($guidance, 1);
 				$variables['property'] = $this->requestString('property');
 				$variables['value'] = $this->requestStringArray('value');
+				$variables['hierarchical'] = $this->requestExists('hierarchical');
 			} else {
 				$jump = 'setGuidance';
 				$variables['type'] = $guidance;
 				$variables['property'] = $this->requestString('property');
 				$variables['value'] = $this->requestStringArray('value');
+				$variables['hierarchical'] = $this->requestExists('hierarchical');
 			}
 		} else if ($this->requestExists('feedback')) {
 			$jump = 'feedback';
