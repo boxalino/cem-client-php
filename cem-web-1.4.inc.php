@@ -533,6 +533,7 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 		} else if ($this->requestExists('refine')) {
 			if ($this->requestExists('clear')) {
 				$jump = 'clearQuery';
+				$variables['keepTerms'] = TRUE;
 			} else {
 				$jump = 'refine';
 				$variables['refine'] = $this->requestNumber('refine');

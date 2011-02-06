@@ -18,36 +18,6 @@
  */
 class CEM_GatewayClient {
 	/**
-	 * @ignore Active CURL states
-	 *
-	 * @var array
-	 */
-	private static $STATES = array();
-
-	/**
-	 * @ignore Next CURL state id
-	 *
-	 * @var int
-	 */
-	private static $nextStateId = 0;
-
-	/**
-	 * @ignore Get active CURL state
-	 *
-	 * @param object $h CURL handle
-	 * @return CEM_GatewayState client state
-	 */
-	public static function &GetState($h) {
-		foreach (self::$STATES as $entry) {
-			if ($entry['h'] === $h) {
-				return $entry['s'];
-			}
-		}
-		return NULL;
-	}
-
-
-	/**
 	 * Gateway url
 	 *
 	 * @var string
@@ -92,8 +62,6 @@ class CEM_GatewayClient {
 	 * @return boolean TRUE on success or FALSE otherwise
 	 */
 	public function process(&$state, &$request, &$response) {
-		global $CEM_GatewayClient_curlHttpStates;
-
 		// initialize curl
 		$h = curl_init();
 		if (!$h) {
@@ -125,7 +93,7 @@ class CEM_GatewayClient {
 			curl_close($h);
 			return FALSE;
 		}
-		if (!curl_setopt($h, CURLOPT_HEADERFUNCTION,	'CEM_GatewayClient_parseHeader')) {
+		if (!curl_setopt($h, CURLOPT_HEADERFUNCTION,	array($this, 'parseHeader'))) {
 			curl_close($h);
 			return FALSE;
 		}
@@ -156,8 +124,8 @@ class CEM_GatewayClient {
 		}
 
 		// execute curl request/response
-		$stateId = self::$nextStateId++;
-		self::$STATES[$stateId] = array(
+		$stateId = $this->nextStateId++;
+		$this->states[$stateId] = array(
 			'h' => &$h,
 			's' => &$state
 		);
@@ -168,7 +136,7 @@ class CEM_GatewayClient {
 		$code = curl_getinfo($h, CURLINFO_HTTP_CODE);
 		$error = curl_error($h);
 
-		unset(self::$STATES[$stateId]);
+		unset($this->states[$stateId]);
 
 		// close curl
 		curl_close($h);
@@ -186,40 +154,66 @@ class CEM_GatewayClient {
 		}
 		return FALSE;
 	}
-}
 
 
-/**
- * @ignore Called by CURL to parse http header
- *
- * @param object $h CURL handle
- * @param string $data header line
- * @return integer line size
- */
-function CEM_GatewayClient_parseHeader($h, $data) {
-	// parse cookies
-	$cookieData = NULL;
-	if (stripos($data, "Set-Cookie:") === 0) {
-		$cookieData = trim(substr($data, strlen("Set-Cookie:")));
-	} else if (stripos($data, "Set-Cookie2:") === 0) {
-		$cookieData = trim(substr($data, strlen("Set-Cookie2:")));
-	}
-	if ($cookieData) {
-		$parts = explode(';', $cookieData);
-		if (count($parts) > 0) {
-			$value = explode('=', $parts[0]);
-			$cookie = array(
-				'value' => $value[1],
-				'parameters' => array()
-			);
-			for ($i = 1; $i < count($parts); $i++) {
-				$parameter = explode('=', $parts[$i]);
-				$cookie['parameters'][$parameter[0]] = $parameter[1];
+	/**
+	 * @ignore Active CURL states
+	 *
+	 * @var array
+	 */
+	private $states = array();
+
+	/**
+	 * @ignore Next CURL state id
+	 *
+	 * @var int
+	 */
+	private $nextStateId = 0;
+
+
+	/**
+	 * @ignore Called by CURL to parse http header
+	 *
+	 * @param object $h CURL handle
+	 * @param string $data header line
+	 * @return integer line size
+	 */
+	private function parseHeader($h, $data) {
+		// find state
+		$state = NULL;
+		foreach ($this->states as $entry) {
+			if ($entry['h'] === $h) {
+				$state = $entry['s'];
+				break;
 			}
-			CEM_GatewayClient::GetState($h)->setCookie($value[0], $cookie);
 		}
+
+		// parse cookies
+		if ($state != NULL) {
+			$cookieData = NULL;
+			if (stripos($data, "Set-Cookie:") === 0) {
+				$cookieData = trim(substr($data, strlen("Set-Cookie:")));
+			} else if (stripos($data, "Set-Cookie2:") === 0) {
+				$cookieData = trim(substr($data, strlen("Set-Cookie2:")));
+			}
+			if ($cookieData) {
+				$parts = explode(';', $cookieData);
+				if (count($parts) > 0) {
+					$value = explode('=', $parts[0]);
+					$cookie = array(
+						'value' => $value[1],
+						'parameters' => array()
+					);
+					for ($i = 1; $i < count($parts); $i++) {
+						$parameter = explode('=', $parts[$i]);
+						$cookie['parameters'][$parameter[0]] = $parameter[1];
+					}
+					$state->setCookie($value[0], $cookie);
+				}
+			}
+		}
+		return strlen($data);
 	}
-	return strlen($data);
 }
 
 ?>
