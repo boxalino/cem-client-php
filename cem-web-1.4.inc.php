@@ -433,7 +433,7 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 		if (isset($this->sequentialContexts[$name])) {
 			return $this->sequentialContexts[$name]['data'];
 		}
-		return array();
+		return '';
 	}
 
 	/**
@@ -530,6 +530,9 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 		if ($this->requestExists('query')) {
 			$jump = 'query';
 			$variables['queryText'] = $this->requestString('query');
+			if ($this->requestExists('ac')) {
+				$variables['ac'] = $this->requestNumber('ac');
+			}
 		} else if ($this->requestExists('refine')) {
 			if ($this->requestExists('clear')) {
 				$jump = 'clearQuery';
@@ -758,6 +761,22 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
 			return $this->response->getContextScope($name);
 		}
 		return NULL;
+	}
+
+	/**
+	 * Get context data
+	 *
+	 * @param string $name context name
+	 * @return string context data
+	 */
+	public function getContextData($name) {
+		if ($this->response) {
+			$scope = $this->response->getContextScope($name);
+			if ($scope) {
+				return $scope['data'];
+			}
+		}
+		return '';
 	}
 
 	/**
@@ -1031,6 +1050,15 @@ class CEM_WebController14 {
 	 */
 	public function getLanguage() {
 		return $this->language;
+	}
+	
+	/**
+	 * Set language identifier
+	 *
+	 * @param string $language language identifier
+	 */
+	public function setLanguage($language) {
+		$this->language = $language;
 	}
 	
 	/**
