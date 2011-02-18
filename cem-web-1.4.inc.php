@@ -508,6 +508,9 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 
 		// base context
 		$query = array();
+		if (isset($this->context['query'])) {
+			$query = $this->context['query'];
+		}
 		if ($this->requestExists('filter')) {
 			$query['filter'] = $this->requestString('filter');
 		}
@@ -1221,8 +1224,6 @@ class CEM_WebController14 {
 		$request = new CEM_PR_MultiRequest($this->customer);
 		$request->addRequest(
 			new CEM_PR_CompletionQuery(
-				'kb/query',
-				'complete',
 				$this->index,
 				$this->language,
 				$filter,

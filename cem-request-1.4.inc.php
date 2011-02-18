@@ -297,6 +297,117 @@ class CEM_KB_Query {
 }
 
 /**
+ * Query admin query
+ *
+ * @package cem
+ * @subpackage client
+ */
+class CEM_PR_AdminQuery extends CEM_PR_AbstractQuery {
+	/**
+	 * Index identifier
+	 *
+	 * @var string
+	 */
+	protected $index;
+
+	/**
+	 * Language identifier
+	 *
+	 * @var string
+	 */
+	protected $language;
+
+	/**
+	 * Base filter
+	 *
+	 * @var string
+	 */
+	protected $filter;
+
+	/**
+	 * Textual query
+	 *
+	 * @var string
+	 */
+	protected $queryText;
+
+	/**
+	 * Included properties
+	 *
+	 * @var array
+	 */
+	protected $includedProperties;
+
+	/**
+	 * Excluded properties
+	 *
+	 * @var array
+	 */
+	protected $excludedProperties;
+ 
+	/**
+	 * Filter properties
+	 *
+	 * @var array
+	 */
+	protected $filterProperties;
+
+	/**
+	 * Terms
+	 *
+	 * @var array
+	 */
+	protected $queryTerms;
+
+
+	/**
+	 * Constructor
+	 *
+	 */
+	public function __construct($index, $language, $filter, $queryText, $suggestionLimit, $resultLimit, $includedProperties = array(), $excludedProperties = array(), $filterProperties = array(), $queryTerms = array()) {
+		parent::__construct('kb/query', 'admin');
+		$this->index = $index;
+		$this->language = $language;
+		$this->filter = $filter;
+		$this->queryText = $queryText;
+		$this->includedProperties = $includedProperties;
+		$this->excludedProperties = $excludedProperties;
+		$this->filterProperties = $filterProperties;
+		$this->queryTerms = $queryTerms;
+	}
+
+
+	/**
+	 * Get query type
+	 *
+	 * @return string query type
+	 */
+	public function type() {
+		return "adminQuery";
+	}
+
+	/**
+	 * Called to build the query
+	 *
+	 * @param CEM_GatewayState &$state client state reference
+	 * @return array query
+	 */
+	public function build(&$state) {
+		$query = parent::build($state);
+		$query["index"] = $this->index;
+		$query["language"] = $this->language;
+		$query["filter"] = $this->filter;
+		$query["queryText"] = $this->queryText;
+		$query["termPopulation"] = 250;
+		$query["includedProperties"] = $this->includedProperties;
+		$query["excludedProperties"] = $this->excludedProperties;
+		$query["filterProperties"] = $this->filterProperties;
+		$query["queryTerms"] = $this->queryTerms;
+		return $query;
+	}
+}
+
+/**
  * Query completion recommendation query
  *
  * @package cem
@@ -336,14 +447,14 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 	 *
 	 * @var int
 	 */
-	protected $limit;
+	protected $suggestionLimit;
  
 	/**
 	 * Maximum amount of contextual recommendations
 	 *
 	 * @var int
 	 */
-	protected $resultsLimit;
+	protected $resultLimit;
 
 	/**
 	 * Included properties
@@ -377,17 +488,15 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 	/**
 	 * Constructor
 	 *
-	 * @param string $strategy strategy identifier
-	 * @param string $operation operation identifier
 	 */
-	public function __construct($strategy, $operation, $index, $language, $filter, $queryText, $limit, $resultsLimit, $includedProperties = array(), $excludedProperties = array(), $filterProperties = array(), $scorerProperties = array()) {
-		parent::__construct($strategy, $operation);
+	public function __construct($index, $language, $filter, $queryText, $suggestionLimit, $resultLimit, $includedProperties = array(), $excludedProperties = array(), $filterProperties = array(), $scorerProperties = array()) {
+		parent::__construct('kb/query', 'complete');
 		$this->index = $index;
 		$this->language = $language;
 		$this->filter = $filter;
 		$this->queryText = $queryText;
-		$this->limit = $limit;
-		$this->resultsLimit = $resultsLimit;
+		$this->suggestionLimit = $suggestionLimit;
+		$this->resultLimit = $resultLimit;
 		$this->includedProperties = $includedProperties;
 		$this->excludedProperties = $excludedProperties;
 		$this->filterProperties = $filterProperties;
@@ -416,8 +525,10 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 		$query["language"] = $this->language;
 		$query["filter"] = $this->filter;
 		$query["queryText"] = $this->queryText;
-		$query["limit"] = $this->limit;
-		$query["resultsLimit"] = $this->resultsLimit;
+		$query["termPopulation"] = 250;
+		$query["suggestionLimit"] = $this->suggestionLimit;
+		$query["resultPopulation"] = $this->resultLimit * 3;
+		$query["resultLimit"] = $this->resultLimit;
 		$query["includedProperties"] = $this->includedProperties;
 		$query["excludedProperties"] = $this->excludedProperties;
 		$query["filterProperties"] = $this->filterProperties;
