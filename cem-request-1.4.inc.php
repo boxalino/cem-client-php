@@ -254,49 +254,6 @@ abstract class CEM_PR_AbstractQuery {
 }
 
 /**
- * Kb query
- *
- * @package cem
- * @subpackage client
- */
-class CEM_KB_Query {
-	/**
-	 * Index identifier
-	 *
-	 * @var string
-	 */
-	public $index;
-
-	/**
-	 * Flags
-	 *
-	 * @var array
-	 */
-	public $flags;
-
-	/**
-	 * Parameters
-	 *
-	 * @var array
-	 */
-	public $parameters;
-
-
-	/**
-	 * Constructor
-	 *
-	 * @param string $index index identifier
-	 * @param string $flags query flags
-	 * @param string $parameters query parameters
-	 */
-	public function __construct($index, $flags = array(), $parameters = array()) {
-		$this->index = $index;
-		$this->flags = $flags;
-		$this->parameters = $parameters;
-	}
-}
-
-/**
  * Query admin query
  *
  * @package cem
@@ -364,7 +321,7 @@ class CEM_PR_AdminQuery extends CEM_PR_AbstractQuery {
 	 * Constructor
 	 *
 	 */
-	public function __construct($index, $language, $filter, $queryText, $suggestionLimit, $resultLimit, $includedProperties = array(), $excludedProperties = array(), $filterProperties = array(), $queryTerms = array()) {
+	public function __construct($index, $language, $filter, $queryText, $includedProperties = array(), $excludedProperties = array(), $filterProperties = array(), $queryTerms = array()) {
 		parent::__construct('kb/query', 'admin');
 		$this->index = $index;
 		$this->language = $language;
