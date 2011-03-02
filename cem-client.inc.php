@@ -144,8 +144,8 @@ class CEM_GatewayClient {
 		// debug
 //		echo($requestData."\n");
 //		echo($responseData."\n");
-//		echo("<pre>".htmlentities($requestData)."</pre>");
-//		echo("<pre>".htmlentities($responseData)."</pre>");
+//		echo("<pre>".htmlentities($requestData, ENT_COMPAT, 'UTF-8')."</pre>");
+//		echo("<pre>".htmlentities($responseData, ENT_COMPAT, 'UTF-8')."</pre>");
 
 		// parse response
 		$state->setStatus($code, $error);

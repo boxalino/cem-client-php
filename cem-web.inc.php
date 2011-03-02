@@ -129,6 +129,11 @@ class CEM_WebEncryption {
 	 * @return string plain data
 	 */
 	public function decrypt($data) {
+		// check input data
+		if (strlen($data) == 0) {
+			return FALSE;
+		}
+
 		// open algorithm
 		$td = mcrypt_module_open($this->algo, $this->algoPath, $this->mode, $this->modePath);
 		if (!$td) {

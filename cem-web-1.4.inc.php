@@ -424,6 +424,15 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 
 
 	/**
+	 * Get sequential contexts
+	 *
+	 * @return array sequential contexts
+	 */
+	public function getSequentialContexts() {
+		return $this->sequentialContexts;
+	}
+
+	/**
 	 * Get sequential context variables
 	 *
 	 * @param string $name context name
@@ -559,15 +568,31 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 			} else if (strpos($guidance, '+') === 0 || strpos($guidance, ' ') === 0) {
 				$jump = 'addGuidance';
 				$variables['type'] = substr($guidance, 1);
+				$variables['hierarchical'] = $this->requestNumber('hierarchical') > 0;
 				$variables['property'] = $this->requestString('property');
-				$variables['value'] = $this->requestStringArray('value');
-				$variables['hierarchical'] = $this->requestExists('hierarchical');
+				if ($variables['hierarchical']) {
+					$variables['value'] = array();
+					for ($i = 0; $i < $this->requestNumber('hierarchical'); $i++) {
+						$value = $this->requestStringArray('value'.$i);
+						$variables['value'][] = $value[0];
+					}
+				} else {
+					$variables['value'] = $this->requestStringArray('value');
+				}
 			} else {
 				$jump = 'setGuidance';
 				$variables['type'] = $guidance;
+				$variables['hierarchical'] = $this->requestExists('hierarchical') > 0;
 				$variables['property'] = $this->requestString('property');
-				$variables['value'] = $this->requestStringArray('value');
-				$variables['hierarchical'] = $this->requestExists('hierarchical');
+				if ($variables['hierarchical']) {
+					$variables['value'] = array();
+					for ($i = 0; $i < $this->requestNumber('hierarchical'); $i++) {
+						$value = $this->requestStringArray('value'.$i);
+						$variables['value'][] = $value[0];
+					}
+				} else {
+					$variables['value'] = $this->requestStringArray('value');
+				}
 			}
 		} else if ($this->requestExists('feedback')) {
 			$jump = 'feedback';
