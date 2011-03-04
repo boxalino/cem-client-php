@@ -565,26 +565,23 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 				$jump = 'delGuidance';
 				$variables['guidance'] = -1;
 				$variables['property'] = substr($guidance, 1);
-			} else if (strpos($guidance, '+') === 0 || strpos($guidance, ' ') === 0) {
-				$jump = 'addGuidance';
-				$variables['type'] = substr($guidance, 1);
-				$variables['hierarchical'] = $this->requestNumber('hierarchical') > 0;
-				$variables['property'] = $this->requestString('property');
-				if ($variables['hierarchical']) {
-					$variables['value'] = array();
-					for ($i = 0; $i < $this->requestNumber('hierarchical'); $i++) {
-						$value = $this->requestStringArray('value'.$i);
-						$variables['value'][] = $value[0];
-					}
-				} else {
-					$variables['value'] = $this->requestStringArray('value');
-				}
 			} else {
-				$jump = 'setGuidance';
-				$variables['type'] = $guidance;
-				$variables['hierarchical'] = $this->requestExists('hierarchical') > 0;
+				if (strpos($guidance, '+') === 0 || strpos($guidance, ' ') === 0) {
+					$jump = 'addGuidance';
+					$variables['type'] = substr($guidance, 1);
+				} else {
+					$jump = 'setGuidance';
+					$variables['type'] = $guidance;
+				}
+				if ($this->requestNumber('hierarchical') > 0) {
+					$variables['mode'] = 'hierarchical';
+				} else if ($this->requestExists('mode')) {
+					$variables['mode'] = $this->requestString('mode');
+				} else {
+					$variables['mode'] = 'guidance';
+				}
 				$variables['property'] = $this->requestString('property');
-				if ($variables['hierarchical']) {
+				if ($variables['mode'] == 'hierarchical') {
 					$variables['value'] = array();
 					for ($i = 0; $i < $this->requestNumber('hierarchical'); $i++) {
 						$value = $this->requestStringArray('value'.$i);
