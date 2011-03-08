@@ -713,13 +713,6 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
 	 */
 	protected $response;
 
-	/**
-	 * Current json response
-	 *
-	 * @var object
-	 */
-	protected $json;
-
 
 	/**
 	 * Constructor
@@ -732,7 +725,6 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
 		$this->mainGroupId = isset($options['mainGroupId']) ? $options['mainGroupId'] : 'main';
 		$this->request = NULL;
 		$this->response = NULL;
-		$this->json = NULL;
 	}
 
 
@@ -755,37 +747,15 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
 	}
 
 	/**
-	 * Get decoded json response
+	 * Get context scope(s)
 	 *
-	 * @return object decoded json response
+	 * @return mixed context scope(s)
 	 */
-	public function getJson() {
-		return $this->json;
-	}
-
-	/**
-	 * Get context scope names
-	 *
-	 * @return array context scope names
-	 */
-	public function getContextScopes() {
+	public function getContext() {
 		if ($this->response) {
-			return $this->response->getContextScopes();
+			return $this->response->getContext();
 		}
 		return array();
-	}
-
-	/**
-	 * Get context scope
-	 *
-	 * @param string $name context name
-	 * @return mixed context scope
-	 */
-	public function getContextScope($name) {
-		if ($this->response) {
-			return $this->response->getContextScope($name);
-		}
-		return NULL;
 	}
 
 	/**
@@ -796,12 +766,25 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
 	 */
 	public function getContextData($name) {
 		if ($this->response) {
-			$scope = $this->response->getContextScope($name);
-			if ($scope) {
-				return $scope['data'];
+			$scopes = $this->getContext();
+			if (isset($scopes[$name])) {
+				return $scopes[$name]['data'];
 			}
 		}
 		return '';
+	}
+
+
+	/**
+	 * Get groups
+	 *
+	 * @return array group scopes
+	 */
+	public function getGroups() {
+		if ($this->response) {
+			return $this->response->getResponses();
+		}
+		return array();
 	}
 
 	/**
@@ -811,32 +794,17 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
 	 * @return object group or NULL if none
 	 */
 	public function getGroup($id = NULL) {
-		if ($this->json && isset($this->json->groups)) {
-			if ($id == NULL) {
-				$id = $this->mainGroupId;
-			}
-			if (isset($this->json->groups->$id)) {
-				return $this->json->groups->$id;
+		if ($id == NULL) {
+			$id = $this->mainGroupId;
+		}
+		if ($this->response) {
+			$scopes = $this->response->getResponses();
+			if (isset($scopes[$id])) {
+				return $scopes[$id];
 			}
 		}
 		return NULL;
 	}
-
-	/**
-	 * Get decoded raw json response
-	 *
-	 * @param string $widget widget identifier (template.instance)
-	 * @return string widget data (source or text)
-	 */
-	public function getWidgetData($widget) {
-		list($template, $instance) = explode('.', $widget);
-
-		if ($this->response) {
-			return $this->response->getWidget($template, $instance);
-		}
-		return "";
-	}
-
 
 	/**
 	 * Encode sequential context states into url
@@ -847,8 +815,7 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
 	public function encodeQuery($parameters = array()) {
 		if ($this->response) {
 			$data = '';
-			foreach ($this->response->getContextScopes() as $name) {
-				$scope = $this->response->getContextScope($name);
+			foreach ($this->response->getContext() as $name => $scope) {
 				if ($scope['mode'] == 'sequential') {
 					switch ($scope['level']) {
 					case 'visitor':
@@ -904,14 +871,6 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
 	public function onInteraction(&$state, &$request, &$response, &$options) {
 		$this->request = $request;
 		$this->response = $response;
-
-		// decode json response
-		if ($this->response->getSize() > 0) {
-			$this->json = json_decode($this->response->getResponse());
-			if (!$this->json) {
-				return FALSE;
-			}
-		}
 		return $this;
 	}
 
@@ -1139,19 +1098,18 @@ class CEM_WebController14 {
 	 * Process client interaction
 	 *
 	 * @param array &$options interaction options passed to handlers
-	 * @param boolean $withResponse with response flag (defaults to TRUE)
 	 * @param boolean $useCache optional parameter to use cache (defaults to TRUE)
 	 * @return mixed wrapped cem response or FALSE on error
 	 */
-	public function interact(&$options = array(), $withResponse = TRUE, $useCache = TRUE) {
+	public function interact(&$options = array(), $useCache = TRUE) {
 		// return cached interaction if any
 		if ($useCache && $this->lastInteraction !== NULL) {
 			return $this->lastInteraction;
 		}
 
 		// build cem state/request/response
-		$request = new CEM_GS_SimpleRequest($this->customer, $this->dialog, $this->language, $withResponse);
-		$response = new CEM_GS_SimpleResponse();
+		$request = new CEM_GS_SimpleRequest14($this->customer, $this->dialog, $this->language);
+		$response = new CEM_GS_SimpleResponse14();
 		list($state, $created) = $this->getState();
 
 		// initialize client state
@@ -1270,8 +1228,8 @@ class CEM_WebController14 {
 	 */
 	public function destroy() {
 		// build cem state/request/response
-		$request = new CEM_GS_SimpleRequest($this->customer, $this->dialog, $this->language, FALSE);
-		$response = new CEM_GS_SimpleResponse();
+		$request = new CEM_GS_SimpleRequest14($this->customer, $this->dialog, $this->language);
+		$response = new CEM_GS_SimpleResponse14();
 		list($state, $created) = $this->getState();
 		if ($created) {
 			return FALSE;

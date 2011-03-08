@@ -11,6 +11,89 @@
 
 
 /**
+ * Abstract gateway request
+ *
+ * @package cem
+ * @subpackage client
+ */
+abstract class CEM_GatewayRequest {
+	/**
+	 * Constructor
+	 *
+	 */
+	public function __construct() {
+	}
+
+
+	/**
+	 * Get request body content-type
+	 *
+	 * @return string request body content-type
+	 */
+	public abstract function getContentType();
+
+	/**
+	 * Called to write the request
+	 *
+	 * @param CEM_GatewayState &$state client state reference
+	 * @return string request raw body
+	 */
+	public abstract function write(&$state);
+}
+
+/**
+ * Abstract gateway response
+ *
+ * @package cem
+ * @subpackage client
+ */
+abstract class CEM_GatewayResponse {
+	/**
+	 * Processing time
+	 *
+	 * @var float
+	 */
+	protected $totalTime;	
+
+
+	/**
+	 * Constructor
+	 *
+	 */
+	public function __construct() {
+	}
+
+
+	/**
+	 * Get processing time
+	 *
+	 * @return float processing time (in seconds)
+	 */
+	public function getTotalTime() {
+		return $this->totalTime;
+	}
+
+	/**
+	 * Called to set processing time
+	 *
+	 * @param float $time processing time (in seconds)
+	 */
+	public function setTotalTime($time) {
+		$this->totalTime = $time;
+	}
+
+	/**
+	 * Called to read the response
+	 *
+	 * @param CEM_GatewayState &$state client state reference
+	 * @param string &$data response raw body
+	 * @return boolean TRUE on success, FALSE otherwise
+	 */
+	public abstract function read(&$state, &$data);
+}
+
+
+/**
  * Boxalino CEM Gateway client class
  *
  * @package cem
@@ -132,7 +215,7 @@ class CEM_GatewayClient {
 
 		$time = microtime(TRUE);
 		$responseData = curl_exec($h);
-		$response->setTime(microtime(TRUE) - $time);
+		$response->setTotalTime(microtime(TRUE) - $time);
 		$code = curl_getinfo($h, CURLINFO_HTTP_CODE);
 		$error = curl_error($h);
 
