@@ -1223,7 +1223,7 @@ class CEM_WebController14 {
 		}
 
 		// process recommendation
-		$client = new CEM_GatewayClient($this->url . '/pr/gateway/json-recommendation-1.4', $this->connectionTimeout, $this->readTimeout);
+		$client = new CEM_GatewayClient($this->url . '/pr/gateway/client-1.4', $this->connectionTimeout, $this->readTimeout);
 		if (!$client->process($state, $request, $response)) {
 			if ($this->responseHandler) {
 				$this->responseHandler->onError($state, $request, $options);
