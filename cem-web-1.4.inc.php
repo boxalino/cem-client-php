@@ -461,7 +461,7 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 	 * Called when client state needs to be initialized
 	 *
 	 * @param CEM_GatewayState &$state client state reference
-	 * @param CEM_GS_SimpleRequest &$request client request reference
+	 * @param CEM_GS_GatewayRequest14 &$request client request reference
 	 * @return boolean TRUE on success or FALSE on error
 	 */
 	public function onInit(&$state, &$request) {
@@ -473,7 +473,7 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 	 * Called when client state needs to be freed
 	 *
 	 * @param CEM_GatewayState &$state client state reference
-	 * @param CEM_GS_SimpleRequest &$request client request reference
+	 * @param CEM_GS_GatewayRequest14 &$request client request reference
 	 * @return boolean TRUE on success or FALSE on error
 	 */
 	public function onFree(&$state, &$request) {
@@ -485,7 +485,7 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 	 * Called each client interaction to build request
 	 *
 	 * @param CEM_GatewayState &$state client state reference
-	 * @param CEM_GS_SimpleRequest &$request client request reference
+	 * @param CEM_GS_GatewayRequest14 &$request client request reference
 	 * @param array &$options options passed for interaction
 	 * @return boolean TRUE on success or FALSE on error
 	 */
@@ -503,7 +503,7 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 		$model = isset($contexts['model']) ? json_decode($contexts['model']['data']) : array();
 
 		// notify custom implementation
-		$jump = $this->onInteractionBefore($state, $request, 'none', $variables, $options);
+		$action = $this->onInteractionBefore($state, $request, 'none', $variables, $options);
 
 		// base parameters
 		if ($this->requestExists('offset')) {
@@ -540,17 +540,17 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 
 		// controller logic
 		if ($this->requestExists('query')) {
-			$jump = 'query';
+			$action = 'query';
 			$variables['queryText'] = $this->requestString('query');
 			if ($this->requestExists('ac')) {
 				$variables['ac'] = $this->requestNumber('ac');
 			}
 		} else if ($this->requestExists('refine')) {
 			if ($this->requestExists('clear')) {
-				$jump = 'clearQuery';
+				$action = 'clearQuery';
 				$variables['keepTerms'] = TRUE;
 			} else {
-				$jump = 'refine';
+				$action = 'refine';
 				$variables['refine'] = $this->requestNumber('refine');
 				$variables['property'] = $this->requestString('property');
 				$variables['value'] = $this->requestString('value');
@@ -558,19 +558,19 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 		} else if ($this->requestExists('guidance')) {
 			$guidance = $this->requestString('guidance');
 			if (is_numeric($guidance)) {
-				$jump = 'delGuidance';
+				$action = 'delGuidance';
 				$variables['guidance'] = $this->requestNumber('guidance');
 				$variables['property'] = '';
 			} else if (strpos($guidance, '-') === 0) {
-				$jump = 'delGuidance';
+				$action = 'delGuidance';
 				$variables['guidance'] = -1;
 				$variables['property'] = substr($guidance, 1);
 			} else {
 				if (strpos($guidance, '+') === 0 || strpos($guidance, ' ') === 0) {
-					$jump = 'addGuidance';
+					$action = 'addGuidance';
 					$variables['type'] = substr($guidance, 1);
 				} else {
-					$jump = 'setGuidance';
+					$action = 'setGuidance';
 					$variables['type'] = $guidance;
 				}
 				if ($this->requestNumber('hierarchical') > 0) {
@@ -592,54 +592,27 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 				}
 			}
 		} else if ($this->requestExists('feedback')) {
-			$jump = 'feedback';
+			$action = 'feedback';
 			$variables['weight'] = $this->requestNumber('feedback');
 		}
 
 		// custom overrides
-		if (isset($options['jump'])) {
-			$jump = strval($options['jump']);
+		if (isset($options['action'])) {
+			$action = strval($options['action']);
 		}
 		if (isset($options['variables'])) {
 			foreach ($options['variables'] as $key => $value) {
 				$variables[$key] = $value;
 			}
 		}
-/*		if (isset($options['widgets'])) {
-			foreach ($options['widgets'] as $widget) {
-				list($template, $instance) = explode('.', $widget);
-
-				if (strlen($template) > 0 && strlen($instance) > 0) {
-					$request->addWidget($template, $instance, CEM_GS_WIDGET_DATA);
-				}
-			}
-		}*/
 
 		// notify custom implementation
-		$jump = $this->onInteractionAfter($state, $request, $jump, $variables, $options);
+		$action = $this->onInteractionAfter($state, $request, $action, $variables, $options);
 
 		// add final request
-		$request->appendRequest($jump, $variables);
-
-		// request state widget
-//		$request->addWidget('state', 'default', CEM_GS_WIDGET_DATA);
+		$request->appendRequest($action, $variables);
 		return TRUE;
 	}
-
-	/**
-	 * Called each client recommendation to build request
-	 *
-	 * @param CEM_GatewayState &$state client state reference
-	 * @param CEM_PR_AbstractQuery &$request client request reference
-	 * @param string $strategy recommendation strategy identifier
-	 * @param string $operation recommendation operation identifier
-	 * @param array &$options options passed for recommendation
-	 * @return boolean TRUE on success or FALSE on error
-	 */
-	public function onRecommendation(&$state, &$request, $options) {
-		return TRUE;
-	}
-
 
 	/**
 	 * Build interaction variables
@@ -659,28 +632,43 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 	 * Called before default interaction request is built
 	 *
 	 * @param CEM_GatewayState &$state client state reference
-	 * @param CEM_GS_SimpleRequest &$request client request reference
-	 * @param string $jump current jump identifier
+	 * @param CEM_GS_GatewayRequest14 &$request client request reference
+	 * @param string $action current action identifier
 	 * @param array &$variables contextual request variables
 	 * @param array &$options options passed for interaction
-	 * @return string final jump identifier
+	 * @return string final action identifier
 	 */
-	protected function onInteractionBefore(&$state, &$request, $jump, &$variables, &$options) {
-		return $jump;
+	protected function onInteractionBefore(&$state, &$request, $action, &$variables, &$options) {
+		return $action;
 	}
 
 	/**
 	 * Called after default interaction request is built
 	 *
 	 * @param CEM_GatewayState &$state client state reference
-	 * @param CEM_GS_SimpleRequest &$request client request reference
-	 * @param string $jump current jump identifier
+	 * @param CEM_GS_GatewayRequest14 &$request client request reference
+	 * @param string $action current action identifier
 	 * @param array &$variables contextual request variables
 	 * @param array &$options options passed for interaction
-	 * @return string final jump identifier
+	 * @return string final action identifier
 	 */
-	protected function onInteractionAfter(&$state, &$request, $jump, &$variables, &$options) {
-		return $jump;
+	protected function onInteractionAfter(&$state, &$request, $action, &$variables, &$options) {
+		return $action;
+	}
+
+
+	/**
+	 * Called each client recommendation to build request
+	 *
+	 * @param CEM_GatewayState &$state client state reference
+	 * @param CEM_PR_GatewayRequest14 &$request client request reference
+	 * @param string $strategy recommendation strategy identifier
+	 * @param string $operation recommendation operation identifier
+	 * @param array &$options options passed for recommendation
+	 * @return boolean TRUE on success or FALSE on error
+	 */
+	public function onRecommendation(&$state, &$request, $options) {
+		return TRUE;
 	}
 }
 
@@ -863,8 +851,8 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
 	 * Called each client interaction to wrap the response
 	 *
 	 * @param CEM_GatewayState &$state client state reference
-	 * @param CEM_GS_SimpleRequest &$request client request reference
-	 * @param CEM_GS_SimpleResponse &$response client response reference
+	 * @param CEM_GS_GatewayRequest14 &$request client request reference
+	 * @param CEM_GS_GatewayResponse14 &$response client response reference
 	 * @param array &$options options passed for interaction
 	 * @return mixed wrapped response on success or FALSE on error
 	 */
@@ -878,21 +866,21 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
 	 * Called each client recommendation to wrap the response
 	 *
 	 * @param CEM_GatewayState &$state client state reference
-	 * @param CEM_PR_AbstractQuery &$request client request reference
-	 * @param CEM_PR_SimpleResponse &$response client response reference
+	 * @param CEM_PR_GatewayRequest14 &$request client request reference
+	 * @param CEM_PR_GatewayResponse14 &$response client response reference
 	 * @param string $strategy recommendation strategy identifier
 	 * @param array &$options options passed for recommendation
 	 * @return mixed wrapped response on success or FALSE on error
 	 */
 	public function onRecommendation(&$state, &$request, &$response, &$options) {
-		return $response->getJson();
+		return $response;
 	}
 
 	/**
 	 * Called if client interaction triggers an error
 	 *
 	 * @param CEM_GatewayState &$state client state reference
-	 * @param CEM_PR_SimpleRequest|CEM_GS_SimpleRequest &$request client request reference
+	 * @param CEM_PR_GatewayRequest14|CEM_GS_GatewayRequest14 &$request client request reference
 	 * @param array &$options options passed for recommendation
 	 */
 	public function onError(&$state, &$request, &$options) {
@@ -995,7 +983,7 @@ class CEM_WebController14 {
 		$this->customer = 'default';
 		$this->index = 'default';
 		$this->language = 'en';
-		$this->dialog = 'search';
+		$this->dialog = 'standard';
 		$this->stateHandler = NULL;
 		$this->requestHandler = NULL;
 		$this->responseHandler = NULL;
@@ -1004,7 +992,6 @@ class CEM_WebController14 {
 		foreach ($options as $key => $value) {
 			$this->$key = $value;
 		}
-
 		$this->lastInteraction = NULL;
 	}
 
@@ -1094,22 +1081,91 @@ class CEM_WebController14 {
 		return NULL;
 	}
 
+
+	/**
+	 * Destroy client state gracefully if any
+	 *
+	 * @return mixed wrapped cem response on success or FALSE on error
+	 */
+	public function destroy() {
+		// get cem state
+		list($state, $created) = $this->getState();
+
+		if ($created) {
+			return FALSE;
+		}
+		
+		// process interaction
+		$request = new CEM_GS_GatewayRequest14($this->customer, $this->dialog, $this->language);
+		$request->appendFreeRequest();
+		$this->lastInteraction = $this->gs($request, new CEM_GS_GatewayResponse14());
+
+		// clear client state
+		if ($this->stateHandler) {
+			$this->stateHandler->remove($state);
+		}
+		return $this->lastInteraction;
+	}
+
 	/**
 	 * Process client interaction
 	 *
-	 * @param array &$options interaction options passed to handlers
+	 * @param array $options interaction options passed to handlers
 	 * @param boolean $useCache optional parameter to use cache (defaults to TRUE)
 	 * @return mixed wrapped cem response or FALSE on error
 	 */
-	public function interact(&$options = array(), $useCache = TRUE) {
+	public function interact($options = array(), $useCache = TRUE) {
 		// return cached interaction if any
 		if ($useCache && $this->lastInteraction !== NULL) {
 			return $this->lastInteraction;
 		}
 
-		// build cem state/request/response
-		$request = new CEM_GS_SimpleRequest14($this->customer, $this->dialog, $this->language);
-		$response = new CEM_GS_SimpleResponse14();
+		// process interaction
+		$request = new CEM_GS_GatewayRequest14($this->customer, $this->dialog, $this->language);
+		$this->lastInteraction = $this->gs($request, new CEM_GS_GatewayResponse14());
+
+		return $this->lastInteraction;
+	}
+
+	/**
+	 * Do query completion suggestion
+	 *
+	 * @param string $query query prefix to complete
+	 * @param integer $size suggested query count (defaults to 10)
+	 * @param integer $contextual recommended item count (defaults to 3)
+	 * @param array $options recommendation options
+	 * @return mixed wrapped cem response or FALSE on error
+	 */
+	public function suggest($query, $size = 10, $contextual = 3, $options = array()) {
+		$request = new CEM_PR_GatewayRequest14($this->customer);
+		$request->addRequest(
+			new CEM_PR_CompletionQuery(
+				$this->index,
+				$this->language,
+				isset($options['filter']) ? $options['filter'] : '@type:instance',
+				$query,
+				$size,
+				$contextual,
+				isset($options['includedProperties']) ? $options['includedProperties'] : array(),
+				isset($options['excludedProperties']) ? $options['excludedProperties'] : array('title'),
+				isset($options['filterProperties']) ? $options['filterProperties'] : array('title', 'body'),
+				isset($options['scorerProperties']) ? $options['scorerProperties'] : array('title', 'body')
+			)
+		);
+		return $this->pr($request, new CEM_PR_GatewayResponse14(), $options);
+	}
+
+
+	/**
+	 * Do GS request (low-level)
+	 *
+	 * @param CEM_GS_GatewayRequest14 &$request guided-search request
+	 * @param CEM_GS_GatewayResponse14 &$response guided-search response
+	 * @param array $options interaction options passed to handlers
+	 * @return mixed wrapped cem response or FALSE on error
+	 */
+	public function gs(&$request, &$response, $options = array()) {
+		// get cem state
 		list($state, $created) = $this->getState();
 
 		// initialize client state
@@ -1139,28 +1195,25 @@ class CEM_WebController14 {
 
 		// notify response handler
 		if ($this->responseHandler) {
-			$this->lastInteraction = $this->responseHandler->onInteraction($state, $request, $response, $options);
-		} else {
-			$this->lastInteraction = $response;
+			$response = $this->responseHandler->onInteraction($state, $request, $response, $options);
 		}
 
 		// write client state
 		if ($this->stateHandler) {
 			$this->stateHandler->write($state);
 		}
-		return $this->lastInteraction;
+		return $response;
 	}
 
-
 	/**
-	 * Recommend items (customized request&response wrappers)
+	 * Do PR request (low-level)
 	 *
-	 * @param CEM_PR_AbstractQuery &$request recommendation request
-	 * @param CEM_PR_SimpleResponse &$response recommendation response
-	 * @param array &$options recommendation options
+	 * @param CEM_PR_GatewayRequest14 &$request recommendation request
+	 * @param CEM_PR_GatewayResponse14 &$response recommendation response
+	 * @param array $options recommendation options
 	 * @return mixed wrapped cem response or FALSE on error
 	 */
-	public function recommend(&$request, &$response, &$options = array()) {
+	public function pr(&$request, &$response, $options = array()) {
 		// build cem state
 		list($state, $created) = $this->getState();
 
@@ -1182,87 +1235,6 @@ class CEM_WebController14 {
 		if ($this->responseHandler) {
 			return $this->responseHandler->onRecommendation($state, $request, $response, $options);
 		}
-		return $response;
-	}
-
-	/**
-	 * Do query completion suggestion
-	 *
-	 * @param string $query query prefix to complete
-	 * @param integer $size suggested query count (defaults to 10)
-	 * @param integer $contextual recommended item count (defaults to 3)
-	 * @param array &$options recommendation options
-	 * @return mixed wrapped cem response or FALSE on error
-	 */
-	public function suggest($query, $size = 10, $contextual = 3, &$options = array()) {
-		$filter = isset($options['filter']) ? $options['filter'] : '@type:instance';
-		$includedProperties = isset($options['includedProperties']) ? $options['includedProperties'] : array();
-		$excludedProperties = isset($options['excludedProperties']) ? $options['excludedProperties'] : array('title');
-		$filterProperties = isset($options['filterProperties']) ? $options['filterProperties'] : array('title', 'body');
-		$scorerProperties = isset($options['scorerProperties']) ? $options['scorerProperties'] : array('title', 'body');
-
-		$request = new CEM_PR_MultiRequest($this->customer);
-		$request->addRequest(
-			new CEM_PR_CompletionQuery(
-				$this->index,
-				$this->language,
-				$filter,
-				$query,
-				$size,
-				$contextual,
-				$includedProperties,
-				$excludedProperties,
-				$filterProperties,
-				$scorerProperties
-			)
-		);
-		$response = new CEM_PR_SimpleResponse();
-		return $this->recommend($request, $response, $options);
-	}
-
-
-	/**
-	 * Destroy client state gracefully if any
-	 *
-	 * @return mixed wrapped cem response on success or FALSE on error
-	 */
-	public function destroy() {
-		// build cem state/request/response
-		$request = new CEM_GS_SimpleRequest14($this->customer, $this->dialog, $this->language);
-		$response = new CEM_GS_SimpleResponse14();
-		list($state, $created) = $this->getState();
-		if ($created) {
-			return FALSE;
-		}
-
-		// notify request handler
-		if ($this->requestHandler) {
-			if (!$this->requestHandler->onFree($state, $request)) {
-				return FALSE;
-			}
-		} else {
-			$request->appendFreeRequest();
-		}
-
-		// process interaction
-		$client = new CEM_GatewayClient($this->url . '/gs/gateway/client-1.4', $this->connectionTimeout, $this->readTimeout);
-		if (!$client->process($state, $request, $response)) {
-			if ($this->responseHandler) {
-				$this->responseHandler->onError($state, $request, array());
-			}
-			return FALSE;
-		}
-
-		// notify response handler
-		if ($this->responseHandler) {
-			$response = $this->responseHandler->onInteraction($state, $request, $response, array());
-		}
-
-		// clear client state
-		if ($this->stateHandler) {
-			$this->stateHandler->remove($state);
-		}
-		$this->lastInteraction = NULL;
 		return $response;
 	}
 

@@ -10,6 +10,13 @@
  */
 
 
+/** PR request/response format: json */
+define('CEM_PR_FORMAT_JSON', 'JSON');
+
+/** PR request/response format: xml */
+define('CEM_PR_FORMAT_XML', 'XML');
+
+
 /** GS request/response format: none */
 define('CEM_GS_FORMAT_NONE', 'NONE');
 
@@ -26,7 +33,7 @@ define('CEM_GS_FORMAT_XML', 'XML');
  * @package cem
  * @subpackage client
  */
-class CEM_PR_MultiRequest extends CEM_GatewayRequest {
+class CEM_PR_GatewayRequest14 extends CEM_GatewayRequest {
 	/**
 	 * Customer identifier
 	 *
@@ -35,11 +42,25 @@ class CEM_PR_MultiRequest extends CEM_GatewayRequest {
 	protected $customer;
 
 	/**
+	 * Request format
+	 *
+	 * @var string
+	 */
+	protected $requestFormat;
+
+	/**
 	 * Requests
 	 *
 	 * @var array
 	 */
 	protected $requests;
+
+	/**
+	 * Response format
+	 *
+	 * @var string
+	 */
+	protected $responseFormat;
 
 
 	/**
@@ -50,7 +71,9 @@ class CEM_PR_MultiRequest extends CEM_GatewayRequest {
 	public function __construct($customer) {
 		parent::__construct();
 		$this->customer = $customer;
+		$this->requestFormat = CEM_PR_FORMAT_JSON;
 		$this->requests = array();
+		$this->responseFormat = CEM_PR_FORMAT_JSON;
 	}
 
 
@@ -96,7 +119,7 @@ class CEM_PR_MultiRequest extends CEM_GatewayRequest {
 	 * @return string request body content-type
 	 */
 	public function getContentType() {
-		return "text/plain; charset=UTF-8";
+		return "text/xml; charset=UTF-8";
 	}
 
 	/**
@@ -106,14 +129,27 @@ class CEM_PR_MultiRequest extends CEM_GatewayRequest {
 	 * @return string request raw body
 	 */
 	public function write(&$state) {
-		$root = array();
-		$root['customer'] = $this->customer;
-		$root['requests'] = array();
+		$doc = new DOMDocument("1.0", 'UTF-8');
+
+		$root = $doc->createElement('cem');
+		$root->setAttribute('customer', $this->customer);
+		$root->setAttribute('requestFormat', $this->requestFormat);
+		$root->setAttribute('responseFormat', $this->responseFormat);
+
 		foreach ($this->requests as $request) {
-			$root['requests'][] = $request->type();
-			$root['requests'][] = $request->build($state);
+			$el = $doc->createElement('request');
+			if ($this->requestFormat == CEM_GS_FORMAT_JSON) {
+				$el->setAttribute('type', $request->type());
+				$el->appendChild($doc->createCDATASection(json_encode($request->build($state))));
+			} else {
+				return FALSE;
+			}
+			$root->appendChild($el);
 		}
-		return json_encode($root);
+
+		$doc->appendChild($root);
+
+		return $doc->saveXML();
 	}
 }
 
@@ -255,10 +291,10 @@ abstract class CEM_PR_AbstractQuery {
 			}
 		}
 		return array(
-			"strategy" => $this->strategy,
-			"operation" => $this->operation,
-			"parameters" => $parameters,
-			"indexPreferences" => $indexPreferences
+			'strategy' => $this->strategy,
+			'operation' => $this->operation,
+			'parameters' => $parameters,
+			'indexPreferences' => $indexPreferences
 		);
 	}
 }
@@ -511,7 +547,7 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
  * @package cem
  * @subpackage client
  */
-class CEM_GS_SimpleRequest14 extends CEM_GatewayRequest {
+class CEM_GS_GatewayRequest14 extends CEM_GatewayRequest {
 	/**
 	 * Customer identifier
 	 *
