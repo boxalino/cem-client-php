@@ -6,7 +6,7 @@
  * @package cem
  * @subpackage client
  * @author nitro@boxalino.com
- * @copyright 2009-2010 - Boxalino AG
+ * @copyright 2009-2011 - Boxalino AG
  */
 
 
@@ -165,6 +165,14 @@ abstract class CEM_WebHandler extends CEM_AbstractWebHandler {
 
 
 	/**
+	 * Request variables
+	 *
+	 * @var array
+	 */
+	protected $context;
+
+
+	/**
 	 * Constructor
 	 *
 	 * @param CEM_WebEncryption &$crypto encryption facility
@@ -172,6 +180,7 @@ abstract class CEM_WebHandler extends CEM_AbstractWebHandler {
 	 */
 	public function __construct(&$crypto, $options = array()) {
 		parent::__construct($crypto, $options);
+		$this->context = array();
 
 		$keys = array(
 			'context' => 'ce',

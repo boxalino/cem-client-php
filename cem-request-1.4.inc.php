@@ -6,7 +6,7 @@
  * @package cem
  * @subpackage client
  * @author nitro@boxalino.com
- * @copyright 2009-2010 - Boxalino AG
+ * @copyright 2009-2011 - Boxalino AG
  */
 
 
@@ -530,7 +530,7 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 		$query["queryText"] = $this->queryText;
 		$query["termPopulation"] = 250;
 		$query["suggestionLimit"] = $this->suggestionLimit;
-		$query["resultPopulation"] = $this->resultLimit * 3;
+		$query["resultPopulation"] = $this->resultLimit * 10;
 		$query["resultLimit"] = $this->resultLimit;
 		$query["includedProperties"] = $this->includedProperties;
 		$query["excludedProperties"] = $this->excludedProperties;
@@ -683,7 +683,7 @@ class CEM_GS_GatewayRequest14 extends CEM_GatewayRequest {
 	/**
 	 * Insert a new request at the end of the batch
 	 *
-	 * @param string $jump request action (or NULL if none)
+	 * @param string $action request action (or NULL if none)
 	 * @param array $variables request variables hashmap
 	 */
 	public function appendRequest($action, $variables = array()) {

@@ -6,7 +6,7 @@
  * @package cem
  * @subpackage client
  * @author nitro@boxalino.com
- * @copyright 2009-2010 - Boxalino AG
+ * @copyright 2009-2011 - Boxalino AG
  */
 
 
@@ -377,6 +377,13 @@ abstract class CEM_WebHandler14 extends CEM_AbstractWebHandler {
  */
 class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 	/**
+	 * Request variables
+	 *
+	 * @var array
+	 */
+	protected $context;
+
+	/**
 	 * Sequential contexts
 	 *
 	 * @var array
@@ -424,6 +431,27 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 
 
 	/**
+	 * Get request variables
+	 *
+	 * @return array request variables
+	 */
+	public function getContext() {
+		return $this->context;
+	}
+
+	/**
+	 * Set request variables
+	 *
+	 * @param array $context request variables
+	 */
+	public function setContext($context) {
+		foreach ($context as $key => $value) {
+			$this->context[$key] = $value;
+		}
+	}
+
+
+	/**
 	 * Get sequential contexts
 	 *
 	 * @return array sequential contexts
@@ -443,17 +471,6 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 			return $this->sequentialContexts[$name]['data'];
 		}
 		return '';
-	}
-
-	/**
-	 * Set context variables
-	 *
-	 * @param array $context context variables
-	 */
-	public function setContext($context) {
-		foreach ($context as $key => $value) {
-			$this->context[$key] = $value;
-		}
 	}
 
 
@@ -662,8 +679,6 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 	 *
 	 * @param CEM_GatewayState &$state client state reference
 	 * @param CEM_PR_GatewayRequest14 &$request client request reference
-	 * @param string $strategy recommendation strategy identifier
-	 * @param string $operation recommendation operation identifier
 	 * @param array &$options options passed for recommendation
 	 * @return boolean TRUE on success or FALSE on error
 	 */
@@ -735,9 +750,9 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
 	}
 
 	/**
-	 * Get context scope(s)
+	 * Get context scopes
 	 *
-	 * @return mixed context scope(s)
+	 * @return array context scopes
 	 */
 	public function getContext() {
 		if ($this->response) {
@@ -794,13 +809,13 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
 		return NULL;
 	}
 
+
 	/**
-	 * Encode sequential context states into url
+	 * Encode sequential contexts
 	 *
-	 * @param array $parameters additional query parameters
-	 * @return string encoded url query
+	 * @return string encoded sequential contexts
 	 */
-	public function encodeQuery($parameters = array()) {
+	public function encodeSequentialContexts() {
 		if ($this->response) {
 			$data = '';
 			foreach ($this->response->getContext() as $name => $scope) {
@@ -820,9 +835,23 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
 			if (strlen($data) > 0) {
 				$data = $this->crypto->encrypt('cem'.gzdeflate($data, 9));
 				if ($data) {
-					$parameters['context'] = base64_encode($data);
+					return base64_encode($data);
 				}
 			}
+		}
+		return NULL;
+	}
+
+	/**
+	 * Encode parameters and state into url
+	 *
+	 * @param array $parameters additional query parameters
+	 * @return string encoded url query
+	 */
+	public function encodeQuery($parameters = array()) {
+		$context = $this->encodeSequentialContexts();
+		if ($context != NULL) {
+			$parameters['context'] = $context;
 		}
 		$query = '';
 		foreach ($parameters as $key => $value) {
@@ -868,7 +897,6 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
 	 * @param CEM_GatewayState &$state client state reference
 	 * @param CEM_PR_GatewayRequest14 &$request client request reference
 	 * @param CEM_PR_GatewayResponse14 &$response client response reference
-	 * @param string $strategy recommendation strategy identifier
 	 * @param array &$options options passed for recommendation
 	 * @return mixed wrapped response on success or FALSE on error
 	 */

@@ -6,7 +6,7 @@
  * @package cem
  * @subpackage client
  * @author nitro@boxalino.com
- * @copyright 2009-2010 - Boxalino AG
+ * @copyright 2009-2011 - Boxalino AG
  */
 
 
@@ -302,13 +302,6 @@ abstract class CEM_AbstractWebHandler {
 	protected $crypto;
 
 	/**
-	 * Context variables
-	 *
-	 * @var array
-	 */
-	protected $context;
-
-	/**
 	 * Context variable keys
 	 *
 	 * @var array
@@ -324,7 +317,6 @@ abstract class CEM_AbstractWebHandler {
 	 */
 	public function __construct(&$crypto, $options = array()) {
 		$this->crypto = $crypto;
-		$this->context = array();
 		$this->keys = array();
 		if (isset($options['keys'])) {
 			foreach ($options['keys'] as $key => $value) {
