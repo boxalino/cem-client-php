@@ -49,87 +49,12 @@ class CEM_GatewayState {
 	/**
 	 * Constructor
 	 *
-	 * @param string $raw optional encoded format
 	 */
-	public function __construct($raw = FALSE) {
+	public function __construct() {
 		$this->code = 0;
 		$this->message = "";
 		$this->cookies = array();
 		$this->data = array();
-
-		// decode state
-		if ($raw) {
-			list($cookies, $context, $others) = explode('&', $raw);
-
-			if (strlen($cookies) > 0) {
-				foreach (explode(';', $cookies) as $item) {
-					list($name, $value) = explode('=', $item);
-
-					$name = urldecode($name);
-					if (strlen($name) > 0) {
-						$this->cookies[$name] = array('value' => urldecode($value));
-					}
-				}
-			}
-			if (strlen($context) > 0) {
-				$value = array();
-				foreach (explode(';', $context) as $item) {
-					list($name, $level, $mode, $data) = explode('=', $item);
-
-					$name = urldecode($name);
-					$level = urldecode($level);
-					$mode = urldecode($mode);
-					$data = urldecode($data);
-					if (strlen($name) > 0) {
-						$value[$name] = array('level' => $level, 'mode' => $mode, 'data' => $data);
-					}
-				}
-				$this->data['context'] = $value;
-			}
-			if (strlen($others) > 0) {
-				foreach (explode(';', $others) as $item) {
-					list($name, $data) = explode('=', $item);
-
-					$name = urldecode($name);
-					if (strlen($name) > 0) {
-						$this->data[$name] = json_decode(urldecode($data));
-					}
-				}
-			}
-		}
-	}
-
-
-	/**
-	 * Encode this object into a compressed format
-	 *
-	 * @return string encoded format
-	 */
-	public function encode() {
-		$text = $this->getCookies();
-		$text .= '&';
-		if (isset($this->data['context'])) {
-			$i = 0;
-			foreach ($this->data['context'] as $key => $value) {
-				if ($i > 0) {
-					$text .= ';';
-				}
-				$text .= urlencode($key) . '=' . urlencode($value['level']) . '=' . urlencode($value['mode']) . '=' . urlencode($value['data']);
-				$i++;
-			}
-		}
-		$text .= '&';
-		$i = 0;
-		foreach ($this->data as $key => $value) {
-			if ($key != 'context') {
-				if ($i > 0) {
-					$text .= ';';
-				}
-				$text .= urlencode($key) . '=' . urlencode(json_encode($value['data']));
-				$i++;
-			}
-		}
-		return $text;
 	}
 
 
@@ -164,61 +89,6 @@ class CEM_GatewayState {
 		return $this->message;
 	}
 
-
-	/**
-	 * Get current session identifier
-	 *
-	 * @return string session identifier or NULL if none
-	 */
-	public function getSessionId() {
-		if (isset($this->cookies['JSESSIONID'])) {
-			return $this->cookies['JSESSIONID']['value'];
-		}
-		return NULL;
-	}
-
-	/**
-	 * Set current session identifier
-	 *
-	 * @param string $id session identifier (or NULL to remove)
-	 */
-	public function setSessionId($id) {
-		if ($id !== NULL) {
-			$this->cookies['JSESSIONID'] = array(
-				'value' => $id
-			);
-		} else if (isset($this->cookies['JSESSIONID'])) {
-			unset($this->cookies['JSESSIONID']);
-		}
-	}
-
-
-	/**
-	 * Get active cookies for http header
-	 *
-	 * @return string active cookies
-	 */
-	public function getCookies() {
-		$text = '';
-		foreach ($this->cookies as $name => $cookie) {
-			if (strlen($text) > 0) {
-				$text .= ';';
-			}
-			$text .= urlencode($name) . '=' . urlencode($cookie['value']);
-		}
-		return $text;
-	}
-
-	/**
-	 * Set an active cookie
-	 *
-	 * @param string $name cookie name
-	 * @param array $cookie cookie value
-	 */
-	public function setCookie($name, $cookie) {
-		$this->cookies[$name] = $cookie;
-	}
-
 	/**
 	 * Set status
 	 *
@@ -228,6 +98,64 @@ class CEM_GatewayState {
 	public function setStatus($code, $message) {
 		$this->code = $code;
 		$this->message = $message;
+	}
+
+
+	/**
+	 * Get cookie header
+	 *
+	 * @return string cookie header (or FALSE if none)
+	 */
+	public function getCookieHeader() {
+		if (sizeof($this->cookies) > 0) {
+			$text = '';
+			foreach ($this->cookies as $name => $cookie) {
+				if (strlen($text) > 0) {
+					$text .= ';';
+				}
+				$text .= urlencode($name) . '=' . urlencode($cookie['value']);
+			}
+			return $text;
+		}
+		return FALSE;
+	}
+
+	/**
+	 * Get cookie value
+	 *
+	 * @param string $name cookie name
+	 * @return string cookie value (or FALSE if none)
+	 */
+	public function getCookie($name) {
+		if (isset($this->cookies[$name])) {
+			return $this->cookies[$name]['value'];
+		}
+		return FALSE;
+	}
+
+	/**
+	 * Set an active cookie
+	 *
+	 * @param string $name cookie name
+	 * @param string $value cookie value
+	 * @param array $parameters cookie parameters
+	 */
+	public function setCookie($name, $value, $parameters = array()) {
+		$this->cookies[$name] = array(
+			'value' => $value,
+			'parameters' => $parameters
+		);
+	}
+
+	/**
+	 * Remove cookie
+	 *
+	 * @param string $name cookie name
+	 */
+	public function removeCookie($name) {
+		if (isset($this->cookies[$name])) {
+			unset($this->cookies[$name]);
+		}
 	}
 
 

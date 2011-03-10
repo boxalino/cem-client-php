@@ -771,7 +771,7 @@ class CEM_GS_GatewayRequest14 extends CEM_GatewayRequest {
 		}
 
 		$context = $state->get('context');
-		if (is_array($context) > 0) {
+		if (sizeof($context) > 0) {
 			foreach ($context as $id => $item) {
 				$context = $doc->createElement('context');
 				$context->setAttribute('id', $id);
@@ -780,8 +780,6 @@ class CEM_GS_GatewayRequest14 extends CEM_GatewayRequest {
 				$context->appendChild($doc->createCDATASection($item['data']));
 				$root->appendChild($context);
 			}
-		} else if (sizeof($this->requests) == 0 || $this->requests[0]['type'] != 'init') {
-			$this->insertInitRequest();
 		}
 
 		$doc->appendChild($root);

@@ -165,128 +165,6 @@ class CEM_WebEncryption {
 	}
 }
 
-
-/**
- * Default CEM state handler for web-sites
- *
- * @package cem
- * @subpackage web
- */
-class CEM_WebStateHandler {
-	/**
-	 * Cached state
-	 *
-	 * @var CEM_GatewayState
-	 */
-	protected $state;
-
-
-	/**
-	 * Constructor
-	 *
-	 */
-	public function __construct() {
-		$this->state = NULL;
-	}
-
-
-	/**
-	 * Create client state
-	 *
-	 * @return CEM_GatewayState client state
-	 */
-	public function create() {
-		return new CEM_GatewayState();
-	}
-
-	/**
-	 * Read client state from storage
-	 *
-	 * @return CEM_GatewayState client state or NULL if none
-	 */
-	public function read() {
-		return $this->state;
-	}
-
-	/**
-	 * Write client state to storage
-	 *
-	 * @param CEM_GatewayState &$state client state
-	 */
-	public function write(&$state) {
-		$this->state = $state;
-	}
-
-	/**
-	 * Remove client state from storage
-	 *
-	 * @param CEM_GatewayState &$state client state
-	 */
-	public function remove(&$state) {
-		$this->state = NULL;
-	}
-}
-
-/**
- * Session-based CEM state handler for web-sites
- *
- * @package cem
- * @subpackage web
- */
-class CEM_WebStateSessionHandler extends CEM_WebStateHandler {
-	/**
-	 * State variable key
-	 *
-	 * @var string
-	 */
-	protected $key;
-
-
-	/**
-	 * Constructor
-	 *
-	 * @param string $key variable key (defaults to 'CEM')
-	 */
-	public function __construct($key = 'CEM') {
-		parent::__construct();
-		$this->key = $key;
-
-		// start session if necessary
-		if (strlen(session_id()) == 0) {
-			session_start();
-		}
-		if (isset($_SESSION[$this->key])) {
-			$this->state = $_SESSION[$this->key];
-		}
-	}
-
-
-	/**
-	 * Write client state to storage
-	 *
-	 * @param CEM_GatewayState &$state client state
-	 */
-	public function write(&$state) {
-		$_SESSION[$this->key] = $state;
-
-		parent::write($state);
-	}
-
-	/**
-	 * Remove client state from storage
-	 *
-	 * @param CEM_GatewayState &$state client state
-	 */
-	public function remove(&$state) {
-		if (isset($_SESSION[$this->key])) {
-			unset($_SESSION[$this->key]);
-		}
-
-		parent::remove($state);
-	}
-}
-
-
 /**
  * Abstract CEM handler for web-sites
  *
@@ -313,16 +191,73 @@ abstract class CEM_AbstractWebHandler {
 	 * Constructor
 	 *
 	 * @param CEM_WebEncryption &$crypto encryption facility
-	 * @param array $options context options
+	 * @param array $keys request parameter mapping
 	 */
-	public function __construct(&$crypto, $options = array()) {
+	public function __construct(&$crypto, $keys = array()) {
 		$this->crypto = $crypto;
-		$this->keys = array();
-		if (isset($options['keys'])) {
-			foreach ($options['keys'] as $key => $value) {
-				$this->keys[$key] = $value;
+		$this->keys = $keys;
+	}
+
+
+	/**
+	 * Escape value ('%' <> '%25', ';' <> '%3B', '=' <> '%3D')
+	 *
+	 * @param string $value input value
+	 * @return escaped value
+	 */
+	protected function escapeValue($value) {
+		return str_replace(
+			array('%', ';', '='),
+			array('%25', '%3B', '%3D'),
+			$value
+		);
+	}
+
+	/**
+	 * Unescape value ('%' <> '%25', ';' <> '%3B', '=' <> '%3D')
+	 *
+	 * @param string $value input value
+	 * @return escaped value
+	 */
+	protected function unescapeValue($value) {
+		return str_replace(
+			array('%25', '%3B', '%3D'),
+			array('%', ';', '='),
+			$value
+		);
+	}
+
+
+	/**
+	 * Encrypt/deflate data
+	 *
+	 * @param string $data plain data
+	 * @return string encrypted data (or FALSE if none)
+	 */
+	protected function encrypt($data) {
+		if (strlen($data) > 0) {
+			$data = $this->crypto->encrypt('cem'.@gzdeflate($data, 9));
+			if ($data) {
+				return base64_encode($data);
 			}
 		}
+		return FALSE;
+	}
+
+	/**
+	 * Decrypt/inflate data
+	 *
+	 * @param string $data encrypted data
+	 * @return string plain data (or FALSE if none)
+	 */
+	protected function decrypt($data) {
+		if (strlen($data) > 0) {
+			$data = $this->crypto->decrypt(base64_decode($data));
+			if ($data && strpos($data, 'cem') === 0) {
+				return @gzinflate(substr($data, 3));
+			}
+		}
+		return FALSE;
 	}
 
 
@@ -437,6 +372,129 @@ abstract class CEM_AbstractWebHandler {
 			return stripslashes($value);
 		}
 		return $value;
+	}
+}
+
+/**
+ * Default CEM state handler for web-sites
+ *
+ * @package cem
+ * @subpackage web
+ */
+class CEM_WebStateHandler extends CEM_AbstractWebHandler {
+	/**
+	 * Cached state
+	 *
+	 * @var CEM_GatewayState
+	 */
+	protected $state;
+
+
+	/**
+	 * Constructor
+	 *
+	 * @param CEM_WebEncryption &$crypto encryption facility
+	 */
+	public function __construct(&$crypto) {
+		parent::__construct($crypto);
+		$this->state = NULL;
+	}
+
+
+	/**
+	 * Create client state
+	 *
+	 * @return CEM_GatewayState client state
+	 */
+	public function create() {
+		return new CEM_GatewayState();
+	}
+
+	/**
+	 * Read client state from storage
+	 *
+	 * @return CEM_GatewayState client state or NULL if none
+	 */
+	public function read() {
+		return $this->state;
+	}
+
+	/**
+	 * Write client state to storage
+	 *
+	 * @param CEM_GatewayState &$state client state
+	 */
+	public function write(&$state) {
+		$this->state = $state;
+	}
+
+	/**
+	 * Remove client state from storage
+	 *
+	 * @param CEM_GatewayState &$state client state
+	 */
+	public function remove(&$state) {
+		$this->state = NULL;
+	}
+}
+
+/**
+ * Session-based CEM state handler for web-sites
+ *
+ * @package cem
+ * @subpackage web
+ */
+class CEM_WebStateSessionHandler extends CEM_WebStateHandler {
+	/**
+	 * State variable key
+	 *
+	 * @var string
+	 */
+	protected $name;
+
+
+	/**
+	 * Constructor
+	 *
+	 * @param CEM_WebEncryption &$crypto encryption facility
+	 * @param string $name variable name (defaults to 'cem')
+	 */
+	public function __construct(&$crypto, $name = 'cem') {
+		parent::__construct($crypto);
+		$this->name = $name;
+
+		// start session if necessary
+		if (strlen(session_id()) == 0) {
+			session_start();
+		}
+		if (isset($_SESSION[$this->name])) {
+			$this->state = $_SESSION[$this->name];
+		}
+	}
+
+
+	/**
+	 * Write client state to storage
+	 *
+	 * @param CEM_GatewayState &$state client state
+	 */
+	public function write(&$state) {
+		$_SESSION[$this->name] = $state;
+
+		parent::write($state);
+	}
+
+	/**
+	 * Remove client state from storage
+	 *
+	 * @param CEM_GatewayState &$state client state
+	 */
+	public function remove(&$state) {
+		if (isset($_SESSION[$this->name])) {
+			unset($_SESSION[$this->name]);
+		}
+
+		parent::remove($state);
 	}
 }
 

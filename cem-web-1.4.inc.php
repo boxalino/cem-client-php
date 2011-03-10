@@ -18,13 +18,6 @@
  */
 class CEM_WebStateCookieHandler14 extends CEM_WebStateHandler {
 	/**
-	 * Encryption facility
-	 *
-	 * @var CEM_WebEncryption
-	 */
-	protected $crypto;
-
-	/**
 	 * Cookie prefix
 	 *
 	 * @var string
@@ -76,11 +69,10 @@ class CEM_WebStateCookieHandler14 extends CEM_WebStateHandler {
 	 * @param string $domain domain (defaults to any)
 	 * @param boolean $secure secure flag (defaults to FALSE)
 	 * @param integer $expiry visitor expiry time in seconds (defaults to 30 days)
-	 * @param integer $chunkLength cookie chunk size (defaults to 4096 bytes)
+	 * @param integer $chunkLength cookie chunk size (defaults to 4095 bytes)
 	 */
-	public function __construct(&$crypto, $prefix = 'cem', $path = '/', $domain = FALSE, $secure = FALSE, $expiry = 2592000, $chunkLength = 4096) {
-		parent::__construct();
-		$this->crypto = $crypto;
+	public function __construct(&$crypto, $prefix = 'cem', $path = '/', $domain = FALSE, $secure = FALSE, $expiry = 2592000, $chunkLength = 4095) {
+		parent::__construct($crypto);
 		$this->prefix = $prefix;
 		$this->path = $path;
 		$this->domain = $domain;
@@ -102,9 +94,8 @@ class CEM_WebStateCookieHandler14 extends CEM_WebStateHandler {
 				foreach (explode(';', $cem) as $item) {
 					list($name, $value) = explode('=', $item);
 
-					$name = urldecode($name);
 					if (strlen($name) > 0) {
-						$this->state->setCookie($name, array('value' => urldecode($value)));
+						$this->state->setCookie(urldecode($name), urldecode($value));
 					}
 				}
 			}
@@ -116,10 +107,10 @@ class CEM_WebStateCookieHandler14 extends CEM_WebStateHandler {
 					list($name, $value) = explode('=', $item);
 
 					if (strlen($name) > 0) {
-						$context[CEM_WebStateCookieHandler14::unescapeValue($name)] = array(
+						$context[$this->unescapeValue($name)] = array(
 							'level' => 'visitor',
 							'mode' => 'aggregate',
-							'data' => CEM_WebStateCookieHandler14::unescapeValue($value)
+							'data' => $this->unescapeValue($value)
 						);
 					}
 				}
@@ -129,10 +120,10 @@ class CEM_WebStateCookieHandler14 extends CEM_WebStateHandler {
 					list($name, $value) = explode('=', $item);
 
 					if (strlen($name) > 0) {
-						$context[CEM_WebStateCookieHandler14::unescapeValue($name)] = array(
+						$context[$this->unescapeValue($name)] = array(
 							'level' => 'session',
 							'mode' => 'aggregate',
-							'data' => CEM_WebStateCookieHandler14::unescapeValue($value)
+							'data' => $this->unescapeValue($value)
 						);
 					}
 				}
@@ -142,10 +133,10 @@ class CEM_WebStateCookieHandler14 extends CEM_WebStateHandler {
 					list($name, $value) = explode('=', $item);
 
 					if (strlen($name) > 0) {
-						$context[CEM_WebStateCookieHandler14::unescapeValue($name)] = array(
+						$context[$this->unescapeValue($name)] = array(
 							'level' => 'search',
 							'mode' => 'aggregate',
-							'data' => CEM_WebStateCookieHandler14::unescapeValue($value)
+							'data' => $this->unescapeValue($value)
 						);
 					}
 				}
@@ -159,8 +150,8 @@ class CEM_WebStateCookieHandler14 extends CEM_WebStateHandler {
 
 					if (strlen($name) > 0) {
 						$this->state->set(
-							CEM_WebStateCookieHandler14::unescapeValue($name),
-							json_decode(CEM_WebStateCookieHandler14::unescapeValue($value))
+							$this->unescapeValue($name),
+							json_decode($this->unescapeValue($value))
 						);
 					}
 				}
@@ -176,53 +167,42 @@ class CEM_WebStateCookieHandler14 extends CEM_WebStateHandler {
 	 */
 	public function write(&$state) {
 		// write cem cookies
-		$data = $state->getCookies();
-		if (strlen($data) > 0) {
-			$this->writeCookies($this->prefix.'a', $data, FALSE);
-		}
+		$this->writeCookies($this->prefix.'a', $state->getCookieHeader(), FALSE);
 
 		// write levels cookies
-		$context = $state->get('context');
-		if (is_array($context)) {
-			$visitor = '';
-			$session = '';
-			$search = '';
-			foreach ($context as $key => $item) {
-				if ($item['mode'] == 'aggregate') {
-					switch ($item['level']) {
-					case 'visitor':
-						if (strlen($visitor) > 0) {
-							$visitor .= ';';
-						}
-						$visitor .= CEM_WebStateCookieHandler14::escapeValue($key) . '=' . CEM_WebStateCookieHandler14::escapeValue($item['data']);
-						break;
-
-					case 'session':
-						if (strlen($session) > 0) {
-							$session .= ';';
-						}
-						$session .= CEM_WebStateCookieHandler14::escapeValue($key) . '=' . CEM_WebStateCookieHandler14::escapeValue($item['data']);
-						break;
-
-					case 'search':
-						if (strlen($search) > 0) {
-							$search .= ';';
-						}
-						$search .= CEM_WebStateCookieHandler14::escapeValue($key) . '=' . CEM_WebStateCookieHandler14::escapeValue($item['data']);
-						break;
+		$context = $state->get('context', array());
+		$visitor = '';
+		$session = '';
+		$search = '';
+		foreach ($context as $key => $item) {
+			if ($item['mode'] == 'aggregate') {
+				switch ($item['level']) {
+				case 'visitor':
+					if (strlen($visitor) > 0) {
+						$visitor .= ';';
 					}
+					$visitor .= $this->escapeValue($key) . '=' . $this->escapeValue($item['data']);
+					break;
+
+				case 'session':
+					if (strlen($session) > 0) {
+						$session .= ';';
+					}
+					$session .= $this->escapeValue($key) . '=' . $this->escapeValue($item['data']);
+					break;
+
+				case 'search':
+					if (strlen($search) > 0) {
+						$search .= ';';
+					}
+					$search .= $this->escapeValue($key) . '=' . $this->escapeValue($item['data']);
+					break;
 				}
 			}
-			if (strlen($visitor) > 0) {
-				$this->writeCookies($this->prefix.'b', $visitor, TRUE);
-			}
-			if (strlen($session) > 0) {
-				$this->writeCookies($this->prefix.'c', $session, FALSE);
-			}
-			if (strlen($search) > 0) {
-				$this->writeCookies($this->prefix.'d', $search, FALSE);
-			}
 		}
+		$this->writeCookies($this->prefix.'b', $visitor, TRUE);
+		$this->writeCookies($this->prefix.'c', $session, FALSE);
+		$this->writeCookies($this->prefix.'d', $search, FALSE);
 
 		// write state data cookies
 		$data = '';
@@ -231,12 +211,10 @@ class CEM_WebStateCookieHandler14 extends CEM_WebStateHandler {
 				if (strlen($data) > 0) {
 					$data .= ';';
 				}
-				$data .= CEM_WebStateCookieHandler14::escapeValue($key) . '=' . CEM_WebStateCookieHandler14::escapeValue(json_encode($value));
+				$data .= $this->escapeValue($key) . '=' . $this->escapeValue(json_encode($value));
 			}
 		}
-		if (strlen($data) > 0) {
-			$this->writeCookies($this->prefix.'e', $data, FALSE);
-		}
+		$this->writeCookies($this->prefix.'e', $data, FALSE);
 
 		parent::write($state);
 	}
@@ -266,19 +244,12 @@ class CEM_WebStateCookieHandler14 extends CEM_WebStateHandler {
 	 */
 	protected function readCookies($prefix) {
 		$i = 0;
-		if (isset($_COOKIE[$prefix.$i])) {
-			$data = $_COOKIE[$prefix.$i];
+		$data = '';
+		while (isset($_COOKIE[$prefix.$i])) {
+			$data .= $_COOKIE[$prefix.$i];
 			$i++;
-			while (isset($_COOKIE[$prefix.$i])) {
-				$data .= $_COOKIE[$prefix.$i];
-				$i++;
-			}
-			$data = $this->crypto->decrypt(base64_decode($data));
-			if ($data && strpos($data, 'cem') === 0) {
-				return gzinflate(substr($data, 3));
-			}
 		}
-		return NULL;
+		return $this->decrypt($data);
 	}
 
 	/**
@@ -290,81 +261,31 @@ class CEM_WebStateCookieHandler14 extends CEM_WebStateHandler {
 	 */
 	protected function writeCookies($prefix, $data = '', $visitor = FALSE) {
 		$i = 0;
-		if (strlen($data) > 0) {
-			$data = $this->crypto->encrypt('cem'.gzdeflate($data, 9));
-			if ($data) {
-				$offset = 0;
-				$data = base64_encode($data);
-				while ($offset < strlen($data)) {
-					if (($offset + $this->chunkLength) < strlen($data)) {
-						$chunk = substr($data, $offset, $this->chunkLength);
-					} else {
-						$chunk = substr($data, $offset);
-					}
-					setcookie(
-						$prefix.$i,
-						$chunk,
-						$visitor ? time() + $this->expiry : 0,
-						$this->path,
-						$this->domain,
-						$this->secure
-					);
-					$offset += $this->chunkLength;
-					$i++;
+		$data = $this->encrypt($data);
+		if ($data) {
+			$offset = 0;
+			while ($offset < strlen($data)) {
+				if (($offset + $this->chunkLength) < strlen($data)) {
+					$chunk = substr($data, $offset, $this->chunkLength);
+				} else {
+					$chunk = substr($data, $offset);
 				}
+				setcookie(
+					$prefix.$i,
+					$chunk,
+					$visitor ? time() + $this->expiry : 0,
+					$this->path,
+					$this->domain,
+					$this->secure
+				);
+				$offset += $this->chunkLength;
+				$i++;
 			}
 		}
 		while (isset($_COOKIE[$prefix.$i]) && strlen($_COOKIE[$prefix.$i]) > 0) {
 			setcookie($prefix.$i, '', time() - (24 * 60 * 60), $this->path, $this->domain, $this->secure);
 			$i++;
 		}
-	}
-
-	/**
-	 * Escape value ('%' <> '%25', ';' <> '%3B', '=' <> '%3D')
-	 *
-	 * @param string $value input value
-	 * @return escaped value
-	 */
-	public static function escapeValue($value) {
-		return str_replace(
-			array('%', ';', '='),
-			array('%25', '%3B', '%3D'),
-			$value
-		);
-	}
-
-	/**
-	 * Unescape value ('%' <> '%25', ';' <> '%3B', '=' <> '%3D')
-	 *
-	 * @param string $value input value
-	 * @return escaped value
-	 */
-	public static function unescapeValue($value) {
-		return str_replace(
-			array('%25', '%3B', '%3D'),
-			array('%', ';', '='),
-			$value
-		);
-	}
-}
-
-
-/**
- * Abstract CEM handler for web-sites (CEM 1.4)
- *
- * @package cem
- * @subpackage web
- */
-abstract class CEM_WebHandler14 extends CEM_AbstractWebHandler {
-	/**
-	 * Constructor
-	 *
-	 * @param CEM_WebEncryption &$crypto encryption facility
-	 * @param array $options context options
-	 */
-	public function __construct(&$crypto, $options = array()) {
-		parent::__construct($crypto, $options);
 	}
 }
 
@@ -375,7 +296,7 @@ abstract class CEM_WebHandler14 extends CEM_AbstractWebHandler {
  * @package cem
  * @subpackage web
  */
-class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
+class CEM_WebRequestHandler14 extends CEM_AbstractWebHandler {
 	/**
 	 * Request variables
 	 *
@@ -395,30 +316,22 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
 	 * Constructor
 	 *
 	 * @param CEM_WebEncryption &$crypto encryption facility
-	 * @param array $options context options
+	 * @param array $keys request parameter mapping
 	 */
-	public function __construct(&$crypto, $options = array()) {
-		parent::__construct($crypto, $options);
+	public function __construct(&$crypto, $keys = array()) {
+		parent::__construct($crypto, $keys);
 		$this->sequentialContexts = array();
-
-		// initial context values if given
-		if (isset($options['context'])) {
-			foreach ($options['context'] as $key => $value) {
-				$this->context[$key] = $value;
-			}
-		}
 
 		// decode sequential context states
 		if ($this->requestExists('context')) {
-			$data = $this->crypto->decrypt(base64_decode($this->requestString('context')));
-			if ($data && strpos($data, 'cem') === 0) {
-				$data = gzinflate(substr($data, 3));
+			$data = $this->decrypt($this->requestString('context'));
+			if ($data) {
 				foreach (explode(';', $data) as $scope) {
 					list($name, $level, $data) = explode('=', $scope);
 
-					$name = CEM_WebStateCookieHandler14::unescapeValue($name);
-					$level = CEM_WebStateCookieHandler14::unescapeValue($level);
-					$data = CEM_WebStateCookieHandler14::unescapeValue($data);
+					$name = $this->unescapeValue($name);
+					$level = $this->unescapeValue($level);
+					$data = $this->unescapeValue($data);
 					$this->sequentialContexts[$name] = array(
 						'level' => $level,
 						'mode' => 'sequential',
@@ -694,47 +607,100 @@ class CEM_WebRequestHandler14 extends CEM_WebHandler14 {
  * @package cem
  * @subpackage web
  */
-class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
+class CEM_WebResponseHandler14 extends CEM_AbstractWebHandler {
 	/**
-	 * Main group identifier (defaults to 'main')
+	 * Constructor
 	 *
-	 * @var string
+	 * @param CEM_WebEncryption &$crypto encryption facility
 	 */
-	protected $mainGroupId;
+	public function __construct(&$crypto) {
+		parent::__construct($crypto);
+	}
 
+
+	/**
+	 * Called each client interaction to wrap the response
+	 *
+	 * @param CEM_GatewayState &$state client state reference
+	 * @param CEM_GS_GatewayRequest14 &$request client request reference
+	 * @param CEM_GS_GatewayResponse14 &$response client response reference
+	 * @param array &$options options passed for interaction
+	 */
+	public function onInteraction(&$state, &$request, &$response, &$options) {
+	}
+
+	/**
+	 * Called each client recommendation to wrap the response
+	 *
+	 * @param CEM_GatewayState &$state client state reference
+	 * @param CEM_PR_GatewayRequest14 &$request client request reference
+	 * @param CEM_PR_GatewayResponse14 &$response client response reference
+	 * @param array &$options options passed for recommendation
+	 */
+	public function onRecommendation(&$state, &$request, &$response, &$options) {
+	}
+
+	/**
+	 * Called if client interaction triggers an error
+	 *
+	 * @param CEM_GatewayState &$state client state reference
+	 * @param CEM_PR_GatewayRequest14|CEM_GS_GatewayRequest14 &$request client request reference
+	 * @param array &$options options passed for recommendation
+	 */
+	public function onError(&$state, &$request, &$options) {
+	}
+}
+
+
+/**
+ * PR interaction for web-sites (CEM 1.4)
+ *
+ * @package cem
+ * @subpackage web
+ */
+class CEM_PR_Interaction14 extends CEM_AbstractWebHandler {
 	/**
 	 * Current request
 	 *
-	 * @var CEM_GS_SimpleRequest
+	 * @var CEM_PR_GatewayRequest14
 	 */
 	protected $request;
- 
+
 	/**
 	 * Current response
 	 *
-	 * @var CEM_GS_SimpleResponse
+	 * @var CEM_PR_GatewayResponse14
 	 */
 	protected $response;
+
+	/**
+	 * User-defined options
+	 *
+	 * @var array
+	 */
+	protected $options;
 
 
 	/**
 	 * Constructor
 	 *
 	 * @param CEM_WebEncryption &$crypto encryption facility
-	 * @param array $options context options
+	 * @param CEM_PR_GatewayRequest14 &$request client request reference
+	 * @param CEM_PR_GatewayResponse14 &$response client response reference
+	 * @param array &$options user-defined options
 	 */
-	public function __construct(&$crypto, $options = array()) {
-		parent::__construct($crypto, $options);
-		$this->mainGroupId = isset($options['mainGroupId']) ? $options['mainGroupId'] : 'main';
-		$this->request = NULL;
-		$this->response = NULL;
+	public function __construct(&$crypto, &$request, &$response, &$options) {
+		parent::__construct($crypto);
+		$this->request = $request;
+		$this->response = $response;
+		$this->options = $options;
 	}
 
 
 	/**
 	 * Get underlying request
 	 *
-	 * @return CEM_GS_SimpleRequest underlying request
+	 * @return CEM_PR_GatewayRequest14 underlying request
 	 */
 	public function getRequest() {
 		return $this->request;
@@ -743,11 +709,105 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
 	/**
 	 * Get underlying response
 	 *
-	 * @return CEM_GS_SimpleResponse underlying response
+	 * @return CEM_PR_GatewayResponse14 underlying response
 	 */
 	public function getResponse() {
 		return $this->response;
 	}
+
+	/**
+	 * Get user-defined options
+	 *
+	 * @return array user-defined options
+	 */
+	public function getOptions() {
+		return $this->options;
+	}
+
+
+	/**
+	 * Get recommendations
+	 *
+	 * @return array recommendations
+	 */
+	public function getRecommendations() {
+		return $this->response->getResponses();
+	}
+}
+
+
+/**
+ * GS interaction for web-sites (CEM 1.4)
+ *
+ * @package cem
+ * @subpackage web
+ */
+class CEM_GS_Interaction14 extends CEM_AbstractWebHandler {
+	/**
+	 * Current request
+	 *
+	 * @var CEM_GS_GatewayRequest14
+	 */
+	protected $request;
+
+	/**
+	 * Current response
+	 *
+	 * @var CEM_GS_GatewayResponse14
+	 */
+	protected $response;
+
+	/**
+	 * User-defined options
+	 *
+	 * @var array
+	 */
+	protected $options;
+
+
+	/**
+	 * Constructor
+	 *
+	 * @param CEM_WebEncryption &$crypto encryption facility
+	 * @param CEM_GS_GatewayRequest14 &$request client request reference
+	 * @param CEM_GS_GatewayResponse14 &$response client response reference
+	 * @param array &$options user-defined options
+	 */
+	public function __construct(&$crypto, &$request, &$response, &$options) {
+		parent::__construct($crypto);
+		$this->request = $request;
+		$this->response = $response;
+		$this->options = $options;
+	}
+
+
+	/**
+	 * Get underlying request
+	 *
+	 * @return CEM_GS_GatewayRequest14 underlying request
+	 */
+	public function getRequest() {
+		return $this->request;
+	}
+
+	/**
+	 * Get underlying response
+	 *
+	 * @return CEM_GS_GatewayResponse14 underlying response
+	 */
+	public function getResponse() {
+		return $this->response;
+	}
+
+	/**
+	 * Get user-defined options
+	 *
+	 * @return array user-defined options
+	 */
+	public function getOptions() {
+		return $this->options;
+	}
+
 
 	/**
 	 * Get context scopes
@@ -755,10 +815,7 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
 	 * @return array context scopes
 	 */
 	public function getContext() {
-		if ($this->response) {
-			return $this->response->getContext();
-		}
-		return array();
+		return $this->response->getContext();
 	}
 
 	/**
@@ -768,45 +825,11 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
 	 * @return string context data
 	 */
 	public function getContextData($name) {
-		if ($this->response) {
-			$scopes = $this->getContext();
-			if (isset($scopes[$name])) {
-				return $scopes[$name]['data'];
-			}
+		$scopes = $this->getContext();
+		if (isset($scopes[$name])) {
+			return $scopes[$name]['data'];
 		}
 		return '';
-	}
-
-
-	/**
-	 * Get groups
-	 *
-	 * @return array group scopes
-	 */
-	public function getGroups() {
-		if ($this->response) {
-			return $this->response->getResponses();
-		}
-		return array();
-	}
-
-	/**
-	 * Get group
-	 *
-	 * @param string $id group identifier (defaults to main group)
-	 * @return object group or NULL if none
-	 */
-	public function getGroup($id = NULL) {
-		if ($id == NULL) {
-			$id = $this->mainGroupId;
-		}
-		if ($this->response) {
-			$scopes = $this->response->getResponses();
-			if (isset($scopes[$id])) {
-				return $scopes[$id];
-			}
-		}
-		return NULL;
 	}
 
 
@@ -816,30 +839,22 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
 	 * @return string encoded sequential contexts
 	 */
 	public function encodeSequentialContexts() {
-		if ($this->response) {
-			$data = '';
-			foreach ($this->response->getContext() as $name => $scope) {
-				if ($scope['mode'] == 'sequential') {
-					switch ($scope['level']) {
-					case 'visitor':
-					case 'session':
-					case 'search':
-						if (strlen($data) > 0) {
-							$data .= ';';
-						}
-						$data .= CEM_WebStateCookieHandler14::escapeValue($name) . '=' . CEM_WebStateCookieHandler14::escapeValue($scope['level']) . '=' . CEM_WebStateCookieHandler14::escapeValue($scope['data']);
-						break;
+		$data = '';
+		foreach ($this->response->getContext() as $name => $scope) {
+			if ($scope['mode'] == 'sequential') {
+				switch ($scope['level']) {
+				case 'visitor':
+				case 'session':
+				case 'search':
+					if (strlen($data) > 0) {
+						$data .= ';';
 					}
-				}
-			}
-			if (strlen($data) > 0) {
-				$data = $this->crypto->encrypt('cem'.gzdeflate($data, 9));
-				if ($data) {
-					return base64_encode($data);
+					$data .= $this->escapeValue($name) . '=' . $this->escapeValue($scope['level']) . '=' . $this->escapeValue($scope['data']);
+					break;
 				}
 			}
 		}
-		return NULL;
+		return $this->encrypt($data);
 	}
 
 	/**
@@ -850,7 +865,7 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
 	 */
 	public function encodeQuery($parameters = array()) {
 		$context = $this->encodeSequentialContexts();
-		if ($context != NULL) {
+		if ($context) {
 			$parameters['context'] = $context;
 		}
 		$query = '';
@@ -877,41 +892,26 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
 
 
 	/**
-	 * Called each client interaction to wrap the response
+	 * Get groups
 	 *
-	 * @param CEM_GatewayState &$state client state reference
-	 * @param CEM_GS_GatewayRequest14 &$request client request reference
-	 * @param CEM_GS_GatewayResponse14 &$response client response reference
-	 * @param array &$options options passed for interaction
-	 * @return mixed wrapped response on success or FALSE on error
+	 * @return array group scopes
 	 */
-	public function onInteraction(&$state, &$request, &$response, &$options) {
-		$this->request = $request;
-		$this->response = $response;
-		return $this;
+	public function getGroups() {
+		return $this->response->getResponses();
 	}
 
 	/**
-	 * Called each client recommendation to wrap the response
+	 * Get group
 	 *
-	 * @param CEM_GatewayState &$state client state reference
-	 * @param CEM_PR_GatewayRequest14 &$request client request reference
-	 * @param CEM_PR_GatewayResponse14 &$response client response reference
-	 * @param array &$options options passed for recommendation
-	 * @return mixed wrapped response on success or FALSE on error
+	 * @param string $id group identifier
+	 * @return object group or NULL if none
 	 */
-	public function onRecommendation(&$state, &$request, &$response, &$options) {
-		return $response;
-	}
-
-	/**
-	 * Called if client interaction triggers an error
-	 *
-	 * @param CEM_GatewayState &$state client state reference
-	 * @param CEM_PR_GatewayRequest14|CEM_GS_GatewayRequest14 &$request client request reference
-	 * @param array &$options options passed for recommendation
-	 */
-	public function onError(&$state, &$request, &$options) {
+	public function getGroup($id = 'main') {
+		$scopes = $this->response->getResponses();
+		if (isset($scopes[$id])) {
+			return $scopes[$id];
+		}
+		return NULL;
 	}
 }
 
@@ -923,6 +923,13 @@ class CEM_WebResponseHandler14 extends CEM_WebHandler14 {
  * @subpackage web
  */
 class CEM_WebController14 {
+	/**
+	 * Encryption facility
+	 *
+	 * @var CEM_WebEncryption
+	 */
+	protected $crypto;
+
 	/**
 	 * CEM server url (defaults to 'http://root:@localhost:9000')
 	 *
@@ -996,7 +1003,7 @@ class CEM_WebController14 {
 	/**
 	 * Last interaction response
 	 *
-	 * @var mixed
+	 * @var CEM_GS_Interaction14
 	 */
 	protected $lastInteraction;
 
@@ -1004,9 +1011,11 @@ class CEM_WebController14 {
 	/**
 	 * Constructor
 	 *
+	 * @param CEM_WebEncryption &$crypto encryption facility
 	 * @param array $options options map
 	 */
-	public function __construct($options = array()) {
+	public function __construct(&$crypto, $options = array()) {
+		$this->crypto = $crypto;
 		$this->url = 'http://root:@localhost:9000';
 		$this->customer = 'default';
 		$this->index = 'default';
@@ -1113,26 +1122,27 @@ class CEM_WebController14 {
 	/**
 	 * Destroy client state gracefully if any
 	 *
-	 * @return mixed wrapped cem response on success or FALSE on error
 	 */
 	public function destroy() {
 		// get cem state
 		list($state, $created) = $this->getState();
 
 		if ($created) {
-			return FALSE;
+			return;
 		}
 		
 		// process interaction
 		$request = new CEM_GS_GatewayRequest14($this->customer, $this->dialog, $this->language);
 		$request->appendFreeRequest();
-		$this->lastInteraction = $this->gs($request, new CEM_GS_GatewayResponse14());
+		$response = new CEM_GS_GatewayResponse14();
+
+		$this->gs($request, $response);
+		$this->lastInteraction = NULL;
 
 		// clear client state
 		if ($this->stateHandler) {
 			$this->stateHandler->remove($state);
 		}
-		return $this->lastInteraction;
 	}
 
 	/**
@@ -1140,7 +1150,7 @@ class CEM_WebController14 {
 	 *
 	 * @param array $options interaction options passed to handlers
 	 * @param boolean $useCache optional parameter to use cache (defaults to TRUE)
-	 * @return mixed wrapped cem response or FALSE on error
+	 * @return CEM_GS_Interaction14 wrapped cem response
 	 */
 	public function interact($options = array(), $useCache = TRUE) {
 		// return cached interaction if any
@@ -1148,12 +1158,28 @@ class CEM_WebController14 {
 			return $this->lastInteraction;
 		}
 
-		// process interaction
-		$request = new CEM_GS_GatewayRequest14($this->customer, $this->dialog, $this->language);
-		$this->lastInteraction = $this->gs($request, new CEM_GS_GatewayResponse14());
+		// prepare interaction
+		list($state, $created) = $this->getState();
 
+		$request = new CEM_GS_GatewayRequest14($this->customer, $this->dialog, $this->language);
+		if ($created) {
+			if ($this->requestHandler) {
+				if (!$this->requestHandler->onInit($state, $request)) {
+					return;
+				}
+			} else {
+				$request->appendInitRequest();
+			}
+		}
+		$response = new CEM_GS_GatewayResponse14();
+
+		// process interaction
+		$this->gs($request, $response, $options);
+
+		$this->lastInteraction = new CEM_GS_Interaction14($this->crypto, $request, $response, $options);
 		return $this->lastInteraction;
 	}
+
 
 	/**
 	 * Do query completion suggestion
@@ -1165,6 +1191,7 @@ class CEM_WebController14 {
 	 * @return mixed wrapped cem response or FALSE on error
 	 */
 	public function suggest($query, $size = 10, $contextual = 3, $options = array()) {
+		// prepare interaction
 		$request = new CEM_PR_GatewayRequest14($this->customer);
 		$request->addRequest(
 			new CEM_PR_CompletionQuery(
@@ -1180,7 +1207,12 @@ class CEM_WebController14 {
 				isset($options['scorerProperties']) ? $options['scorerProperties'] : array('title', 'body')
 			)
 		);
-		return $this->pr($request, new CEM_PR_GatewayResponse14(), $options);
+		$response = new CEM_PR_GatewayResponse14();
+
+		// process interaction
+		$this->pr($request, $response, $options);
+
+		return new CEM_PR_Interaction14($this->crypto, $request, $response, $options);
 	}
 
 
@@ -1190,47 +1222,30 @@ class CEM_WebController14 {
 	 * @param CEM_GS_GatewayRequest14 &$request guided-search request
 	 * @param CEM_GS_GatewayResponse14 &$response guided-search response
 	 * @param array $options interaction options passed to handlers
-	 * @return mixed wrapped cem response or FALSE on error
 	 */
 	public function gs(&$request, &$response, $options = array()) {
 		// get cem state
 		list($state, $created) = $this->getState();
 
-		// initialize client state
-		if ($created) {
-			if ($this->requestHandler) {
-				if (!$this->requestHandler->onInit($state, $request)) {
-					return FALSE;
-				}
-			} else {
-				$request->appendInitRequest();
-			}
-		}
-
-		// notify request handler
-		if ($this->requestHandler && !$this->requestHandler->onInteraction($state, $request, $options)) {
-			return FALSE;
-		}
-
 		// process interaction
 		$client = new CEM_GatewayClient($this->url . '/gs/gateway/client-1.4', $this->connectionTimeout, $this->readTimeout);
-		if (!$client->process($state, $request, $response)) {
+		if ($this->requestHandler && !$this->requestHandler->onInteraction($state, $request, $options)) {
+			return;
+		}
+		if ($client->process($state, $request, $response)) {
+			if ($this->responseHandler) {
+				$this->responseHandler->onInteraction($state, $request, $response, $options);
+			}
+		} else {
 			if ($this->responseHandler) {
 				$this->responseHandler->onError($state, $request, $options);
 			}
-			return FALSE;
-		}
-
-		// notify response handler
-		if ($this->responseHandler) {
-			$response = $this->responseHandler->onInteraction($state, $request, $response, $options);
 		}
 
 		// write client state
 		if ($this->stateHandler) {
 			$this->stateHandler->write($state);
 		}
-		return $response;
 	}
 
 	/**
@@ -1239,31 +1254,25 @@ class CEM_WebController14 {
 	 * @param CEM_PR_GatewayRequest14 &$request recommendation request
 	 * @param CEM_PR_GatewayResponse14 &$response recommendation response
 	 * @param array $options recommendation options
-	 * @return mixed wrapped cem response or FALSE on error
 	 */
 	public function pr(&$request, &$response, $options = array()) {
 		// build cem state
 		list($state, $created) = $this->getState();
 
-		// notify request handler
-		if ($this->requestHandler && !$this->requestHandler->onRecommendation($state, $request, $options)) {
-			return FALSE;
-		}
-
 		// process recommendation
 		$client = new CEM_GatewayClient($this->url . '/pr/gateway/client-1.4', $this->connectionTimeout, $this->readTimeout);
-		if (!$client->process($state, $request, $response)) {
+		if ($this->requestHandler && !$this->requestHandler->onRecommendation($state, $request, $options)) {
+			return;
+		}
+		if ($client->process($state, $request, $response)) {
+			if ($this->responseHandler) {
+				$this->responseHandler->onRecommendation($state, $request, $response, $options);
+			}
+		} else {
 			if ($this->responseHandler) {
 				$this->responseHandler->onError($state, $request, $options);
 			}
-			return FALSE;
 		}
-
-		// notify response handler
-		if ($this->responseHandler) {
-			return $this->responseHandler->onRecommendation($state, $request, $response, $options);
-		}
-		return $response;
 	}
 
 

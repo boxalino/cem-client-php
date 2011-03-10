@@ -199,8 +199,9 @@ class CEM_GatewayClient {
 		}
 
 		// set curl request cookie
-		if (strlen($state->getCookies()) > 0) {
-			if (!curl_setopt($h, CURLOPT_COOKIE,		$state->getCookies())) {
+		$cookieHeader = $state->getCookieHeader();
+		if (strlen($cookieHeader) > 0) {
+			if (!curl_setopt($h, CURLOPT_COOKIE,		$cookieHeader)) {
 				curl_close($h);
 				return FALSE;
 			}
@@ -225,10 +226,8 @@ class CEM_GatewayClient {
 		curl_close($h);
 
 		// debug
-//		echo($requestData."\n");
-//		echo($responseData."\n");
-//		echo("<pre>".htmlentities($requestData, ENT_COMPAT, 'UTF-8')."</pre>");
-//		echo("<pre>".htmlentities($responseData, ENT_COMPAT, 'UTF-8')."</pre>");
+//		echo($requestData."\n".$responseData);
+//		echo("<pre style=\"width: 100%; overflow: auto; background-color: white; color: black;\">" . htmlentities($requestData, ENT_COMPAT, 'UTF-8')."\n".htmlentities($responseData, ENT_COMPAT, 'UTF-8') . "</pre>");
 
 		// parse response
 		$state->setStatus($code, $error);
@@ -274,24 +273,21 @@ class CEM_GatewayClient {
 		// parse cookies
 		if ($state != NULL) {
 			$cookieData = NULL;
-			if (stripos($data, "Set-Cookie:") === 0) {
-				$cookieData = trim(substr($data, strlen("Set-Cookie:")));
-			} else if (stripos($data, "Set-Cookie2:") === 0) {
-				$cookieData = trim(substr($data, strlen("Set-Cookie2:")));
+			if (stripos($data, "set-cookie:") === 0) {
+				$cookieData = trim(substr($data, strlen("set-cookie:")));
+			} else if (stripos($data, "set-cookie2:") === 0) {
+				$cookieData = trim(substr($data, strlen("set-cookie2:")));
 			}
 			if ($cookieData) {
 				$parts = explode(';', $cookieData);
 				if (count($parts) > 0) {
 					$value = explode('=', $parts[0]);
-					$cookie = array(
-						'value' => $value[1],
-						'parameters' => array()
-					);
+					$parameters = array();
 					for ($i = 1; $i < count($parts); $i++) {
 						$parameter = explode('=', $parts[$i]);
-						$cookie['parameters'][$parameter[0]] = $parameter[1];
+						$parameters[$parameter[0]] = $parameter[1];
 					}
-					$state->setCookie($value[0], $cookie);
+					$state->setCookie($value[0], $value[1], $parameters);
 				}
 			}
 		}

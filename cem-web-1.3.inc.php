@@ -18,13 +18,6 @@
  */
 class CEM_WebStateCookieHandler extends CEM_WebStateHandler {
 	/**
-	 * Encryption facility
-	 *
-	 * @var CEM_WebEncryption
-	 */
-	protected $crypto;
-
-	/**
 	 * State variable key
 	 *
 	 * @var string
@@ -71,8 +64,7 @@ class CEM_WebStateCookieHandler extends CEM_WebStateHandler {
 	 * @param boolean $secure secure flag (defaults to FALSE)
 	 */
 	public function __construct(&$crypto, $key = 'CEM', $expiry = 1800, $path = '/', $domain = FALSE, $secure = FALSE) {
-		parent::__construct();
-		$this->crypto = $crypto;
+		parent::__construct($crypto);
 		$this->key = $key;
 		$this->expiry = $expiry;
 		$this->path = $path;
@@ -80,9 +72,48 @@ class CEM_WebStateCookieHandler extends CEM_WebStateHandler {
 		$this->secure = $secure;
 
 		if (isset($_COOKIE[$this->key])) {
-			$data = $this->crypto->decrypt(base64_decode($_COOKIE[$this->key]));
-			if ($data && strpos($data, 'cem') === 0) {
-				$this->state = new CEM_GatewayState(gzinflate(substr($data, 3)));
+			$data = $this->decrypt($_COOKIE[$this->key]);
+			if ($data) {
+				$this->state = new CEM_GatewayState();
+
+				// decode state
+				list($cookies, $context, $others) = explode('&', $data);
+
+				if (strlen($cookies) > 0) {
+					foreach (explode(';', $cookies) as $item) {
+						list($name, $value) = explode('=', $item);
+	
+						$name = urldecode($name);
+						if (strlen($name) > 0) {
+							$this->cookies[$name] = array('value' => urldecode($value));
+						}
+					}
+				}
+				if (strlen($context) > 0) {
+					$value = array();
+					foreach (explode(';', $context) as $item) {
+						list($name, $level, $mode, $data) = explode('=', $item);
+	
+						$name = urldecode($name);
+						$level = urldecode($level);
+						$mode = urldecode($mode);
+						$data = urldecode($data);
+						if (strlen($name) > 0) {
+							$value[$name] = array('level' => $level, 'mode' => $mode, 'data' => $data);
+						}
+					}
+					$this->data['context'] = $value;
+				}
+				if (strlen($others) > 0) {
+					foreach (explode(';', $others) as $item) {
+						list($name, $data) = explode('=', $item);
+
+						$name = urldecode($name);
+						if (strlen($name) > 0) {
+							$this->data[$name] = json_decode(urldecode($data));
+						}
+					}
+				}
 			}
 		}
 	}
@@ -94,9 +125,35 @@ class CEM_WebStateCookieHandler extends CEM_WebStateHandler {
 	 * @param CEM_GatewayState &$state client state
 	 */
 	public function write(&$state) {
-		$data = $this->crypto->encrypt('cem'.gzdeflate($state->encode(), 9));
+		$text = $state->getCookieHeader();
+		$text .= '&';
+		$context = $state->get('context');
+		if (is_array($context)) {
+			$i = 0;
+			foreach ($context as $key => $value) {
+				if ($i > 0) {
+					$text .= ';';
+				}
+				$text .= urlencode($key) . '=' . urlencode($value['level']) . '=' . urlencode($value['mode']) . '=' . urlencode($value['data']);
+				$i++;
+			}
+		}
+		$text .= '&';
+		$i = 0;
+		foreach ($state->getAll() as $key => $value) {
+			if ($key != 'context') {
+				if ($i > 0) {
+					$text .= ';';
+				}
+				$text .= urlencode($key) . '=' . urlencode(json_encode($value));
+				$i++;
+			}
+		}
+		$data = $this->encrypt($text);
 		if ($data) {
-			setcookie($this->key, base64_encode($data), time() + $this->expiry, $this->path, $this->domain, $this->secure);
+			setcookie($this->key, $data, time() + $this->expiry, $this->path, $this->domain, $this->secure);
+		} else {
+			setcookie($this->key, "", time() - 3600, $this->path, $this->domain, $this->secure);
 		}
 
 		parent::write($state);
@@ -176,10 +233,10 @@ abstract class CEM_WebHandler extends CEM_AbstractWebHandler {
 	 * Constructor
 	 *
 	 * @param CEM_WebEncryption &$crypto encryption facility
-	 * @param array $options context options
+	 * @param array $keys request parameter mapping
 	 */
-	public function __construct(&$crypto, $options = array()) {
-		parent::__construct($crypto, $options);
+	public function __construct(&$crypto, $keys = array()) {
+		parent::__construct($crypto, $keys);
 		$this->context = array();
 
 		$keys = array(
@@ -284,7 +341,7 @@ class CEM_WebRequestHandler extends CEM_WebHandler {
 	 * @param array $options context options
 	 */
 	public function __construct(&$crypto, $options = array()) {
-		parent::__construct($crypto, $options);
+		parent::__construct($crypto, isset($options['keys']) ? $options['keys'] : array());
 
 		// initial context values if given
 		if (isset($options['context'])) {
@@ -624,13 +681,6 @@ class CEM_WebResponseHandler extends CEM_WebHandler {
 	protected $mainSearchId;
 
 	/**
-	 * Main group identifier (defaults to 'main')
-	 *
-	 * @var string
-	 */
-	protected $mainGroupId;
-
-	/**
 	 * Current request
 	 *
 	 * @var CEM_GS_SimpleRequest
@@ -666,9 +716,8 @@ class CEM_WebResponseHandler extends CEM_WebHandler {
 	 * @param array $options context options
 	 */
 	public function __construct(&$crypto, $options = array()) {
-		parent::__construct($crypto, $options);
+		parent::__construct($crypto, isset($options['keys']) ? $options['keys'] : array());
 		$this->mainSearchId = isset($options['mainSearchId']) ? $options['mainSearchId'] : 'main';
-		$this->mainGroupId = isset($options['mainGroupId']) ? $options['mainGroupId'] : 'main';
 		$this->response = NULL;
 		$this->json = NULL;
 		$this->contextValue = NULL;
