@@ -1,20 +1,18 @@
 <?php
 
 /**
- * Boxalino CEM client library in PHP
+ * @internal
  *
- * @package cem
- * @subpackage client
- * @author nitro@boxalino.com
- * @copyright 2009-2011 - Boxalino AG
+ * Boxalino CEM client library in PHP.
+ *
+ * (C) 2009-2011 - Boxalino AG
  */
 
 
 /**
  * P&R gateway response
  *
- * @package cem
- * @subpackage client
+ * @author nitro@boxalino.com
  */
 class CEM_PR_SimpleResponse extends CEM_GatewayResponse {
 	/**
@@ -62,8 +60,7 @@ class CEM_PR_SimpleResponse extends CEM_GatewayResponse {
 /**
  * Guided-Search gateway response
  *
- * @package cem
- * @subpackage client
+ * @author nitro@boxalino.com
  */
 class CEM_GS_SimpleResponse extends CEM_GatewayResponse {
 	/**

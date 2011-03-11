@@ -1,20 +1,18 @@
 <?php
 
 /**
- * Boxalino CEM client library in PHP
+ * @internal
  *
- * @package cem
- * @subpackage client
- * @author nitro@boxalino.com
- * @copyright 2009-2011 - Boxalino AG
+ * Boxalino CEM client library in PHP.
+ *
+ * (C) 2009-2011 - Boxalino AG
  */
 
 
 /**
  * Cookie-based CEM state handler for web-sites (CEM 1.3)
  *
- * @package cem
- * @subpackage web
+ * @author nitro@boxalino.com
  */
 class CEM_WebStateCookieHandler extends CEM_WebStateHandler {
 	/**
@@ -174,8 +172,7 @@ class CEM_WebStateCookieHandler extends CEM_WebStateHandler {
 /**
  * Abstract CEM handler for web-sites (CEM 1.3)
  *
- * @package cem
- * @subpackage web
+ * @author nitro@boxalino.com
  */
 abstract class CEM_WebHandler extends CEM_AbstractWebHandler {
 	/**
@@ -330,8 +327,7 @@ abstract class CEM_WebHandler extends CEM_AbstractWebHandler {
 /**
  * Default CEM request handler for web-sites (CEM 1.3)
  *
- * @package cem
- * @subpackage web
+ * @author nitro@boxalino.com
  */
 class CEM_WebRequestHandler extends CEM_WebHandler {
 	/**
@@ -669,8 +665,7 @@ class CEM_WebRequestHandler extends CEM_WebHandler {
 /**
  * Default CEM response handler for web-sites (CEM 1.3)
  *
- * @package cem
- * @subpackage web
+ * @author nitro@boxalino.com
  */
 class CEM_WebResponseHandler extends CEM_WebHandler {
 	/**
@@ -956,8 +951,7 @@ class CEM_WebResponseHandler extends CEM_WebHandler {
 /**
  * CEM controller for web-sites (CEM 1.3)
  *
- * @package cem
- * @subpackage web
+ * @author nitro@boxalino.com
  */
 class CEM_WebController {
 	/**

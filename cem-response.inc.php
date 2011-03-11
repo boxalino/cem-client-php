@@ -1,26 +1,22 @@
 <?php
 
 /**
- * Boxalino CEM client library in PHP
+ * @internal
  *
- * @package cem
- * @subpackage client
- * @author nitro@boxalino.com
- * @copyright 2009-2011 - Boxalino AG
+ * Boxalino CEM client library in PHP.
+ *
+ * (C) 2009-2011 - Boxalino AG
  */
 
 
 /**
  * Info gateway response
  *
- * @package cem
- * @subpackage client
+ * @author nitro@boxalino.com
  */
 class CEM_INFO_GatewayResponse extends CEM_GatewayResponse {
 	/**
 	 * Text response
-	 *
-	 * @var string
 	 */
 	protected $text;
 
@@ -38,9 +34,9 @@ class CEM_INFO_GatewayResponse extends CEM_GatewayResponse {
 	/**
 	 * Called to read the response
 	 *
-	 * @param CEM_GatewayState &$state client state reference
-	 * @param string &$data response raw body
-	 * @return boolean TRUE on success, FALSE otherwise
+	 * @param &$state client state reference
+	 * @param &$data response raw body
+	 * @return TRUE on success, FALSE otherwise
 	 */
 	public function read(&$state, &$data) {
 		$this->text = $data;
@@ -51,7 +47,7 @@ class CEM_INFO_GatewayResponse extends CEM_GatewayResponse {
 	/**
 	 * Get text response
 	 *
-	 * @return string text response
+	 * @return text response
 	 */
 	public function getText() {
 		return $this->text;

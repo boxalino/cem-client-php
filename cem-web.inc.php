@@ -1,68 +1,52 @@
 <?php
 
 /**
- * Boxalino CEM client library in PHP
+ * @internal
  *
- * @package cem
- * @subpackage client
- * @author nitro@boxalino.com
- * @copyright 2009-2011 - Boxalino AG
+ * Boxalino CEM client library in PHP.
+ *
+ * (C) 2009-2011 - Boxalino AG
  */
 
 
 /**
  * Client-side data encryption
  *
- * @package cem
- * @subpackage web
+ * @author nitro@boxalino.com
  */
 class CEM_WebEncryption {
 	/**
 	 * Hash algorithm
-	 *
-	 * @var string
 	 */
 	protected $hash;
 
 	/**
 	 * Encryption key
-	 *
-	 * @var string
 	 */
 	protected $key;
 
 	/**
 	 * Encryption IV
-	 *
-	 * @var string
 	 */
 	protected $iv;
 
 	/**
 	 * Encryption algorithm
-	 *
-	 * @var string
 	 */
 	protected $algo;
 
 	/**
 	 * Encryption algorithm path
-	 *
-	 * @var string
 	 */
 	protected $algoPath;
 
 	/**
 	 * Encryption mode
-	 *
-	 * @var string
 	 */
 	protected $mode;
 
 	/**
 	 * Encryption mode path
-	 *
-	 * @var string
 	 */
 	protected $modePath;
 
@@ -70,9 +54,9 @@ class CEM_WebEncryption {
 	/**
 	 * Constructor
 	 *
-	 * @param string $secret server-side secret key used to encrypt data
-	 * @param string $iv initialization vector key
-	 * @param string $options encryption options
+	 * @param $secret server-side secret key used to encrypt data
+	 * @param $iv initialization vector key
+	 * @param $options encryption options
 	 */
 	public function __construct($secret, $iv, $options = array()) {
 		$this->hash = isset($options['hash']) ? $options['hash'] : 'sha256';
@@ -88,8 +72,8 @@ class CEM_WebEncryption {
 	/**
 	 * Encrypt data
 	 *
-	 * @param string $data plain data
-	 * @return string encrypted data
+	 * @param $data plain data
+	 * @return encrypted data
 	 */
 	public function encrypt($data) {
 		// open algorithm
@@ -125,8 +109,8 @@ class CEM_WebEncryption {
 	/**
 	 * Decrypt data
 	 *
-	 * @param string $data encrypted data
-	 * @return string plain data
+	 * @param $data encrypted data
+	 * @return plain data
 	 */
 	public function decrypt($data) {
 		// check input data
@@ -168,21 +152,16 @@ class CEM_WebEncryption {
 /**
  * Abstract CEM handler for web-sites
  *
- * @package cem
- * @subpackage web
+ * @author nitro@boxalino.com
  */
 abstract class CEM_AbstractWebHandler {
 	/**
 	 * Encryption facility
-	 *
-	 * @var CEM_WebEncryption
 	 */
 	protected $crypto;
 
 	/**
 	 * Context variable keys
-	 *
-	 * @var array
 	 */
 	protected $keys;
 
@@ -190,8 +169,8 @@ abstract class CEM_AbstractWebHandler {
 	/**
 	 * Constructor
 	 *
-	 * @param CEM_WebEncryption &$crypto encryption facility
-	 * @param array $keys request parameter mapping
+	 * @param &$crypto encryption facility
+	 * @param $keys request parameter mapping
 	 */
 	public function __construct(&$crypto, $keys = array()) {
 		$this->crypto = $crypto;
@@ -202,7 +181,7 @@ abstract class CEM_AbstractWebHandler {
 	/**
 	 * Escape value ('%' <> '%25', ';' <> '%3B', '=' <> '%3D')
 	 *
-	 * @param string $value input value
+	 * @param $value input value
 	 * @return escaped value
 	 */
 	protected function escapeValue($value) {
@@ -216,7 +195,7 @@ abstract class CEM_AbstractWebHandler {
 	/**
 	 * Unescape value ('%' <> '%25', ';' <> '%3B', '=' <> '%3D')
 	 *
-	 * @param string $value input value
+	 * @param $value input value
 	 * @return escaped value
 	 */
 	protected function unescapeValue($value) {
@@ -231,8 +210,8 @@ abstract class CEM_AbstractWebHandler {
 	/**
 	 * Encrypt/deflate data
 	 *
-	 * @param string $data plain data
-	 * @return string encrypted data (or FALSE if none)
+	 * @param $data plain data
+	 * @return encrypted data (or FALSE if none)
 	 */
 	protected function encrypt($data) {
 		if (strlen($data) > 0) {
@@ -247,8 +226,8 @@ abstract class CEM_AbstractWebHandler {
 	/**
 	 * Decrypt/inflate data
 	 *
-	 * @param string $data encrypted data
-	 * @return string plain data (or FALSE if none)
+	 * @param $data encrypted data
+	 * @return plain data (or FALSE if none)
 	 */
 	protected function decrypt($data) {
 		if (strlen($data) > 0) {
@@ -264,8 +243,8 @@ abstract class CEM_AbstractWebHandler {
 	/**
 	 * Map parameter key
 	 *
-	 * @param string $key parameter key
-	 * @return string mapped key
+	 * @param $key parameter key
+	 * @return mapped key
 	 */
 	protected function requestKey($key) {
 		if (isset($this->keys[$key])) {
@@ -277,8 +256,8 @@ abstract class CEM_AbstractWebHandler {
 	/**
 	 * Check if parameter exists
 	 *
-	 * @param string $key parameter key
-	 * @return boolean TRUE if exists FALSE otherwise
+	 * @param $key parameter key
+	 * @return TRUE if exists FALSE otherwise
 	 */
 	protected function requestExists($key) {
 		return isset($_REQUEST[$this->requestKey($key)]);
@@ -287,9 +266,9 @@ abstract class CEM_AbstractWebHandler {
 	/**
 	 * Get request parameter as boolean
 	 *
-	 * @param string $key parameter key
-	 * @param boolean $default default value
-	 * @return boolean parameter value or default value if doesn't exist
+	 * @param $key parameter key
+	 * @param $default default value
+	 * @return parameter value or default value if doesn't exist
 	 */
 	protected function requestBoolean($key, $default = FALSE) {
 		if (isset($_REQUEST[$this->requestKey($key)])) {
@@ -302,9 +281,9 @@ abstract class CEM_AbstractWebHandler {
 	/**
 	 * Get request parameter as number
 	 *
-	 * @param string $key parameter key
-	 * @param float $default default value
-	 * @return float parameter value or default value if doesn't exist
+	 * @param $key parameter key
+	 * @param $default default value
+	 * @return parameter value or default value if doesn't exist
 	 */
 	protected function requestNumber($key, $default = 0) {
 		if (isset($_REQUEST[$this->requestKey($key)])) {
@@ -320,9 +299,9 @@ abstract class CEM_AbstractWebHandler {
 	/**
 	 * Get request parameter as string
 	 *
-	 * @param string $key parameter key
-	 * @param string $default default value
-	 * @return string parameter value or default value if doesn't exist
+	 * @param $key parameter key
+	 * @param $default default value
+	 * @return parameter value or default value if doesn't exist
 	 */
 	protected function requestString($key, $default = "") {
 		if (isset($_REQUEST[$this->requestKey($key)])) {
@@ -334,9 +313,9 @@ abstract class CEM_AbstractWebHandler {
 	/**
 	 * Get request parameter as string array
 	 *
-	 * @param string $key parameter key
-	 * @param string $default default value
-	 * @return array parameter value or default value if doesn't exist
+	 * @param $key parameter key
+	 * @param $default default value
+	 * @return parameter value or default value if doesn't exist
 	 */
 	protected function requestStringArray($key, $default = array()) {
 		$array = array();
@@ -360,8 +339,8 @@ abstract class CEM_AbstractWebHandler {
 	/**
 	 * Convert raw string
 	 *
-	 * @param string $value raw string value
-	 * @return string formatted string value
+	 * @param $value raw string value
+	 * @return formatted string value
 	 */
 	protected function filterRawString($value) {
 		$value = strval($value);
@@ -378,14 +357,11 @@ abstract class CEM_AbstractWebHandler {
 /**
  * Default CEM state handler for web-sites
  *
- * @package cem
- * @subpackage web
+ * @author nitro@boxalino.com
  */
 class CEM_WebStateHandler extends CEM_AbstractWebHandler {
 	/**
 	 * Cached state
-	 *
-	 * @var CEM_GatewayState
 	 */
 	protected $state;
 
@@ -393,7 +369,7 @@ class CEM_WebStateHandler extends CEM_AbstractWebHandler {
 	/**
 	 * Constructor
 	 *
-	 * @param CEM_WebEncryption &$crypto encryption facility
+	 * @param &$crypto encryption facility
 	 */
 	public function __construct(&$crypto) {
 		parent::__construct($crypto);
@@ -404,7 +380,7 @@ class CEM_WebStateHandler extends CEM_AbstractWebHandler {
 	/**
 	 * Create client state
 	 *
-	 * @return CEM_GatewayState client state
+	 * @return client state
 	 */
 	public function create() {
 		return new CEM_GatewayState();
@@ -413,7 +389,7 @@ class CEM_WebStateHandler extends CEM_AbstractWebHandler {
 	/**
 	 * Read client state from storage
 	 *
-	 * @return CEM_GatewayState client state or NULL if none
+	 * @return client state or NULL if none
 	 */
 	public function read() {
 		return $this->state;
@@ -422,7 +398,7 @@ class CEM_WebStateHandler extends CEM_AbstractWebHandler {
 	/**
 	 * Write client state to storage
 	 *
-	 * @param CEM_GatewayState &$state client state
+	 * @param &$state client state
 	 */
 	public function write(&$state) {
 		$this->state = $state;
@@ -431,7 +407,7 @@ class CEM_WebStateHandler extends CEM_AbstractWebHandler {
 	/**
 	 * Remove client state from storage
 	 *
-	 * @param CEM_GatewayState &$state client state
+	 * @param &$state client state
 	 */
 	public function remove(&$state) {
 		$this->state = NULL;
@@ -441,14 +417,11 @@ class CEM_WebStateHandler extends CEM_AbstractWebHandler {
 /**
  * Session-based CEM state handler for web-sites
  *
- * @package cem
- * @subpackage web
+ * @author nitro@boxalino.com
  */
 class CEM_WebStateSessionHandler extends CEM_WebStateHandler {
 	/**
 	 * State variable key
-	 *
-	 * @var string
 	 */
 	protected $name;
 
@@ -456,8 +429,8 @@ class CEM_WebStateSessionHandler extends CEM_WebStateHandler {
 	/**
 	 * Constructor
 	 *
-	 * @param CEM_WebEncryption &$crypto encryption facility
-	 * @param string $name variable name (defaults to 'cem')
+	 * @param &$crypto encryption facility
+	 * @param $name variable name (defaults to 'cem')
 	 */
 	public function __construct(&$crypto, $name = 'cem') {
 		parent::__construct($crypto);
@@ -476,7 +449,7 @@ class CEM_WebStateSessionHandler extends CEM_WebStateHandler {
 	/**
 	 * Write client state to storage
 	 *
-	 * @param CEM_GatewayState &$state client state
+	 * @param &$state client state
 	 */
 	public function write(&$state) {
 		$_SESSION[$this->name] = $state;
@@ -487,7 +460,7 @@ class CEM_WebStateSessionHandler extends CEM_WebStateHandler {
 	/**
 	 * Remove client state from storage
 	 *
-	 * @param CEM_GatewayState &$state client state
+	 * @param &$state client state
 	 */
 	public function remove(&$state) {
 		if (isset($_SESSION[$this->name])) {

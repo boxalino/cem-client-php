@@ -1,75 +1,57 @@
 <?php
 
 /**
- * Boxalino CEM client library in PHP
+ * @internal
  *
- * @package cem
- * @subpackage client
- * @author nitro@boxalino.com
- * @copyright 2009-2011 - Boxalino AG
+ * Boxalino CEM client library in PHP.
+ *
+ * (C) 2009-2011 - Boxalino AG
  */
 
 
 /**
  * PR gateway response
  *
- * @package cem
- * @subpackage client
+ * @author nitro@boxalino.com
  */
 class CEM_PR_GatewayResponse14 extends CEM_GatewayResponse {
 	/**
 	 * Server version
-	 *
-	 * @var string
 	 */
 	protected $version;
 
 	/**
 	 * Response status
-	 *
-	 * @var boolean
 	 */
 	protected $status;
 
 	/**
 	 * Response message
-	 *
-	 * @var string
 	 */
 	protected $message;
 
 	/**
 	 * Response time
-	 *
-	 * @var int
 	 */
 	protected $time;
 
 	/**
 	 * Customer identifier
-	 *
-	 * @var string
 	 */
 	protected $customer;
 
 	/**
 	 * Response format
-	 *
-	 * @var string
 	 */
 	protected $responseFormat;
 
 	/**
 	 * Response scope
-	 *
-	 * @var array
 	 */
 	protected $responses;
 
 	/**
 	 * Response size
-	 *
-	 * @var int
 	 */
 	protected $responseSize;
 
@@ -94,7 +76,7 @@ class CEM_PR_GatewayResponse14 extends CEM_GatewayResponse {
 	/**
 	 * Get server version
 	 *
-	 * @return string server version
+	 * @return server version
 	 */
 	public function getVersion() {
 		return $this->version;
@@ -103,7 +85,7 @@ class CEM_PR_GatewayResponse14 extends CEM_GatewayResponse {
 	/**
 	 * Get status
 	 *
-	 * @return boolean status
+	 * @return status
 	 */
 	public function getStatus() {
 		return $this->status;
@@ -112,7 +94,7 @@ class CEM_PR_GatewayResponse14 extends CEM_GatewayResponse {
 	/**
 	 * Get response message
 	 *
-	 * @return string response message
+	 * @return response message
 	 */
 	public function getMessage() {
 		return $this->message;
@@ -121,7 +103,7 @@ class CEM_PR_GatewayResponse14 extends CEM_GatewayResponse {
 	/**
 	 * Get time
 	 *
-	 * @return floag time (in seconds)
+	 * @return time (in seconds)
 	 */
 	public function getTime() {
 		return ($this->time / 1000.0);
@@ -131,7 +113,7 @@ class CEM_PR_GatewayResponse14 extends CEM_GatewayResponse {
 	/**
 	 * Get customer identifier
 	 *
-	 * @return string customer identifier
+	 * @return customer identifier
 	 */
 	public function getCustomer() {
 		return $this->customer;
@@ -140,7 +122,7 @@ class CEM_PR_GatewayResponse14 extends CEM_GatewayResponse {
 	/**
 	 * Get response format
 	 *
-	 * @return string response format
+	 * @return response format
 	 */
 	public function getResponseFormat() {
 		return $this->responseFormat;
@@ -149,7 +131,7 @@ class CEM_PR_GatewayResponse14 extends CEM_GatewayResponse {
 	/**
 	 * Get response size
 	 *
-	 * @return string response size
+	 * @return response size
 	 */
 	public function getResponseSize() {
 		return $this->responseSize;
@@ -158,7 +140,7 @@ class CEM_PR_GatewayResponse14 extends CEM_GatewayResponse {
 	/**
 	 * Get response scopes
 	 *
-	 * @return array response scopes
+	 * @return response scopes
 	 */
 	public function getResponses() {
 		return $this->responses;
@@ -168,9 +150,9 @@ class CEM_PR_GatewayResponse14 extends CEM_GatewayResponse {
 	/**
 	 * Called to read the response
 	 *
-	 * @param CEM_GatewayState &$state client state reference
-	 * @param string &$data response raw body
-	 * @return boolean TRUE on success, FALSE otherwise
+	 * @param &$state client state reference
+	 * @param &$data response raw body
+	 * @return TRUE on success, FALSE otherwise
 	 */
 	public function read(&$state, &$data) {
 		$this->responseSize = strlen($data);
@@ -183,8 +165,8 @@ class CEM_PR_GatewayResponse14 extends CEM_GatewayResponse {
 	/**
 	 * Visit xml response
 	 *
-	 * @param object &$node root element
-	 * @return boolean TRUE on success, FALSE otherwise
+	 * @param &$node root element
+	 * @return TRUE on success, FALSE otherwise
 	 */
 	protected function visitResponse(&$node) {
 		// check root element
@@ -233,8 +215,8 @@ class CEM_PR_GatewayResponse14 extends CEM_GatewayResponse {
 	/**
 	 * Visit xml text nodes
 	 *
-	 * @param object &$node xml element
-	 * @return string text content
+	 * @param &$node xml element
+	 * @return text content
 	 */
 	protected function visitTexts(&$node) {
 		$text = '';
@@ -255,84 +237,61 @@ class CEM_PR_GatewayResponse14 extends CEM_GatewayResponse {
 /**
  * Guided-Search gateway response
  *
- * @package cem
- * @subpackage client
+ * @author nitro@boxalino.com
  */
 class CEM_GS_GatewayResponse14 extends CEM_GatewayResponse {
 	/**
 	 * Server version
-	 *
-	 * @var string
 	 */
 	protected $version;
 
 	/**
 	 * Response status
-	 *
-	 * @var boolean
 	 */
 	protected $status;
 
 	/**
 	 * Response message
-	 *
-	 * @var string
 	 */
 	protected $message;
 
 	/**
 	 * Response time
-	 *
-	 * @var int
 	 */
 	protected $time;
 
 	/**
 	 * Customer identifier
-	 *
-	 * @var string
 	 */
 	protected $customer;
 
 	/**
 	 * Dialog identifier
-	 *
-	 * @var string
 	 */
 	protected $dialog;
 
 	/**
 	 * Language identifier
-	 *
-	 * @var string
 	 */
 	protected $language;
 
 	/**
 	 * Response format
-	 *
-	 * @var string
 	 */
 	protected $responseFormat;
 
 	/**
 	 * Response scope
-	 *
-	 * @var array
 	 */
 	protected $responses;
 
 	/**
 	 * Response size
-	 *
-	 * @var int
 	 */
 	protected $responseSize;
 
 	/**
 	 * Context scopes
-	 *
-	 * @var array
 	 */
 	protected $context;
 
@@ -360,7 +319,7 @@ class CEM_GS_GatewayResponse14 extends CEM_GatewayResponse {
 	/**
 	 * Get server version
 	 *
-	 * @return string server version
+	 * @return server version
 	 */
 	public function getVersion() {
 		return $this->version;
@@ -369,7 +328,7 @@ class CEM_GS_GatewayResponse14 extends CEM_GatewayResponse {
 	/**
 	 * Get status
 	 *
-	 * @return boolean status
+	 * @return status
 	 */
 	public function getStatus() {
 		return $this->status;
@@ -378,7 +337,7 @@ class CEM_GS_GatewayResponse14 extends CEM_GatewayResponse {
 	/**
 	 * Get response message
 	 *
-	 * @return string response message
+	 * @return response message
 	 */
 	public function getMessage() {
 		return $this->message;
@@ -387,7 +346,7 @@ class CEM_GS_GatewayResponse14 extends CEM_GatewayResponse {
 	/**
 	 * Get time
 	 *
-	 * @return floag time (in seconds)
+	 * @return time (in seconds)
 	 */
 	public function getTime() {
 		return ($this->time / 1000.0);
@@ -397,7 +356,7 @@ class CEM_GS_GatewayResponse14 extends CEM_GatewayResponse {
 	/**
 	 * Get customer identifier
 	 *
-	 * @return string customer identifier
+	 * @return customer identifier
 	 */
 	public function getCustomer() {
 		return $this->customer;
@@ -406,7 +365,7 @@ class CEM_GS_GatewayResponse14 extends CEM_GatewayResponse {
 	/**
 	 * Get dialog identifier
 	 *
-	 * @return string dialog identifier
+	 * @return dialog identifier
 	 */
 	public function getDialog() {
 		return $this->dialog;
@@ -415,7 +374,7 @@ class CEM_GS_GatewayResponse14 extends CEM_GatewayResponse {
 	/**
 	 * Get language identifier
 	 *
-	 * @return string language identifier
+	 * @return language identifier
 	 */
 	public function getLanguage() {
 		return $this->language;
@@ -424,7 +383,7 @@ class CEM_GS_GatewayResponse14 extends CEM_GatewayResponse {
 	/**
 	 * Get response format
 	 *
-	 * @return string response format
+	 * @return response format
 	 */
 	public function getResponseFormat() {
 		return $this->responseFormat;
@@ -433,7 +392,7 @@ class CEM_GS_GatewayResponse14 extends CEM_GatewayResponse {
 	/**
 	 * Get response size
 	 *
-	 * @return string response size
+	 * @return response size
 	 */
 	public function getResponseSize() {
 		return $this->responseSize;
@@ -442,7 +401,7 @@ class CEM_GS_GatewayResponse14 extends CEM_GatewayResponse {
 	/**
 	 * Get response scopes
 	 *
-	 * @return array response scopes
+	 * @return response scopes
 	 */
 	public function getResponses() {
 		return $this->responses;
@@ -451,7 +410,7 @@ class CEM_GS_GatewayResponse14 extends CEM_GatewayResponse {
 	/**
 	 * Get context scopes
 	 *
-	 * @return array context scopes 
+	 * @return context scopes 
 	 */
 	public function getContext() {
 		return $this->context;
@@ -461,9 +420,9 @@ class CEM_GS_GatewayResponse14 extends CEM_GatewayResponse {
 	/**
 	 * Called to read the response
 	 *
-	 * @param CEM_GatewayState &$state client state reference
-	 * @param string &$data response raw body
-	 * @return boolean TRUE on success, FALSE otherwise
+	 * @param &$state client state reference
+	 * @param &$data response raw body
+	 * @return TRUE on success, FALSE otherwise
 	 */
 	public function read(&$state, &$data) {
 		$this->responseSize = strlen($data);
@@ -480,8 +439,8 @@ class CEM_GS_GatewayResponse14 extends CEM_GatewayResponse {
 	/**
 	 * Visit xml response
 	 *
-	 * @param object &$node root element
-	 * @return boolean TRUE on success, FALSE otherwise
+	 * @param &$node root element
+	 * @return TRUE on success, FALSE otherwise
 	 */
 	protected function visitResponse(&$node) {
 		// check root element
@@ -540,8 +499,8 @@ class CEM_GS_GatewayResponse14 extends CEM_GatewayResponse {
 	/**
 	 * Visit xml text nodes
 	 *
-	 * @param object &$node xml element
-	 * @return string text content
+	 * @param &$node xml element
+	 * @return text content
 	 */
 	protected function visitTexts(&$node) {
 		$text = '';

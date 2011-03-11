@@ -1,12 +1,11 @@
 <?php
 
 /**
- * Boxalino CEM client library in PHP
+ * @internal
  *
- * @package cem
- * @subpackage client
- * @author nitro@boxalino.com
- * @copyright 2009-2011 - Boxalino AG
+ * Boxalino CEM client library in PHP.
+ *
+ * (C) 2009-2011 - Boxalino AG
  */
 
 
@@ -30,35 +29,26 @@ define('CEM_GS_FORMAT_XML', 'XML');
 /**
  * P&R gateway request
  *
- * @package cem
- * @subpackage client
+ * @author nitro@boxalino.com
  */
 class CEM_PR_GatewayRequest14 extends CEM_GatewayRequest {
 	/**
 	 * Customer identifier
-	 *
-	 * @var string
 	 */
 	protected $customer;
 
 	/**
 	 * Request format
-	 *
-	 * @var string
 	 */
 	protected $requestFormat;
 
 	/**
 	 * Requests
-	 *
-	 * @var array
 	 */
 	protected $requests;
 
 	/**
 	 * Response format
-	 *
-	 * @var string
 	 */
 	protected $responseFormat;
 
@@ -66,7 +56,7 @@ class CEM_PR_GatewayRequest14 extends CEM_GatewayRequest {
 	/**
 	 * Constructor
 	 *
-	 * @param string $customer customer identifier
+	 * @param $customer customer identifier
 	 */
 	public function __construct($customer) {
 		parent::__construct();
@@ -80,7 +70,7 @@ class CEM_PR_GatewayRequest14 extends CEM_GatewayRequest {
 	/**
 	 * Get customer identifier
 	 *
-	 * @return string customer identifier
+	 * @return customer identifier
 	 */
 	public function getCustomer() {
 		return $this->customer;
@@ -89,7 +79,7 @@ class CEM_PR_GatewayRequest14 extends CEM_GatewayRequest {
 	/**
 	 * Get recommendation requests
 	 *
-	 * @return array recommendation requests
+	 * @return recommendation requests
 	 */
 	public function getRequests() {
 		return $this->requests;
@@ -98,7 +88,7 @@ class CEM_PR_GatewayRequest14 extends CEM_GatewayRequest {
 	/**
 	 * Add recommendation request
 	 *
-	 * @param CEM_PR_AbstractQuery $request recommendation request
+	 * @param $request recommendation request
 	 */
 	public function addRequest($request) {
 		$this->requests[] = $request;
@@ -116,7 +106,7 @@ class CEM_PR_GatewayRequest14 extends CEM_GatewayRequest {
 	/**
 	 * Get request body content-type
 	 *
-	 * @return string request body content-type
+	 * @return request body content-type
 	 */
 	public function getContentType() {
 		return "text/xml; charset=UTF-8";
@@ -125,8 +115,8 @@ class CEM_PR_GatewayRequest14 extends CEM_GatewayRequest {
 	/**
 	 * Called to write the request
 	 *
-	 * @param CEM_GatewayState &$state client state reference
-	 * @return string request raw body
+	 * @param &$state client state reference
+	 * @return request raw body
 	 */
 	public function write(&$state) {
 		$doc = new DOMDocument("1.0", 'UTF-8');
@@ -156,28 +146,21 @@ class CEM_PR_GatewayRequest14 extends CEM_GatewayRequest {
 /**
  * Abstract recommendation query
  *
- * @package cem
- * @subpackage client
+ * @author nitro@boxalino.com
  */
 abstract class CEM_PR_AbstractQuery {
 	/**
 	 * Strategy identifier
-	 *
-	 * @var string
 	 */
 	protected $strategy;
 
 	/**
 	 * Operation identifier
-	 *
-	 * @var string
 	 */
 	protected $operation;
 
 	/**
 	 * Strategy parameters
-	 *
-	 * @var array
 	 */
 	protected $parameters;
 
@@ -185,8 +168,8 @@ abstract class CEM_PR_AbstractQuery {
 	/**
 	 * Constructor
 	 *
-	 * @param string $strategy strategy identifier
-	 * @param string $operation operation identifier
+	 * @param $strategy strategy identifier
+	 * @param $operation operation identifier
 	 */
 	public function __construct($strategy, $operation) {
 		$this->strategy = $strategy;
@@ -198,7 +181,7 @@ abstract class CEM_PR_AbstractQuery {
 	/**
 	 * Get query type
 	 *
-	 * @return string query type
+	 * @return query type
 	 */
 	public function type() {
 		return "simple";
@@ -207,7 +190,7 @@ abstract class CEM_PR_AbstractQuery {
 	/**
 	 * Get strategy identifier
 	 *
-	 * @return string strategy identifier
+	 * @return strategy identifier
 	 */
 	public function getStrategy() {
 		return $this->strategy;
@@ -216,7 +199,7 @@ abstract class CEM_PR_AbstractQuery {
 	/**
 	 * Get operation identifier
 	 *
-	 * @return string operation identifier
+	 * @return operation identifier
 	 */
 	public function getOperation() {
 		return $this->operation;
@@ -225,8 +208,8 @@ abstract class CEM_PR_AbstractQuery {
 	/**
 	 * Get strategy parameter
 	 *
-	 * @param string $name parameter name
-	 * @return string parameter value
+	 * @param $name parameter name
+	 * @return parameter value
 	 */
 	public function getParameter($name) {
 		if (isset($this->parameters[$name])) {
@@ -238,8 +221,8 @@ abstract class CEM_PR_AbstractQuery {
 	/**
 	 * Set strategy parameter
 	 *
-	 * @param string $name parameter name
-	 * @param string $value parameter value
+	 * @param $name parameter name
+	 * @param $value parameter value
 	 */
 	public function setParameter($name, $value) {
 		$this->parameters[$name] = $value;
@@ -248,7 +231,7 @@ abstract class CEM_PR_AbstractQuery {
 	/**
 	 * Remove strategy parameter
 	 *
-	 * @param string $name parameter name
+	 * @param $name parameter name
 	 */
 	public function removeParameter($name) {
 		unset($this->parameters[$name]);
@@ -266,8 +249,8 @@ abstract class CEM_PR_AbstractQuery {
 	/**
 	 * Called to build the query
 	 *
-	 * @param CEM_GatewayState &$state client state reference
-	 * @return array query
+	 * @param &$state client state reference
+	 * @return query
 	 */
 	public function build(&$state) {
 		$parameters = array();
@@ -302,63 +285,46 @@ abstract class CEM_PR_AbstractQuery {
 /**
  * Query admin query
  *
- * @package cem
- * @subpackage client
+ * @author nitro@boxalino.com
  */
 class CEM_PR_AdminQuery extends CEM_PR_AbstractQuery {
 	/**
 	 * Index identifier
-	 *
-	 * @var string
 	 */
 	protected $index;
 
 	/**
 	 * Language identifier
-	 *
-	 * @var string
 	 */
 	protected $language;
 
 	/**
 	 * Base filter
-	 *
-	 * @var string
 	 */
 	protected $filter;
 
 	/**
 	 * Textual query
-	 *
-	 * @var string
 	 */
 	protected $queryText;
 
 	/**
 	 * Included properties
-	 *
-	 * @var array
 	 */
 	protected $includedProperties;
 
 	/**
 	 * Excluded properties
-	 *
-	 * @var array
 	 */
 	protected $excludedProperties;
  
 	/**
 	 * Filter properties
-	 *
-	 * @var array
 	 */
 	protected $filterProperties;
 
 	/**
 	 * Terms
-	 *
-	 * @var array
 	 */
 	protected $queryTerms;
 
@@ -366,6 +332,14 @@ class CEM_PR_AdminQuery extends CEM_PR_AbstractQuery {
 	/**
 	 * Constructor
 	 *
+	 * @param $index index identifier
+	 * @param $language language identifier
+	 * @param $filter query filter
+	 * @param $queryText query text
+	 * @param $includedProperties included properties
+	 * @param $excludedProperties excluded properties
+	 * @param $filterProperties filter properties
+	 * @param $queryTerms terms to update
 	 */
 	public function __construct($index, $language, $filter, $queryText, $includedProperties = array(), $excludedProperties = array(), $filterProperties = array(), $queryTerms = array()) {
 		parent::__construct('kb/query', 'admin');
@@ -383,7 +357,7 @@ class CEM_PR_AdminQuery extends CEM_PR_AbstractQuery {
 	/**
 	 * Get query type
 	 *
-	 * @return string query type
+	 * @return query type
 	 */
 	public function type() {
 		return "adminQuery";
@@ -392,8 +366,8 @@ class CEM_PR_AdminQuery extends CEM_PR_AbstractQuery {
 	/**
 	 * Called to build the query
 	 *
-	 * @param CEM_GatewayState &$state client state reference
-	 * @return array query
+	 * @param &$state client state reference
+	 * @return query
 	 */
 	public function build(&$state) {
 		$query = parent::build($state);
@@ -413,77 +387,56 @@ class CEM_PR_AdminQuery extends CEM_PR_AbstractQuery {
 /**
  * Query completion recommendation query
  *
- * @package cem
- * @subpackage client
+ * @author nitro@boxalino.com
  */
 class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 	/**
 	 * Index identifier
-	 *
-	 * @var string
 	 */
 	protected $index;
 
 	/**
 	 * Language identifier
-	 *
-	 * @var string
 	 */
 	protected $language;
 
 	/**
 	 * Base filter
-	 *
-	 * @var string
 	 */
 	protected $filter;
 
 	/**
 	 * Textual query
-	 *
-	 * @var string
 	 */
 	protected $queryText;
 
 	/**
 	 * Maximum amount of suggestions
-	 *
-	 * @var int
 	 */
 	protected $suggestionLimit;
  
 	/**
 	 * Maximum amount of contextual recommendations
-	 *
-	 * @var int
 	 */
 	protected $resultLimit;
 
 	/**
 	 * Included properties
-	 *
-	 * @var array
 	 */
 	protected $includedProperties;
 
 	/**
 	 * Excluded properties
-	 *
-	 * @var array
 	 */
 	protected $excludedProperties;
  
 	/**
 	 * Filter properties
-	 *
-	 * @var array
 	 */
 	protected $filterProperties;
 
 	/**
 	 * Scorer properties
-	 *
-	 * @var array
 	 */
 	protected $scorerProperties;
 
@@ -491,6 +444,16 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 	/**
 	 * Constructor
 	 *
+	 * @param $index index identifier
+	 * @param $language language identifier
+	 * @param $filter query filter
+	 * @param $queryText query text
+	 * @param $suggestionLimit suggestion limit
+	 * @param $resultLimit result limit
+	 * @param $includedProperties included properties
+	 * @param $excludedProperties excluded properties
+	 * @param $filterProperties filter properties
+	 * @param $scorerProperties scorer properties
 	 */
 	public function __construct($index, $language, $filter, $queryText, $suggestionLimit, $resultLimit, $includedProperties = array(), $excludedProperties = array(), $filterProperties = array(), $scorerProperties = array()) {
 		parent::__construct('kb/query', 'complete');
@@ -510,7 +473,7 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 	/**
 	 * Get query type
 	 *
-	 * @return string query type
+	 * @return query type
 	 */
 	public function type() {
 		return "completeQuery";
@@ -519,8 +482,8 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 	/**
 	 * Called to build the query
 	 *
-	 * @param CEM_GatewayState &$state client state reference
-	 * @return array query
+	 * @param &$state client state reference
+	 * @return query
 	 */
 	public function build(&$state) {
 		$query = parent::build($state);
@@ -544,49 +507,36 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 /**
  * Guided-Search gateway request
  *
- * @package cem
- * @subpackage client
+ * @author nitro@boxalino.com
  */
 class CEM_GS_GatewayRequest14 extends CEM_GatewayRequest {
 	/**
 	 * Customer identifier
-	 *
-	 * @var string
 	 */
 	protected $customer;
 
 	/**
 	 * Dialog identifier
-	 *
-	 * @var string
 	 */
 	protected $dialog;
 
 	/**
 	 * Language identifier
-	 *
-	 * @var string
 	 */
 	protected $language;
 
 	/**
 	 * Request format
-	 *
-	 * @var string
 	 */
 	protected $requestFormat;
 
 	/**
 	 * Requests array
-	 *
-	 * @var array
 	 */
 	protected $requests;
 
 	/**
 	 * Response format
-	 *
-	 * @var string
 	 */
 	protected $responseFormat;
 
@@ -594,9 +544,9 @@ class CEM_GS_GatewayRequest14 extends CEM_GatewayRequest {
 	/**
 	 * Constructor
 	 *
-	 * @param string $customer customer identifier
-	 * @param string $dialog dialog identifier
-	 * @param string $language language identifier
+	 * @param $customer customer identifier
+	 * @param $dialog dialog identifier
+	 * @param $language language identifier
 	 */
 	public function __construct($customer, $dialog, $language) {
 		parent::__construct();
@@ -612,7 +562,7 @@ class CEM_GS_GatewayRequest14 extends CEM_GatewayRequest {
 	/**
 	 * Get customer identifier
 	 *
-	 * @return string customer identifier
+	 * @return customer identifier
 	 */
 	public function getCustomer() {
 		return $this->customer;
@@ -621,7 +571,7 @@ class CEM_GS_GatewayRequest14 extends CEM_GatewayRequest {
 	/**
 	 * Get dialog identifier
 	 *
-	 * @return string dialog identifier
+	 * @return dialog identifier
 	 */
 	public function getDialog() {
 		return $this->dialog;
@@ -630,7 +580,7 @@ class CEM_GS_GatewayRequest14 extends CEM_GatewayRequest {
 	/**
 	 * Get language identifier
 	 *
-	 * @return string language identifier
+	 * @return language identifier
 	 */
 	public function getLanguage() {
 		return $this->language;
@@ -639,7 +589,7 @@ class CEM_GS_GatewayRequest14 extends CEM_GatewayRequest {
 	/**
 	 * Get request format
 	 *
-	 * @return string request format
+	 * @return request format
 	 */
 	public function getRequestFormat() {
 		return $this->requestFormat;
@@ -648,7 +598,7 @@ class CEM_GS_GatewayRequest14 extends CEM_GatewayRequest {
 	/**
 	 * Get request batch
 	 *
-	 * @return array request batch
+	 * @return request batch
 	 */
 	public function getRequests() {
 		return $this->requests;
@@ -657,8 +607,8 @@ class CEM_GS_GatewayRequest14 extends CEM_GatewayRequest {
 	/**
 	 * Insert a new request at the begining of the batch
 	 *
-	 * @param string $action request action (or NULL if none)
-	 * @param array $variables request variables hashmap
+	 * @param $action request action (or NULL if none)
+	 * @param $variables request variables hashmap
 	 */
 	public function insertRequest($action, $variables = array()) {
 		array_unshift($this->requests, array('type' => 'request', 'action' => $action, 'variables' => $variables));
@@ -683,8 +633,8 @@ class CEM_GS_GatewayRequest14 extends CEM_GatewayRequest {
 	/**
 	 * Insert a new request at the end of the batch
 	 *
-	 * @param string $action request action (or NULL if none)
-	 * @param array $variables request variables hashmap
+	 * @param $action request action (or NULL if none)
+	 * @param $variables request variables hashmap
 	 */
 	public function appendRequest($action, $variables = array()) {
 		$this->requests[] = array('type' => 'action', 'action' => $action, 'variables' => $variables);
@@ -717,7 +667,7 @@ class CEM_GS_GatewayRequest14 extends CEM_GatewayRequest {
 	/**
 	 * Get response format
 	 *
-	 * @return string response format
+	 * @return response format
 	 */
 	public function getResponseFormat() {
 		return $this->responseFormat;
@@ -727,7 +677,7 @@ class CEM_GS_GatewayRequest14 extends CEM_GatewayRequest {
 	/**
 	 * Get request body content-type
 	 *
-	 * @return string request body content-type
+	 * @return request body content-type
 	 */
 	public function getContentType() {
 		return "text/xml; charset=UTF-8";
@@ -736,8 +686,8 @@ class CEM_GS_GatewayRequest14 extends CEM_GatewayRequest {
 	/**
 	 * Called to write the request
 	 *
-	 * @param CEM_GatewayState &$state client state reference
-	 * @return string request raw body
+	 * @param &$state client state reference
+	 * @return request raw body
 	 */
 	public function write(&$state) {
 		$doc = new DOMDocument("1.0", 'UTF-8');

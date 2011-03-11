@@ -1,47 +1,37 @@
 <?php
 
 /**
- * Boxalino CEM client library in PHP
+ * @internal
  *
- * @package cem
- * @subpackage client
- * @author nitro@boxalino.com
- * @copyright 2009-2011 - Boxalino AG
+ * Boxalino CEM client library in PHP.
+ *
+ * (C) 2009-2011 - Boxalino AG
  */
 
 
 /**
  * Gateway state
  *
- * @package cem
- * @subpackage client
+ * @author nitro@boxalino.com
  */
 class CEM_GatewayState {
 	/**
 	 * Http status code
-	 *
-	 * @var integer
 	 */
 	protected $code;
 
 	/**
 	 * Http status message
-	 *
-	 * @var string
 	 */
 	protected $message;
 
 	/**
 	 * Active cookies
-	 *
-	 * @var array
 	 */
 	protected $cookies;
 
 	/**
 	 * State data
-	 *
-	 * @var array
 	 */
 	protected $data;
 	
@@ -61,7 +51,7 @@ class CEM_GatewayState {
 	/**
 	 * Get last http status code
 	 *
-	 * @return integer last http status code
+	 * @return last http status code
 	 */
 	public function getHttpCode() {
 		return $this->code;
@@ -70,7 +60,7 @@ class CEM_GatewayState {
 	/**
 	 * Get last http status message
 	 *
-	 * @return string last http status message (or "" if none)
+	 * @return last http status message (or "" if none)
 	 */
 	public function getMessage() {
 		switch ($this->code) {
@@ -92,8 +82,8 @@ class CEM_GatewayState {
 	/**
 	 * Set status
 	 *
-	 * @param integer code last http status code
-	 * @param string message last http status message
+	 * @param code last http status code
+	 * @param message last http status message
 	 */
 	public function setStatus($code, $message) {
 		$this->code = $code;
@@ -104,7 +94,7 @@ class CEM_GatewayState {
 	/**
 	 * Get cookie header
 	 *
-	 * @return string cookie header (or FALSE if none)
+	 * @return cookie header (or FALSE if none)
 	 */
 	public function getCookieHeader() {
 		if (sizeof($this->cookies) > 0) {
@@ -123,8 +113,8 @@ class CEM_GatewayState {
 	/**
 	 * Get cookie value
 	 *
-	 * @param string $name cookie name
-	 * @return string cookie value (or FALSE if none)
+	 * @param $name cookie name
+	 * @return cookie value (or FALSE if none)
 	 */
 	public function getCookie($name) {
 		if (isset($this->cookies[$name])) {
@@ -136,9 +126,9 @@ class CEM_GatewayState {
 	/**
 	 * Set an active cookie
 	 *
-	 * @param string $name cookie name
-	 * @param string $value cookie value
-	 * @param array $parameters cookie parameters
+	 * @param $name cookie name
+	 * @param $value cookie value
+	 * @param $parameters cookie parameters
 	 */
 	public function setCookie($name, $value, $parameters = array()) {
 		$this->cookies[$name] = array(
@@ -150,7 +140,7 @@ class CEM_GatewayState {
 	/**
 	 * Remove cookie
 	 *
-	 * @param string $name cookie name
+	 * @param $name cookie name
 	 */
 	public function removeCookie($name) {
 		if (isset($this->cookies[$name])) {
@@ -162,7 +152,7 @@ class CEM_GatewayState {
 	/**
 	 * List state data
 	 *
-	 * @return array data list
+	 * @return data list
 	 */
 	public function getAll() {
 		return $this->data;
@@ -171,9 +161,9 @@ class CEM_GatewayState {
 	/**
 	 * Get state data
 	 *
-	 * @param string $key data key
-	 * @param mixed $default default value
-	 * @return mixed data value
+	 * @param $key data key
+	 * @param $default default value
+	 * @return data value
 	 */
 	public function get($key, $default = FALSE) {
 		if (isset($this->data[$key])) {
@@ -185,8 +175,8 @@ class CEM_GatewayState {
 	/**
 	 * Find state data
 	 *
-	 * @param string $keyPrefix data key prefix
-	 * @return array map of data value
+	 * @param $keyPrefix data key prefix
+	 * @return map of data value
 	 */
 	public function find($keyPrefix) {
 		$map = array();
@@ -201,8 +191,8 @@ class CEM_GatewayState {
 	/**
 	 * Set state data
 	 *
-	 * @param string $key data key
-	 * @param mixed $value data value
+	 * @param $key data key
+	 * @param $value data value
 	 */
 	public function set($key, $value) {
 		$this->data[$key] = $value;
@@ -211,7 +201,7 @@ class CEM_GatewayState {
 	/**
 	 * Remove state data
 	 *
-	 * @param string $key data key
+	 * @param $key data key
 	 */
 	public function remove($key) {
 		unset($this->data[$key]);
@@ -220,7 +210,7 @@ class CEM_GatewayState {
 	/**
 	 * Remove state data
 	 *
-	 * @param string $keyPrefix data key prefix
+	 * @param $keyPrefix data key prefix
 	 */
 	public function removeAll($keyPrefix) {
 		$map = array();

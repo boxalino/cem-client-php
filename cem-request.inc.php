@@ -1,20 +1,18 @@
 <?php
 
 /**
- * Boxalino CEM client library in PHP
+ * @internal
  *
- * @package cem
- * @subpackage client
- * @author nitro@boxalino.com
- * @copyright 2009-2011 - Boxalino AG
+ * Boxalino CEM client library in PHP.
+ *
+ * (C) 2009-2011 - Boxalino AG
  */
 
 
 /**
  * Info gateway request
  *
- * @package cem
- * @subpackage client
+ * @author nitro@boxalino.com
  */
 class CEM_INFO_GatewayRequest extends CEM_GatewayRequest {
 	/**
@@ -29,7 +27,7 @@ class CEM_INFO_GatewayRequest extends CEM_GatewayRequest {
 	/**
 	 * Get request body content-type
 	 *
-	 * @return string request body content-type
+	 * @return request body content-type
 	 */
 	public function getContentType() {
 		return NULL;
@@ -38,8 +36,8 @@ class CEM_INFO_GatewayRequest extends CEM_GatewayRequest {
 	/**
 	 * Called to write the request
 	 *
-	 * @param CEM_GatewayState &$state client state reference
-	 * @return string request raw body
+	 * @param &$state client state reference
+	 * @return request raw body
 	 */
 	public function write(&$state) {
 		return NULL;

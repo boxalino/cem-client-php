@@ -1,20 +1,18 @@
 <?php
 
 /**
- * Boxalino CEM client library in PHP
+ * @internal
  *
- * @package cem
- * @subpackage client
- * @author nitro@boxalino.com
- * @copyright 2009-2011 - Boxalino AG
+ * Boxalino CEM client library in PHP.
+ *
+ * (C) 2009-2011 - Boxalino AG
  */
 
 
 /**
  * Abstract gateway request
  *
- * @package cem
- * @subpackage client
+ * @author nitro@boxalino.com
  */
 abstract class CEM_GatewayRequest {
 	/**
@@ -28,15 +26,15 @@ abstract class CEM_GatewayRequest {
 	/**
 	 * Get request body content-type
 	 *
-	 * @return string request body content-type
+	 * @return request body content-type
 	 */
 	public abstract function getContentType();
 
 	/**
 	 * Called to write the request
 	 *
-	 * @param CEM_GatewayState &$state client state reference
-	 * @return string request raw body
+	 * @param &$state client state reference
+	 * @return request raw body
 	 */
 	public abstract function write(&$state);
 }
@@ -44,14 +42,11 @@ abstract class CEM_GatewayRequest {
 /**
  * Abstract gateway response
  *
- * @package cem
- * @subpackage client
+ * @author nitro@boxalino.com
  */
 abstract class CEM_GatewayResponse {
 	/**
 	 * Processing time
-	 *
-	 * @var float
 	 */
 	protected $totalTime;	
 
@@ -67,7 +62,7 @@ abstract class CEM_GatewayResponse {
 	/**
 	 * Get processing time
 	 *
-	 * @return float processing time (in seconds)
+	 * @return processing time (in seconds)
 	 */
 	public function getTotalTime() {
 		return $this->totalTime;
@@ -76,7 +71,7 @@ abstract class CEM_GatewayResponse {
 	/**
 	 * Called to set processing time
 	 *
-	 * @param float $time processing time (in seconds)
+	 * @param $time processing time (in seconds)
 	 */
 	public function setTotalTime($time) {
 		$this->totalTime = $time;
@@ -85,9 +80,9 @@ abstract class CEM_GatewayResponse {
 	/**
 	 * Called to read the response
 	 *
-	 * @param CEM_GatewayState &$state client state reference
-	 * @param string &$data response raw body
-	 * @return boolean TRUE on success, FALSE otherwise
+	 * @param &$state client state reference
+	 * @param &$data response raw body
+	 * @return TRUE on success, FALSE otherwise
 	 */
 	public abstract function read(&$state, &$data);
 }
@@ -96,28 +91,21 @@ abstract class CEM_GatewayResponse {
 /**
  * Boxalino CEM Gateway client class
  *
- * @package cem
- * @subpackage client
+ * @author nitro@boxalino.com
  */
 class CEM_GatewayClient {
 	/**
 	 * Gateway url
-	 *
-	 * @var string
 	 */
 	protected $url;
 
 	/**
 	 * Connection timeout [ms]
-	 *
-	 * @var integer
 	 */
 	protected $connectionTimeout;
 
 	/**
 	 * Read timeout [ms]
-	 *
-	 * @var integer
 	 */
 	protected $readTimeout;
 
@@ -125,9 +113,9 @@ class CEM_GatewayClient {
 	/**
 	 * Constructor
 	 *
-	 * @param string $url gateway url
-	 * @param integer $connectionTimeout connection timeout (defaults to 10[s])
-	 * @param integer $readTimeout read timeout (defaults to 15[s])
+	 * @param $url gateway url
+	 * @param $connectionTimeout connection timeout (defaults to 10[s])
+	 * @param $readTimeout read timeout (defaults to 15[s])
 	 */
 	public function __construct($url, $connectionTimeout = 10000, $readTimeout = 15000) {
 		$this->url = $url;
@@ -139,10 +127,10 @@ class CEM_GatewayClient {
 	/**
 	 * Process gateway request/response interaction
 	 *
-	 * @param CEM_GatewayState &$state client state reference
-	 * @param CEM_GatewayRequest &$request gateway request reference
-	 * @param CEM_GatewayResponse &$response gateway response reference
-	 * @return boolean TRUE on success or FALSE otherwise
+	 * @param &$state client state reference
+	 * @param &$request gateway request reference
+	 * @param &$response gateway response reference
+	 * @return TRUE on success or FALSE otherwise
 	 */
 	public function process(&$state, &$request, &$response) {
 		// initialize curl
@@ -239,26 +227,22 @@ class CEM_GatewayClient {
 
 
 	/**
-	 * @ignore Active CURL states
-	 *
-	 * @var array
+	 * @internal Active CURL states
 	 */
 	private $states = array();
 
 	/**
-	 * @ignore Next CURL state id
-	 *
-	 * @var int
+	 * @internal Next CURL state id
 	 */
 	private $nextStateId = 0;
 
 
 	/**
-	 * @ignore Called by CURL to parse http header
+	 * @internal Called by CURL to parse http header
 	 *
-	 * @param object $h CURL handle
-	 * @param string $data header line
-	 * @return integer line size
+	 * @param $h CURL handle
+	 * @param $data header line
+	 * @return line size
 	 */
 	private function parseHeader($h, $data) {
 		// find state
