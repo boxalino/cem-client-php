@@ -302,25 +302,7 @@ class CEM_WebRequestHandler14 extends CEM_AbstractWebHandler {
 	public function __construct(&$crypto, $keys = array()) {
 		parent::__construct($crypto, $keys);
 		$this->sequentialContexts = array();
-
-		// decode sequential context states
-		if ($this->requestExists('context')) {
-			$data = $this->decrypt($this->requestString('context'));
-			if ($data) {
-				foreach (explode(';', $data) as $scope) {
-					list($name, $level, $data) = explode('=', $scope);
-
-					$name = $this->unescapeValue($name);
-					$level = $this->unescapeValue($level);
-					$data = $this->unescapeValue($data);
-					$this->sequentialContexts[$name] = array(
-						'level' => $level,
-						'mode' => 'sequential',
-						'data' => $data
-					);
-				}
-			}
-		}
+		$this->parseSequentialContexts();
 	}
 
 
@@ -367,6 +349,32 @@ class CEM_WebRequestHandler14 extends CEM_AbstractWebHandler {
 		return '';
 	}
 
+	/**
+	 * Parse sequential context variables
+	 *
+	 * @param $key context key
+	 */
+	public function parseSequentialContexts($key = 'context') {
+		// decode sequential context states
+		if ($this->requestExists($key)) {
+			$data = $this->decrypt($this->requestString($key));
+			if ($data) {
+				foreach (explode(';', $data) as $scope) {
+					list($name, $level, $data) = explode('=', $scope);
+
+					$name = $this->unescapeValue($name);
+					$level = $this->unescapeValue($level);
+					$data = $this->unescapeValue($data);
+					$this->sequentialContexts[$name] = array(
+						'level' => $level,
+						'mode' => 'sequential',
+						'data' => $data
+					);
+				}
+			}
+		}
+	}
+
 
 	/**
 	 * Called when client state needs to be initialized
@@ -401,8 +409,6 @@ class CEM_WebRequestHandler14 extends CEM_AbstractWebHandler {
 	 * @return TRUE on success or FALSE on error
 	 */
 	public function onInteraction(&$state, &$request, &$options) {
-		$variables = $this->buildInteractionVariables($options);
-
 		// merge contexts
 		$contexts = $state->get('context', array());
 		foreach ($this->sequentialContexts as $name => $value) {
@@ -414,6 +420,7 @@ class CEM_WebRequestHandler14 extends CEM_AbstractWebHandler {
 		$model = isset($contexts['model']) ? json_decode($contexts['model']['data']) : array();
 
 		// notify custom implementation
+		$variables = $this->buildInteractionVariables($options);
 		$action = $this->onInteractionBefore($state, $request, 'none', $variables, $options);
 
 		// base parameters
@@ -522,6 +529,22 @@ class CEM_WebRequestHandler14 extends CEM_AbstractWebHandler {
 
 		// add final request
 		$request->appendRequest($action, $variables);
+
+		// add detail request
+		if ($this->requestExists('detail')) {
+			// notify custom implementation
+			$variables = $this->buildInteractionVariables($options);
+			$action = $this->onInteractionBefore($state, $request, 'detail', $variables, $options);
+
+			// controller logic
+			$variables['sourceFilter'] = '@type:instance&@id:"'.$this->requestString('detail').'"';
+
+			// notify custom implementation
+			$action = $this->onInteractionAfter($state, $request, $action, $variables, $options);
+
+			// add final request
+			$request->appendRequest('detail', $variables);
+		}
 		return TRUE;
 	}
 

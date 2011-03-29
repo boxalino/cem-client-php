@@ -161,7 +161,7 @@ abstract class CEM_AbstractWebHandler {
 	protected $crypto;
 
 	/**
-	 * Context variable keys
+	 * Context key mapping
 	 */
 	protected $keys;
 
@@ -175,6 +175,18 @@ abstract class CEM_AbstractWebHandler {
 	public function __construct(&$crypto, $keys = array()) {
 		$this->crypto = $crypto;
 		$this->keys = $keys;
+	}
+
+
+	/**
+	 * Set key mapping
+	 *
+	 * @param $keys keys
+	 */
+	public function setKeys($keys) {
+		foreach ($keys as $src => $dst) {
+			$this->keys[$src] = $dst;
+		}
 	}
 
 

@@ -375,7 +375,7 @@ class CEM_PR_AdminQuery extends CEM_PR_AbstractQuery {
 		$query["language"] = $this->language;
 		$query["filter"] = $this->filter;
 		$query["queryText"] = $this->queryText;
-		$query["termPopulation"] = 250;
+		$query["termPopulation"] = 100;
 		$query["includedProperties"] = $this->includedProperties;
 		$query["excludedProperties"] = $this->excludedProperties;
 		$query["filterProperties"] = $this->filterProperties;
@@ -491,10 +491,10 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 		$query["language"] = $this->language;
 		$query["filter"] = $this->filter;
 		$query["queryText"] = $this->queryText;
-		$query["termPopulation"] = 250;
 		$query["suggestionLimit"] = $this->suggestionLimit;
-		$query["resultPopulation"] = $this->resultLimit * 10;
+		$query["resultPopulation"] = $this->resultLimit * 2;
 		$query["resultLimit"] = $this->resultLimit;
+		$query["termPopulation"] = 100;
 		$query["includedProperties"] = $this->includedProperties;
 		$query["excludedProperties"] = $this->excludedProperties;
 		$query["filterProperties"] = $this->filterProperties;
