@@ -160,21 +160,22 @@ abstract class CEM_PR_AbstractQuery {
 	protected $operation;
 
 	/**
-	 * Strategy parameters
+	 * Personalized flag
 	 */
-	protected $parameters;
-
+	protected $personalized;
+	
 
 	/**
 	 * Constructor
 	 *
 	 * @param $strategy strategy identifier
 	 * @param $operation operation identifier
+	 * @param $personalized personalized flag
 	 */
-	public function __construct($strategy, $operation) {
+	public function __construct($strategy, $operation, $personalized = TRUE) {
 		$this->strategy = $strategy;
 		$this->operation = $operation;
-		$this->parameters = array();
+		$this->personalized = $personalized;
 	}
 
 
@@ -205,46 +206,6 @@ abstract class CEM_PR_AbstractQuery {
 		return $this->operation;
 	}
 
-	/**
-	 * Get strategy parameter
-	 *
-	 * @param $name parameter name
-	 * @return parameter value
-	 */
-	public function getParameter($name) {
-		if (isset($this->parameters[$name])) {
-			return $this->parameters[$name];
-		}
-		return FALSE;
-	}
-
-	/**
-	 * Set strategy parameter
-	 *
-	 * @param $name parameter name
-	 * @param $value parameter value
-	 */
-	public function setParameter($name, $value) {
-		$this->parameters[$name] = $value;
-	}
-
-	/**
-	 * Remove strategy parameter
-	 *
-	 * @param $name parameter name
-	 */
-	public function removeParameter($name) {
-		unset($this->parameters[$name]);
-	}
-
-	/**
-	 * Clear strategy parameters
-	 *
-	 */
-	public function clearParameters() {
-		$this->parameters = array();
-	}
-
 
 	/**
 	 * Called to build the query
@@ -253,31 +214,29 @@ abstract class CEM_PR_AbstractQuery {
 	 * @return query
 	 */
 	public function build(&$state) {
-		$parameters = array();
-		foreach ($this->parameters as $name => $value) {
-			$parameters[] = array(
-				"name" => $name,
-				"value" => $value
-			);
-		}
-		$indexPreferences = array();
-		$context = $state->get('context');
-		if (is_array($context)) {
-			foreach ($context as $key => $item) {
-				if ($key == 'profile') {
-					$data = json_decode($item['data']);
-					if (isset($data->preferences)) {
-						$indexPreferences = $data->preferences;
+		if ($this->personalized) {
+			$indexPreferences = array();
+			$context = $state->get('context');
+			if (is_array($context)) {
+				foreach ($context as $key => $item) {
+					if ($key == 'profile') {
+						$data = json_decode($item['data']);
+						if (isset($data->preferences)) {
+							$indexPreferences = $data->preferences;
+						}
+						break;
 					}
-					break;
 				}
 			}
+			return array(
+				'strategy' => $this->strategy,
+				'operation' => $this->operation,
+				'indexPreferences' => $indexPreferences
+			);
 		}
 		return array(
 			'strategy' => $this->strategy,
-			'operation' => $this->operation,
-			'parameters' => $parameters,
-			'indexPreferences' => $indexPreferences
+			'operation' => $this->operation
 		);
 	}
 }
@@ -342,7 +301,7 @@ class CEM_PR_AdminQuery extends CEM_PR_AbstractQuery {
 	 * @param $queryTerms terms to update
 	 */
 	public function __construct($index, $language, $filter, $queryText, $includedProperties = array(), $excludedProperties = array(), $filterProperties = array(), $queryTerms = array()) {
-		parent::__construct('kb/query', 'admin');
+		parent::__construct('kb/query', 'admin', FALSE);
 		$this->index = $index;
 		$this->language = $language;
 		$this->filter = $filter;
@@ -380,6 +339,60 @@ class CEM_PR_AdminQuery extends CEM_PR_AbstractQuery {
 		$query["excludedProperties"] = $this->excludedProperties;
 		$query["filterProperties"] = $this->filterProperties;
 		$query["queryTerms"] = $this->queryTerms;
+		return $query;
+	}
+}
+
+/**
+ * Search detail admin query
+ *
+ * @author nitro@boxalino.com
+ */
+class CEM_PR_AdminSearchDetail extends CEM_PR_AbstractQuery {
+	/**
+	 * Index identifier
+	 */
+	protected $index;
+
+	/**
+	 * Property values
+	 */
+	protected $properties;
+
+
+	/**
+	 * Constructor
+	 *
+	 * @param $index index identifier
+	 * @param $language language identifier
+	 * @param $properties property values
+	 */
+	public function __construct($index, $properties) {
+		parent::__construct('kb/search', 'adminDetail', FALSE);
+		$this->index = $index;
+		$this->properties = $properties;
+	}
+
+
+	/**
+	 * Get query type
+	 *
+	 * @return query type
+	 */
+	public function type() {
+		return "adminDetail";
+	}
+
+	/**
+	 * Called to build the query
+	 *
+	 * @param &$state client state reference
+	 * @return query
+	 */
+	public function build(&$state) {
+		$query = parent::build($state);
+		$query["index"] = $this->index;
+		$query["configuration"] = array('properties' => $this->properties);
 		return $query;
 	}
 }
