@@ -825,11 +825,15 @@ class CEM_GS_Interaction14 extends CEM_AbstractWebHandler {
 	/**
 	 * Encode sequential contexts
 	 *
+	 * @param $contexts optional custom contexts
 	 * @return encoded sequential contexts
 	 */
-	public function encodeSequentialContexts() {
+	public function encodeSequentialContexts($contexts = NULL) {
 		$data = '';
-		foreach ($this->response->getContext() as $name => $scope) {
+		if ($contexts == NULL) {
+			$contexts = $this->response->getContext();
+		}
+		foreach ($contexts as $name => $scope) {
 			if ($scope['mode'] == 'sequential') {
 				switch ($scope['level']) {
 				case 'visitor':
