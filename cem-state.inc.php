@@ -1,5 +1,10 @@
 <?php
 
+/** @addtogroup cem
+ *
+ * @{
+ */
+
 /**
  * @internal
  *
@@ -222,5 +227,9 @@ class CEM_GatewayState {
 		$this->data = $map;
 	}
 }
+
+/**
+ * @}
+ */
 
 ?>

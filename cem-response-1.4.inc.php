@@ -1,5 +1,10 @@
 <?php
 
+/** @addtogroup cem
+ *
+ * @{
+ */
+
 /**
  * @internal
  *
@@ -516,5 +521,9 @@ class CEM_GS_GatewayResponse14 extends CEM_GatewayResponse {
 		return $text;
 	}
 }
+
+/**
+ * @}
+ */
 
 ?>

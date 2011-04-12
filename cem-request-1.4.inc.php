@@ -1,5 +1,10 @@
 <?php
 
+/** @addtogroup cem
+ *
+ * @{
+ */
+
 /**
  * @internal
  *
@@ -750,5 +755,9 @@ class CEM_GS_GatewayRequest14 extends CEM_GatewayRequest {
 		return $doc->saveXML();
 	}
 }
+
+/**
+ * @}
+ */
 
 ?>

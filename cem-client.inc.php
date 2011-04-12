@@ -1,5 +1,10 @@
 <?php
 
+/** @addtogroup cem
+ *
+ * @{
+ */
+
 /**
  * @internal
  *
@@ -278,5 +283,9 @@ class CEM_GatewayClient {
 		return strlen($data);
 	}
 }
+
+/**
+ * @}
+ */
 
 ?>

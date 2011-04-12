@@ -1,5 +1,10 @@
 <?php
 
+/** @addtogroup cem
+ *
+ * @{
+ */
+
 /**
  * @internal
  *
@@ -1264,5 +1269,9 @@ class CEM_WebController14 {
 		return array(new CEM_GatewayState(), TRUE);
 	}
 }
+
+/**
+ * @}
+ */
 
 ?>

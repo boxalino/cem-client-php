@@ -1,5 +1,10 @@
 <?php
 
+/** @addtogroup cem
+ *
+ * @{
+ */
+
 /**
  * @internal
  *
@@ -20,5 +25,9 @@ require_once("cem-web.inc.php");
 require_once("cem-request-1.4.inc.php");
 require_once("cem-response-1.4.inc.php");
 require_once("cem-web-1.4.inc.php");
+
+/**
+ * @}
+ */
 
 ?>

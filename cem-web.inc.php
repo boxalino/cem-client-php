@@ -1,5 +1,10 @@
 <?php
 
+/** @addtogroup cem
+ *
+ * @{
+ */
+
 /**
  * @internal
  *
@@ -482,5 +487,9 @@ class CEM_WebStateSessionHandler extends CEM_WebStateHandler {
 		parent::remove($state);
 	}
 }
+
+/**
+ * @}
+ */
 
 ?>
