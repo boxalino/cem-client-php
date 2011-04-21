@@ -548,7 +548,7 @@ class CEM_WebRequestHandler14 extends CEM_AbstractWebHandler {
 			$action = $this->onInteractionAfter($state, $request, $action, $variables, $options);
 
 			// add final request
-			$request->appendRequest('detail', $variables);
+			$request->appendRequest($action, $variables);
 		}
 		return TRUE;
 	}
