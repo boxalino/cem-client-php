@@ -144,32 +144,14 @@ class CEM_GatewayClient {
 			return FALSE;
 		}
 
-		// set curl url
-		if (!curl_setopt($h, CURLOPT_URL,				$this->url)) {
-			curl_close($h);
-			return FALSE;
-		}
-
-		// set curl timeout
-		if (!curl_setopt($h, CURLOPT_CONNECTTIMEOUT_MS,	$this->connectionTimeout)) {
-			curl_close($h);
-			return FALSE;
-		}
-		if (!curl_setopt($h, CURLOPT_TIMEOUT_MS,		$this->readTimeout)) {
-			curl_close($h);
-			return FALSE;
-		}
-
-		// set curl response options
-		if (!curl_setopt($h, CURLOPT_RETURNTRANSFER,	TRUE)) {
-			curl_close($h);
-			return FALSE;
-		}
-		if (!curl_setopt($h, CURLOPT_HEADER,			FALSE)) {
-			curl_close($h);
-			return FALSE;
-		}
-		if (!curl_setopt($h, CURLOPT_HEADERFUNCTION,	array($this, 'parseHeader'))) {
+		// set curl options
+		if (!curl_setopt($h, CURLOPT_URL,				$this->url) ||
+			!curl_setopt($h, CURLOPT_CONNECTTIMEOUT_MS,	$this->connectionTimeout) ||
+			!curl_setopt($h, CURLOPT_TIMEOUT_MS,		$this->readTimeout) ||
+			!curl_setopt($h, CURLOPT_SSL_VERIFYPEER,    FALSE) ||
+			!curl_setopt($h, CURLOPT_RETURNTRANSFER,	TRUE) ||
+			!curl_setopt($h, CURLOPT_HEADER,			FALSE) ||
+			!curl_setopt($h, CURLOPT_HEADERFUNCTION,	array($this, 'parseHeader'))) {
 			curl_close($h);
 			return FALSE;
 		}
@@ -177,15 +159,9 @@ class CEM_GatewayClient {
 		// set curl request body
 		$requestData = $request->write($state);
 		if ($requestData) {
-			if (!curl_setopt($h, CURLOPT_HTTPHEADER, 	array('Content-Type: ' . $request->getContentType()))) {
-				curl_close($h);
-				return FALSE;
-			}
-			if (!curl_setopt($h, CURLOPT_POST,			TRUE)) {
-				curl_close($h);
-				return FALSE;
-			}
-			if (!curl_setopt($h, CURLOPT_POSTFIELDS, 	$requestData)) {
+			if (!curl_setopt($h, CURLOPT_HTTPHEADER, 	array('Content-Type: ' . $request->getContentType())) ||
+				!curl_setopt($h, CURLOPT_POST,			TRUE) ||
+				!curl_setopt($h, CURLOPT_POSTFIELDS, 	$requestData)) {
 				curl_close($h);
 				return FALSE;
 			}

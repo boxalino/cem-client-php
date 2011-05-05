@@ -15,11 +15,11 @@
 
 
 /**
- * PR gateway response
+ * Abstract gateway response
  *
  * @author nitro@boxalino.com
  */
-class CEM_PR_GatewayResponse14 extends CEM_GatewayResponse {
+abstract class CEM_GatewayResponse14 extends CEM_GatewayResponse {
 	/**
 	 * Server version
 	 */
@@ -40,26 +40,6 @@ class CEM_PR_GatewayResponse14 extends CEM_GatewayResponse {
 	 */
 	protected $time;
 
-	/**
-	 * Customer identifier
-	 */
-	protected $customer;
-
-	/**
-	 * Response format
-	 */
-	protected $responseFormat;
-
-	/**
-	 * Response scope
-	 */
-	protected $responses;
-
-	/**
-	 * Response size
-	 */
-	protected $responseSize;
-
 
 	/**
 	 * Constructor
@@ -71,10 +51,6 @@ class CEM_PR_GatewayResponse14 extends CEM_GatewayResponse {
 		$this->status = FALSE;
 		$this->message = NULL;
 		$this->time = 0;
-		$this->customer = NULL;
-		$this->responseFormat = NULL;
-		$this->responseSize = 0;
-		$this->responses = array();
 	}
 
 
@@ -112,6 +88,47 @@ class CEM_PR_GatewayResponse14 extends CEM_GatewayResponse {
 	 */
 	public function getTime() {
 		return ($this->time / 1000.0);
+	}
+}
+
+
+/**
+ * PR gateway response
+ *
+ * @author nitro@boxalino.com
+ */
+class CEM_PR_GatewayResponse14 extends CEM_GatewayResponse14 {
+	/**
+	 * Customer identifier
+	 */
+	protected $customer;
+
+	/**
+	 * Response format
+	 */
+	protected $responseFormat;
+
+	/**
+	 * Response scope
+	 */
+	protected $responses;
+
+	/**
+	 * Response size
+	 */
+	protected $responseSize;
+
+
+	/**
+	 * Constructor
+	 *
+	 */
+	public function __construct() {
+		parent::__construct();
+		$this->customer = NULL;
+		$this->responseFormat = NULL;
+		$this->responseSize = 0;
+		$this->responses = array();
 	}
 
 
@@ -244,27 +261,7 @@ class CEM_PR_GatewayResponse14 extends CEM_GatewayResponse {
  *
  * @author nitro@boxalino.com
  */
-class CEM_GS_GatewayResponse14 extends CEM_GatewayResponse {
-	/**
-	 * Server version
-	 */
-	protected $version;
-
-	/**
-	 * Response status
-	 */
-	protected $status;
-
-	/**
-	 * Response message
-	 */
-	protected $message;
-
-	/**
-	 * Response time
-	 */
-	protected $time;
-
+class CEM_GS_GatewayResponse14 extends CEM_GatewayResponse14 {
 	/**
 	 * Customer identifier
 	 */
@@ -307,10 +304,6 @@ class CEM_GS_GatewayResponse14 extends CEM_GatewayResponse {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$this->version = NULL;
-		$this->status = FALSE;
-		$this->message = NULL;
-		$this->time = 0;
 		$this->customer = NULL;
 		$this->dialog = NULL;
 		$this->language = NULL;
@@ -318,43 +311,6 @@ class CEM_GS_GatewayResponse14 extends CEM_GatewayResponse {
 		$this->responseSize = 0;
 		$this->responses = array();
 		$this->context = array();
-	}
-
-
-	/**
-	 * Get server version
-	 *
-	 * @return server version
-	 */
-	public function getVersion() {
-		return $this->version;
-	}
-
-	/**
-	 * Get status
-	 *
-	 * @return status
-	 */
-	public function getStatus() {
-		return $this->status;
-	}
-
-	/**
-	 * Get response message
-	 *
-	 * @return response message
-	 */
-	public function getMessage() {
-		return $this->message;
-	}
-
-	/**
-	 * Get time
-	 *
-	 * @return time (in seconds)
-	 */
-	public function getTime() {
-		return ($this->time / 1000.0);
 	}
 
 

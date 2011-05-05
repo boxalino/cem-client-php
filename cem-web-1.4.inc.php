@@ -727,6 +727,43 @@ class CEM_PR_Interaction14 extends CEM_AbstractWebHandler {
 
 
 	/**
+	 * Get server version
+	 *
+	 * @return server version
+	 */
+	public function getVersion() {
+		return $this->response->getVersion();
+	}
+
+	/**
+	 * Get status
+	 *
+	 * @return status
+	 */
+	public function getStatus() {
+		return $this->response->getStatus();
+	}
+
+	/**
+	 * Get response message
+	 *
+	 * @return response message
+	 */
+	public function getMessage() {
+		return $this->response->getMessage();
+	}
+
+	/**
+	 * Get time
+	 *
+	 * @return time (in seconds)
+	 */
+	public function getTime() {
+		return $this->response->getTime();
+	}
+
+
+	/**
 	 * Get recommendations
 	 *
 	 * @return recommendations
@@ -800,6 +837,43 @@ class CEM_GS_Interaction14 extends CEM_AbstractWebHandler {
 	 */
 	public function getOptions() {
 		return $this->options;
+	}
+
+
+	/**
+	 * Get server version
+	 *
+	 * @return server version
+	 */
+	public function getVersion() {
+		return $this->response->getVersion();
+	}
+
+	/**
+	 * Get status
+	 *
+	 * @return status
+	 */
+	public function getStatus() {
+		return $this->response->getStatus();
+	}
+
+	/**
+	 * Get response message
+	 *
+	 * @return response message
+	 */
+	public function getMessage() {
+		return $this->response->getMessage();
+	}
+
+	/**
+	 * Get time
+	 *
+	 * @return time (in seconds)
+	 */
+	public function getTime() {
+		return $this->response->getTime();
 	}
 
 
