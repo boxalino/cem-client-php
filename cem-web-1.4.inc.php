@@ -542,7 +542,7 @@ class CEM_WebRequestHandler14 extends CEM_AbstractWebHandler {
 			$action = $this->onInteractionBefore($state, $request, 'detail', $variables, $options);
 
 			// controller logic
-			$variables['sourceFilter'] = '@type:instance&@id:"'.$this->requestString('detail').'"';
+			$variables['sourceFilter'] = '@type:instance&@id:"'.addcslashes($this->requestString('detail'), '"').'"';
 
 			// notify custom implementation
 			$action = $this->onInteractionAfter($state, $request, $action, $variables, $options);
