@@ -556,7 +556,12 @@ class CEM_PR_GuidancePreviews extends CEM_PR_AbstractQuery {
 	 * Scorer properties
 	 */
 	protected $scorerProperties;
- 
+
+	/**
+	 * Refinements
+	 */
+	protected $refinements;
+
 	/**
 	 * Attributes
 	 */
@@ -582,11 +587,12 @@ class CEM_PR_GuidancePreviews extends CEM_PR_AbstractQuery {
 	 * @param $guidances guidances
 	 * @param $filterProperties filter properties
 	 * @param $scorerProperties scorer properties
+	 * @param $refinements refinements
 	 * @param $attributes attributes
 	 * @param $maximumRecommendations maximum recommendations
 	 * @param $alternatives alternatives flag
 	 */
-	public function __construct($query, $queryText, $queryTerms, $guidances, $filterProperties, $scorerProperties, $attributes, $maximumRecommendations, $alternatives) {
+	public function __construct($query, $queryText, $queryTerms, $guidances, $filterProperties, $scorerProperties, $refinements, $attributes, $maximumRecommendations, $alternatives) {
 		parent::__construct('kb/guidance', 'previews', FALSE);
 		$this->query = $query;
 		$this->queryText = $queryText;
@@ -594,6 +600,7 @@ class CEM_PR_GuidancePreviews extends CEM_PR_AbstractQuery {
 		$this->guidances = $guidances;
 		$this->filterProperties = $filterProperties;
 		$this->scorerProperties = $scorerProperties;
+		$this->refinements = $refinements;
 		$this->attributes = $attributes;
 		$this->maximumRecommendations = $maximumRecommendations;
 		$this->alternatives = $alternatives;
@@ -623,6 +630,7 @@ class CEM_PR_GuidancePreviews extends CEM_PR_AbstractQuery {
 		$query["guidances"] = $this->guidances;
 		$query["filterProperties"] = $this->filterProperties;
 		$query["scorerProperties"] = $this->scorerProperties;
+		$query["refinements"] = $this->refinements;
 		$query["attributes"] = $this->attributes;
 		$query["maximumRecommendations"] = $this->maximumRecommendations;
 		$query["alternatives"] = $this->alternatives;

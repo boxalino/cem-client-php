@@ -795,6 +795,11 @@ class CEM_GS_Interaction14 extends CEM_AbstractWebHandler {
 	 */
 	protected $options;
 
+	/**
+	 * Sequential context cache
+	 */
+	protected $sequentialContexts;
+	
 
 	/**
 	 * Constructor
@@ -809,6 +814,7 @@ class CEM_GS_Interaction14 extends CEM_AbstractWebHandler {
 		$this->request = $request;
 		$this->response = $response;
 		$this->options = $options;
+		$this->sequentialContexts = NULL;
 	}
 
 
@@ -908,25 +914,28 @@ class CEM_GS_Interaction14 extends CEM_AbstractWebHandler {
 	 * @return encoded sequential contexts
 	 */
 	public function encodeSequentialContexts($contexts = NULL) {
-		$data = '';
-		if ($contexts == NULL) {
-			$contexts = $this->response->getContext();
-		}
-		foreach ($contexts as $name => $scope) {
-			if ($scope['mode'] == 'sequential') {
-				switch ($scope['level']) {
-				case 'visitor':
-				case 'session':
-				case 'search':
-					if (strlen($data) > 0) {
-						$data .= ';';
+		if ($this->sequentialContexts == NULL) {
+			$data = '';
+			if ($contexts == NULL) {
+				$contexts = $this->response->getContext();
+			}
+			foreach ($contexts as $name => $scope) {
+				if ($scope['mode'] == 'sequential') {
+					switch ($scope['level']) {
+					case 'visitor':
+					case 'session':
+					case 'search':
+						if (strlen($data) > 0) {
+							$data .= ';';
+						}
+						$data .= $this->escapeValue($name) . '=' . $this->escapeValue($scope['level']) . '=' . $this->escapeValue($scope['data']);
+						break;
 					}
-					$data .= $this->escapeValue($name) . '=' . $this->escapeValue($scope['level']) . '=' . $this->escapeValue($scope['data']);
-					break;
 				}
 			}
+			$this->sequentialContexts = $this->encrypt($data);
 		}
-		return $this->encrypt($data);
+		return $this->sequentialContexts;
 	}
 
 	/**
@@ -1260,6 +1269,56 @@ class CEM_WebController14 {
 		$this->pr($request, $response, $options);
 
 		return new CEM_PR_Interaction14($this->crypto, $request, $response, $options);
+	}
+
+	/**
+	 * Do attribute preview
+	 *
+	 * @param $attribute attribute
+	 * @param $size suggested products
+	 * @param $alternatives alternative flag
+	 * @param $options recommendation options
+	 * @return attribute with previews
+	 */
+	public function preview($attribute, $size = 1, $alternatives = FALSE, $options = array()) {
+		// find model
+		if ($this->lastInteraction == NULL) {
+			return $attribute;
+		}
+		$cemModel = json_decode($this->lastInteraction->getContextData('model'));
+
+		// prepare interaction
+		$request = new CEM_PR_GatewayRequest14($this->customer);
+		$request->addRequest(
+			new CEM_PR_GuidancePreviews(
+				array(
+					'index' => $this->index,
+					'parameters' => array(
+						array('name' => 'language', 'value' => $this->language)
+					),
+					'filter' => isset($options['filter']) ? $options['filter'] : '@type:instance'
+				),
+				isset($cemModel->queryText) ? $cemModel->queryText : '',
+				isset($cemModel->queryTerms) ? $cemModel->queryTerms : array(),
+				isset($cemModel->guidances) ? $cemModel->guidances : array(),
+				isset($options['filterProperties']) ? $options['filterProperties'] : array('title', 'body'),
+				isset($options['scorerProperties']) ? $options['scorerProperties'] : array('title', 'body'),
+				array(),
+				array($attribute),
+				$size,
+				$alternatives
+			)
+		);
+		$response = new CEM_PR_GatewayResponse14();
+
+		// process interaction
+		$this->pr($request, $response, $options);
+
+		if (!$response->getStatus()) {
+			return $attribute;
+		}
+		$responses = $response->getResponses();
+		return $responses[0]->attributes[0];
 	}
 
 
