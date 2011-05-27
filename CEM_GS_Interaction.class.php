@@ -36,10 +36,15 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	protected $options;
 
 	/**
+	 * Json decoded contexts
+	 */
+	protected $jsonContexts = array();
+
+	/**
 	 * Sequential context cache
 	 */
-	protected $sequentialContexts;
-	
+	protected $sequentialContexts = NULL;
+
 
 	/**
 	 * Constructor
@@ -54,7 +59,6 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		$this->request = $request;
 		$this->response = $response;
 		$this->options = $options;
-		$this->sequentialContexts = NULL;
 	}
 
 
@@ -144,6 +148,19 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			return $scopes[$name]['data'];
 		}
 		return '';
+	}
+
+	/**
+	 * Get context data from json
+	 *
+	 * @param $name context name
+	 * @return context data (decoded)
+	 */
+	public function getContextJson($name) {
+		if (!isset($this->jsonContexts[$name])) {
+			$this->jsonContexts[$name] = @json_decode($this->getContextData($name));
+		}
+		return $this->jsonContexts[$name];
 	}
 
 

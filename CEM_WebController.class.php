@@ -253,6 +253,15 @@ class CEM_WebController {
 		return $this->lastInteraction;
 	}
 
+	/**
+	 * Get last interaction if any
+	 *
+	 * @return last interaction or NULL if none
+	 */
+	public function lastInteraction() {
+		return $this->lastInteraction;
+	}
+
 
 	/**
 	 * Do query completion suggestion
