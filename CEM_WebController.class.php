@@ -286,7 +286,8 @@ class CEM_WebController {
 				isset($options['includedProperties']) ? $options['includedProperties'] : array(),
 				isset($options['excludedProperties']) ? $options['excludedProperties'] : array('title'),
 				isset($options['filterProperties']) ? $options['filterProperties'] : array('title', 'body'),
-				isset($options['scorerProperties']) ? $options['scorerProperties'] : array('title', 'body')
+				isset($options['scorerProperties']) ? $options['scorerProperties'] : array('title', 'body'),
+				isset($options['disambiguationPriorities']) ? $options['disambiguationPriorities'] : array()
 			)
 		);
 		$response = new CEM_PR_GatewayResponse();
@@ -298,6 +299,55 @@ class CEM_WebController {
 	}
 
 	/**
+	 * Do refinements preview
+	 *
+	 * @param $refinements refinements
+	 * @param $size suggested products
+	 * @param $options recommendation options
+	 * @return refinements with previews
+	 */
+	public function previewRefinements($refinements, $size = 1, $options = array()) {
+		// find model
+		if ($this->lastInteraction == NULL) {
+			return $refinements;
+		}
+		$cemModel = json_decode($this->lastInteraction->getContextData('model'));
+
+		// prepare interaction
+		$request = new CEM_PR_GatewayRequest($this->customer);
+		$request->addRequest(
+			new CEM_PR_GuidancePreviews(
+				array(
+					'index' => $this->index,
+					'parameters' => array(
+						array('name' => 'language', 'value' => $this->language)
+					),
+					'filter' => isset($options['filter']) ? $options['filter'] : '@type:instance'
+				),
+				isset($cemModel->queryText) ? $cemModel->queryText : '',
+				isset($cemModel->queryTerms) ? $cemModel->queryTerms : array(),
+				isset($cemModel->guidances) ? $cemModel->guidances : array(),
+				isset($options['filterProperties']) ? $options['filterProperties'] : array('title', 'body'),
+				isset($options['scorerProperties']) ? $options['scorerProperties'] : array('title', 'body'),
+				$refinements,
+				array(),
+				$size,
+				$alternatives
+			)
+		);
+		$response = new CEM_PR_GatewayResponse();
+
+		// process interaction
+		$this->pr($request, $response, $options);
+
+		if (!$response->getStatus()) {
+			return $refinements;
+		}
+		$responses = $response->getResponses();
+		return $responses[0]->refinements;
+	}
+
+	/**
 	 * Do attribute preview
 	 *
 	 * @param $attribute attribute
@@ -306,7 +356,7 @@ class CEM_WebController {
 	 * @param $options recommendation options
 	 * @return attribute with previews
 	 */
-	public function preview($attribute, $size = 1, $alternatives = FALSE, $options = array()) {
+	public function previewAttribute($attribute, $size = 1, $alternatives = FALSE, $options = array()) {
 		// find model
 		if ($this->lastInteraction == NULL) {
 			return $attribute;

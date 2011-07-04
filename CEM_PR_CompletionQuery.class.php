@@ -69,6 +69,11 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 	 * Scorer properties
 	 */
 	protected $scorerProperties;
+ 
+	/**
+	 * Disambiguation priorities
+	 */
+	protected $disambiguationPriorities;
 
 
 	/**
@@ -84,8 +89,9 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 	 * @param $excludedProperties excluded properties
 	 * @param $filterProperties filter properties
 	 * @param $scorerProperties scorer properties
+	 * @param $disambiguationPriorities disambiguation priorities
 	 */
-	public function __construct($index, $language, $filter, $queryText, $suggestionLimit, $resultLimit, $includedProperties = array(), $excludedProperties = array(), $filterProperties = array(), $scorerProperties = array()) {
+	public function __construct($index, $language, $filter, $queryText, $suggestionLimit, $resultLimit, $includedProperties = array(), $excludedProperties = array(), $filterProperties = array(), $scorerProperties = array(), $disambiguationPriorities = array()) {
 		parent::__construct('kb/query', 'complete');
 		$this->index = $index;
 		$this->language = $language;
@@ -97,6 +103,7 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 		$this->excludedProperties = $excludedProperties;
 		$this->filterProperties = $filterProperties;
 		$this->scorerProperties = $scorerProperties;
+		$this->disambiguationPriorities = $disambiguationPriorities;
 	}
 
 
@@ -129,6 +136,7 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 		$query["excludedProperties"] = $this->excludedProperties;
 		$query["filterProperties"] = $this->filterProperties;
 		$query["scorerProperties"] = $this->scorerProperties;
+		$query["disambiguationPriorities"] = $this->disambiguationPriorities;
 		return $query;
 	}
 }
