@@ -18,27 +18,28 @@
  * Search detail admin query
  *
  * @author nitro@boxalino.com
- */
-class CEM_PR_AdminSearchDetail extends CEM_PR_AbstractQuery {
+ * /
+class CEM_PR_Admin_SearchDetail extends CEM_PR_AbstractAdminQuery {
 	/**
 	 * Index identifier
-	 */
+	 * /
 	protected $index;
 
 	/**
 	 * Property values
-	 */
+	 * /
 	protected $properties;
 
 
 	/**
 	 * Constructor
 	 *
+	 * @param $mode admin mode
 	 * @param $index index identifier
 	 * @param $properties property values
-	 */
-	public function __construct($index, $properties) {
-		parent::__construct('kb/search', 'adminDetail', FALSE);
+	 * /
+	public function __construct($mode, $index, $properties) {
+		parent::__construct('kb/search', 'adminDetail', $mode);
 		$this->index = $index;
 		$this->properties = $properties;
 	}
@@ -48,7 +49,7 @@ class CEM_PR_AdminSearchDetail extends CEM_PR_AbstractQuery {
 	 * Get query type
 	 *
 	 * @return query type
-	 */
+	 * /
 	public function type() {
 		return "adminDetail";
 	}
@@ -58,14 +59,14 @@ class CEM_PR_AdminSearchDetail extends CEM_PR_AbstractQuery {
 	 *
 	 * @param &$state client state reference
 	 * @return query
-	 */
+	 * /
 	public function build(&$state) {
 		$query = parent::build($state);
 		$query["index"] = $this->index;
 		$query["configuration"] = array('properties' => $this->properties);
 		return $query;
 	}
-}
+}*/
 
 /**
  * @}

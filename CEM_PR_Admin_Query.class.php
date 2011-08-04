@@ -19,7 +19,7 @@
  *
  * @author nitro@boxalino.com
  */
-class CEM_PR_AdminQuery extends CEM_PR_AbstractQuery {
+class CEM_PR_Admin_Query extends CEM_PR_AbstractAdminQuery {
 	/**
 	 * Index identifier
 	 */
@@ -64,6 +64,7 @@ class CEM_PR_AdminQuery extends CEM_PR_AbstractQuery {
 	/**
 	 * Constructor
 	 *
+	 * @param $mode admin mode
 	 * @param $index index identifier
 	 * @param $language language identifier
 	 * @param $filter query filter
@@ -73,8 +74,8 @@ class CEM_PR_AdminQuery extends CEM_PR_AbstractQuery {
 	 * @param $filterProperties filter properties
 	 * @param $queryTerms terms to update
 	 */
-	public function __construct($index, $language, $filter, $queryText, $includedProperties = array(), $excludedProperties = array(), $filterProperties = array(), $queryTerms = array()) {
-		parent::__construct('kb/query', 'admin', FALSE);
+	public function __construct($mode, $index, $language, $filter, $queryText, $includedProperties = array(), $excludedProperties = array(), $filterProperties = array(), $queryTerms = array()) {
+		parent::__construct('kb/query', 'admin', $mode);
 		$this->index = $index;
 		$this->language = $language;
 		$this->filter = $filter;

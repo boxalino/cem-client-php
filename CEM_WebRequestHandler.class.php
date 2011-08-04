@@ -57,11 +57,13 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 	 * Set request variables
 	 *
 	 * @param $context request variables
+	 * @return this
 	 */
 	public function setContext($context) {
 		foreach ($context as $key => $value) {
 			$this->context[$key] = $value;
 		}
+		return $this;
 	}
 
 
