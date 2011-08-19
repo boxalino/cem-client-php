@@ -159,6 +159,9 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 		// get cem model context
 		$model = isset($contexts['model']) ? json_decode($contexts['model']['data']) : array();
 
+		// get cem model context
+		$userState = isset($contexts['userState']) ? json_decode($contexts['userState']['data']) : array();
+
 		// notify custom implementation
 		$variables = $this->buildInteractionVariables($options);
 		$action = $this->onInteractionBefore($state, $request, 'none', $variables, $options);
@@ -171,6 +174,8 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 			$variables['pageSize'] = $this->requestNumber('pageSize');
 		} else if (isset($model->pageSize)) {
 			$variables['pageSize'] = $model->pageSize;
+		} else if (isset($userState->pageSize)) {
+			$variables['pageSize'] = $userState->pageSize;
 		}
 
 		// base context
@@ -191,9 +196,20 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 			$query['ranking'] = $this->requestString('ranking');
 		} else if (isset($model->ranking)) {
 			$query['ranking'] = $model->ranking;
+		} else if (isset($userState->ranking)) {
+			$query['ranking'] = $userState->ranking;
 		}
 		if (sizeof($query) > 0) {
 			$variables['query'] = $query;
+		}
+
+		// scenario
+		if ($this->requestExists('scenario')) {
+			$variables['scenario'] = $this->requestString('scenario');
+		} else if (isset($model->scenario)) {
+			$variables['scenario'] = $model->scenario;
+		} else if (isset($userState->scenario)) {
+			$variables['scenario'] = $userState->scenario;
 		}
 
 		// controller logic
@@ -278,6 +294,35 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 
 			// controller logic
 			$variables['sourceFilter'] = '@type:instance&@id:"'.addcslashes($this->requestString('detail'), '"').'"';
+
+			// notify custom implementation
+			$action = $this->onInteractionAfter($state, $request, $action, $variables, $options);
+
+			// add final request
+			$request->appendRequest($action, $variables);
+		}
+
+		// add state request
+		$userState = array();
+		if ($this->requestExists('pageSize')) {
+			$userState['pageSize'] = $this->requestNumber('pageSize');
+		}
+		if ($this->requestExists('ranking')) {
+			$userState['ranking'] = $this->requestString('ranking');
+		}
+		if ($this->requestExists('displayMode')) {
+			$userState['displayMode'] = $this->requestString('displayMode');
+		}
+		if ($this->requestExists('scenario')) {
+			$userState['scenario'] = $this->requestString('scenario');
+		}
+		if (sizeof($userState) > 0) {
+			// notify custom implementation
+			$variables = array();
+			$action = $this->onInteractionBefore($state, $request, 'setUserState', $variables, $options);
+
+			// controller logic
+			$variables['userState'] = $userState;
 
 			// notify custom implementation
 			$action = $this->onInteractionAfter($state, $request, $action, $variables, $options);
