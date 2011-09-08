@@ -30,6 +30,16 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 	 */
 	protected $sequentialContexts;
 
+	/**
+	 * Current model
+	 */
+	protected $model = array();
+
+	/**
+	 * Current user state
+	 */
+	protected $userState = array();
+
 
 	/**
 	 * Constructor
@@ -157,68 +167,43 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 		$state->set('context', $contexts);
 
 		// get cem model context
-		$model = isset($contexts['model']) ? json_decode($contexts['model']['data']) : array();
+		$this->model = isset($contexts['model']) ? json_decode($contexts['model']['data']) : array();
 
 		// get cem model context
-		$userState = isset($contexts['userState']) ? json_decode($contexts['userState']['data']) : array();
+		$this->userState = isset($contexts['userState']) ? json_decode($contexts['userState']['data']) : array();
 
-		// notify custom implementation
-		$variables = $this->buildInteractionVariables($options);
-		$action = $this->onInteractionBefore($state, $request, 'none', $variables, $options);
-
-		// base parameters
-		if ($this->requestExists('offset')) {
-			$variables['offset'] = $this->requestNumber('offset');
-		}
+		// add state request
+		$userState = array();
 		if ($this->requestExists('pageSize')) {
-			$variables['pageSize'] = $this->requestNumber('pageSize');
-		} else if (isset($model->pageSize)) {
-			$variables['pageSize'] = $model->pageSize;
-		} else if (isset($userState->pageSize)) {
-			$variables['pageSize'] = $userState->pageSize;
-		}
-
-		// base context
-		$query = array();
-		if (isset($this->context['query'])) {
-			$query = $this->context['query'];
-		}
-		if ($this->requestExists('filter')) {
-			$query['filter'] = $this->requestString('filter');
-		}
-		if ($this->requestExists('scorer')) {
-			$query['scorer'] = $this->requestString('scorer');
-		}
-		if ($this->requestExists('snippet')) {
-			$query['snippet'] = $this->requestString('snippet');
+			$userState['pageSize'] = $this->requestNumber('pageSize');
 		}
 		if ($this->requestExists('ranking')) {
-			$query['ranking'] = $this->requestString('ranking');
-		} else if (isset($model->ranking)) {
-			$query['ranking'] = $model->ranking;
-		} else if (isset($userState->ranking)) {
-			$query['ranking'] = $userState->ranking;
+			$userState['ranking'] = $this->requestString('ranking');
 		}
-		if (sizeof($query) > 0) {
-			$variables['query'] = $query;
+		if ($this->requestExists('displayMode')) {
+			$userState['displayMode'] = $this->requestString('displayMode');
 		}
-
-		// scenario
 		if ($this->requestExists('scenario')) {
-			$variables['scenario'] = $this->requestString('scenario');
-		} else if (isset($model->scenario)) {
-			$variables['scenario'] = $model->scenario;
-		} else if (isset($userState->scenario)) {
-			$variables['scenario'] = $userState->scenario;
+			$userState['scenario'] = $this->requestString('scenario');
+		}
+		if (sizeof($userState) > 0) {
+			$request->appendRequest('setUserState', array('userState' => $userState));
 		}
 
-		// controller logic
-		if ($this->requestExists('query')) {
+		// add default request
+		$extraSearch = FALSE;
+		$action = 'search';
+		$variables = $this->buildInteractionVariables($options);
+		if ($this->requestExists('detail')) {
+			$action = 'detail';
+			$variables['sourceFilter'] = '@type:instance&@id:"'.addcslashes($this->requestString('detail'), '"').'"';
+		} else if ($this->requestExists('query')) {
 			$action = 'query';
 			$variables['queryText'] = $this->requestString('query');
 			if ($this->requestExists('ac')) {
 				$variables['ac'] = $this->requestNumber('ac');
 			}
+			$extraSearch = TRUE;
 		} else if ($this->requestExists('refine')) {
 			if ($this->requestExists('clear')) {
 				$action = 'clearQuery';
@@ -229,6 +214,7 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 				$variables['property'] = $this->requestString('property');
 				$variables['value'] = $this->requestString('value');
 			}
+			$extraSearch = TRUE;
 		} else if ($this->requestExists('guidance')) {
 			$guidance = $this->requestString('guidance');
 			if (is_numeric($guidance)) {
@@ -265,70 +251,18 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 					$variables['value'] = $this->requestStringArray('value');
 				}
 			}
+			$extraSearch = TRUE;
 		} else if ($this->requestExists('feedback')) {
 			$action = 'feedback';
 			$variables['weight'] = $this->requestNumber('feedback');
-		}
-
-		// custom overrides
-		if (isset($options['action'])) {
+		} else if (isset($options['action'])) {
 			$action = strval($options['action']);
 		}
-		if (isset($options['variables'])) {
-			foreach ($options['variables'] as $key => $value) {
-				$variables[$key] = $value;
-			}
-		}
-
-		// notify custom implementation
-		$action = $this->onInteractionAfter($state, $request, $action, $variables, $options);
-
-		// add final request
 		$request->appendRequest($action, $variables);
 
-		// add detail request
-		if ($this->requestExists('detail')) {
-			// notify custom implementation
-			$variables = $this->buildInteractionVariables($options);
-			$action = $this->onInteractionBefore($state, $request, 'detail', $variables, $options);
-
-			// controller logic
-			$variables['sourceFilter'] = '@type:instance&@id:"'.addcslashes($this->requestString('detail'), '"').'"';
-
-			// notify custom implementation
-			$action = $this->onInteractionAfter($state, $request, $action, $variables, $options);
-
-			// add final request
-			$request->appendRequest($action, $variables);
-		}
-
-		// add state request
-		$userState = array();
-		if ($this->requestExists('pageSize')) {
-			$userState['pageSize'] = $this->requestNumber('pageSize');
-		}
-		if ($this->requestExists('ranking')) {
-			$userState['ranking'] = $this->requestString('ranking');
-		}
-		if ($this->requestExists('displayMode')) {
-			$userState['displayMode'] = $this->requestString('displayMode');
-		}
-		if ($this->requestExists('scenario')) {
-			$userState['scenario'] = $this->requestString('scenario');
-		}
-		if (sizeof($userState) > 0) {
-			// notify custom implementation
-			$variables = array();
-			$action = $this->onInteractionBefore($state, $request, 'setUserState', $variables, $options);
-
-			// controller logic
-			$variables['userState'] = $userState;
-
-			// notify custom implementation
-			$action = $this->onInteractionAfter($state, $request, $action, $variables, $options);
-
-			// add final request
-			$request->appendRequest($action, $variables);
+		// add extra search request?
+		if ($extraSearch) {
+			$request->appendRequest('search', $this->buildInteractionVariables($options));
 		}
 		return TRUE;
 	}
@@ -340,39 +274,65 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 	 * @return contextual request variables
 	 */
 	protected function buildInteractionVariables(&$options) {
+		// context variables
 		$variables = array();
 		foreach ($this->context as $key => $value) {
 			$variables[$key] = $value;
 		}
+
+		// custom overrides
+		if (isset($options['variables'])) {
+			foreach ($options['variables'] as $key => $value) {
+				$variables[$key] = $value;
+			}
+		}
+
+		// base parameters
+		if ($this->requestExists('offset')) {
+			$variables['offset'] = $this->requestNumber('offset');
+		}
+		if ($this->requestExists('pageSize')) {
+			$variables['pageSize'] = $this->requestNumber('pageSize');
+		} else if (isset($this->model->pageSize)) {
+			$variables['pageSize'] = $this->model->pageSize;
+		} else if (isset($this->userState->pageSize)) {
+			$variables['pageSize'] = $this->userState->pageSize;
+		}
+
+		// base context
+		$query = array();
+		if (isset($this->context['query'])) {
+			$query = $this->context['query'];
+		}
+		if ($this->requestExists('filter')) {
+			$query['filter'] = $this->requestString('filter');
+		}
+		if ($this->requestExists('scorer')) {
+			$query['scorer'] = $this->requestString('scorer');
+		}
+		if ($this->requestExists('snippet')) {
+			$query['snippet'] = $this->requestString('snippet');
+		}
+		if ($this->requestExists('ranking')) {
+			$query['ranking'] = $this->requestString('ranking');
+		} else if (isset($this->model->ranking)) {
+			$query['ranking'] = $this->model->ranking;
+		} else if (isset($this->userState->ranking)) {
+			$query['ranking'] = $this->userState->ranking;
+		}
+		if (sizeof($query) > 0) {
+			$variables['query'] = $query;
+		}
+
+		// scenario
+		if ($this->requestExists('scenario')) {
+			$variables['scenario'] = $this->requestString('scenario');
+		} else if (isset($this->model->scenario)) {
+			$variables['scenario'] = $this->model->scenario;
+		} else if (isset($this->userState->scenario)) {
+			$variables['scenario'] = $this->userState->scenario;
+		}
 		return $variables;
-	}
-
-	/**
-	 * Called before default interaction request is built
-	 *
-	 * @param &$state client state reference
-	 * @param &$request client request reference
-	 * @param $action current action identifier
-	 * @param &$variables contextual request variables
-	 * @param &$options options passed for interaction
-	 * @return final action identifier
-	 */
-	protected function onInteractionBefore(&$state, &$request, $action, &$variables, &$options) {
-		return $action;
-	}
-
-	/**
-	 * Called after default interaction request is built
-	 *
-	 * @param &$state client state reference
-	 * @param &$request client request reference
-	 * @param $action current action identifier
-	 * @param &$variables contextual request variables
-	 * @param &$options options passed for interaction
-	 * @return final action identifier
-	 */
-	protected function onInteractionAfter(&$state, &$request, $action, &$variables, &$options) {
-		return $action;
 	}
 
 
