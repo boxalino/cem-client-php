@@ -244,7 +244,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 * @param $id group identifier
 	 * @return group or NULL if none
 	 */
-	public function getGroup($id = 'main') {
+	public function getGroup($id = 'search') {
 		$scopes = $this->response->getResponses();
 		if (isset($scopes[$id])) {
 			return $scopes[$id];
