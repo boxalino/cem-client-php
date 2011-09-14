@@ -230,12 +230,15 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 
 
 	/**
-	 * Get groups
+	 * Check if group exists
 	 *
-	 * @return group scopes
+	 * @param $id group identifier
+	 * @return TRUE if group exists or FALSE if none
 	 */
-	public function getGroups() {
-		return $this->response->getResponses();
+	public function hasGroup() {
+		$scopes = $this->response->getResponses();
+
+		return isset($scopes[$id]);
 	}
 
 	/**
@@ -250,6 +253,15 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			return $scopes[$id];
 		}
 		return NULL;
+	}
+
+	/**
+	 * Get groups
+	 *
+	 * @return group scopes
+	 */
+	public function getGroups() {
+		return $this->response->getResponses();
 	}
 }
 

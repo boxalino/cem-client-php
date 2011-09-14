@@ -118,6 +118,20 @@ class CEM_PR_Interaction extends CEM_AbstractWebHandler {
 
 
 	/**
+	 * Get recommendation
+	 *
+	 * @param $index recommendation index
+	 * @return recommendation or FALSE if none
+	 */
+	public function getRecommendation($index = 0) {
+		$responses = $this->response->getResponses();
+		if ($index >= 0 && $index < sizeof($responses)) {
+			return $responses[$index];
+		}
+		return FALSE;
+	}
+
+	/**
 	 * Get recommendations
 	 *
 	 * @return recommendations
