@@ -76,6 +76,21 @@ class CEM_WebController {
 	protected $readTimeout;
 
 	/**
+	 * Locale
+	 */
+	protected $locale;
+
+	/**
+	 * Locale currency
+	 */
+	protected $localeCurrency;
+
+	/**
+	 * Locale currency pattern
+	 */
+	protected $localeCurrencyPattern;
+
+	/**
 	 * Last interaction response
 	 */
 	protected $lastInteraction;
@@ -99,13 +114,16 @@ class CEM_WebController {
 		$this->responseHandler = NULL;
 		$this->connectionTimeout = 10000;
 		$this->readTimeout = 15000;
+		$this->locale = Locale::getDefault();
+		$this->localeCurrency = NULL;
+		$this->localeCurrencyPattern = NULL;
 		foreach ($options as $key => $value) {
 			$this->$key = $value;
 		}
 		$this->lastInteraction = NULL;
 	}
 
-	
+
 	/**
 	 * Get customer account identifier
 	 *
@@ -249,7 +267,15 @@ class CEM_WebController {
 		// process interaction
 		$this->gs($request, $response, $options);
 
-		$this->lastInteraction = new CEM_GS_Interaction($this->crypto, $request, $response, $options);
+		$this->lastInteraction = new CEM_GS_Interaction(
+			$this->crypto,
+			$request,
+			$response,
+			$options,
+			$this->locale,
+			$this->localeCurrency,
+			$this->localeCurrencyPattern
+		);
 		return $this->lastInteraction;
 	}
 
