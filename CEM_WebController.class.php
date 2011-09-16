@@ -76,6 +76,16 @@ class CEM_WebController {
 	protected $readTimeout;
 
 	/**
+	 * G-S interaction class
+	 */
+	protected $gsInteractionClass;
+
+	/**
+	 * P-R interaction class
+	 */
+	protected $prInteractionClass;
+
+	/**
 	 * Locale
 	 */
 	protected $locale;
@@ -114,6 +124,8 @@ class CEM_WebController {
 		$this->responseHandler = NULL;
 		$this->connectionTimeout = 10000;
 		$this->readTimeout = 15000;
+		$this->gsInteractionClass = 'CEM_GS_Interaction';
+		$this->prInteractionClass = 'CEM_PR_Interaction';
 		$this->locale = Locale::getDefault();
 		$this->localeCurrency = NULL;
 		$this->localeCurrencyPattern = NULL;
@@ -267,7 +279,7 @@ class CEM_WebController {
 		// process interaction
 		$this->gs($request, $response, $options);
 
-		$this->lastInteraction = new CEM_GS_Interaction(
+		$this->lastInteraction = new $this->gsInteractionClass(
 			$this->crypto,
 			$request,
 			$response,
@@ -321,7 +333,7 @@ class CEM_WebController {
 		// process interaction
 		$this->pr($request, $response, $options);
 
-		return new CEM_PR_Interaction($this->crypto, $request, $response, $options);
+		return new $this->prInteractionClass($this->crypto, $request, $response, $options);
 	}
 
 	/**
@@ -348,7 +360,9 @@ class CEM_WebController {
 					'parameters' => array(
 						array('name' => 'language', 'value' => $this->language)
 					),
-					'filter' => isset($options['filter']) ? $options['filter'] : '@type:instance'
+					'filter' => isset($options['filter']) ? $options['filter'] : '@type:instance',
+					'scorer' => isset($options['scorer']) ? $options['scorer'] : '',
+					'ranking' => isset($options['ranking']) ? $options['ranking'] : '@random asc'
 				),
 				isset($cemModel->queryText) ? $cemModel->queryText : '',
 				isset($cemModel->queryTerms) ? $cemModel->queryTerms : array(),
@@ -358,7 +372,7 @@ class CEM_WebController {
 				$refinements,
 				array(),
 				$size,
-				$alternatives
+				FALSE
 			)
 		);
 		$response = new CEM_PR_GatewayResponse();
@@ -398,7 +412,9 @@ class CEM_WebController {
 					'parameters' => array(
 						array('name' => 'language', 'value' => $this->language)
 					),
-					'filter' => isset($options['filter']) ? $options['filter'] : '@type:instance'
+					'filter' => isset($options['filter']) ? $options['filter'] : '@type:instance',
+					'scorer' => isset($options['scorer']) ? $options['scorer'] : '',
+					'ranking' => isset($options['ranking']) ? $options['ranking'] : '@random asc'
 				),
 				isset($cemModel->queryText) ? $cemModel->queryText : '',
 				isset($cemModel->queryTerms) ? $cemModel->queryTerms : array(),
