@@ -139,6 +139,49 @@ class CEM_PR_Interaction extends CEM_AbstractWebHandler {
 	public function getRecommendations() {
 		return $this->response->getResponses();
 	}
+
+
+	/**
+	 * Build resource descriptor
+	 *
+	 * @param $resource resource
+	 * @return resource descriptor
+	 */
+	public function buildResource($resource) {
+		$data = array(
+			'id' => $resource->id,
+			'type' => $resource->type,
+			'language' => $resource->language,
+			'name' => $resource->name,
+			'properties' => array(),
+			'weight' => isset($resource->weight) ? $resource->weight : 0
+		);
+		$properties = array();
+		foreach ($resource->properties as $value) {
+			$list = $this->collapsePropertyValue($value);
+			if (!isset($data[$value->property])) {
+				$data[$value->property] = sizeof($list) > 1 ? $list : $list[0];
+			}
+			$data['properties'][$value->property][] = sizeof($list) > 1 ? $list : $list[0];
+		}
+		return $data;
+	}
+
+
+	/**
+	 * Collect hierarchical values.
+	 *
+	 * @param $value current node
+	 * @return property values
+	 */
+	private function collapsePropertyValue($value) {
+		$list = array();
+		$list[] = $value->value;
+		if (isset($value->child)) {
+			$list = array_merge($list, $this->collapsePropertyValue($value->child));
+		}
+		return $list;
+	}
 }
 
 /**

@@ -38,17 +38,17 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	/**
 	 * Locale
 	 */
-	protected $locale;
+	private $locale;
 
 	/**
 	 * Locale currency
 	 */
-	protected $localeCurrency;
+	private $localeCurrency;
 
 	/**
 	 * Locale currency pattern
 	 */
-	protected $localeCurrencyPattern;
+	private $localeCurrencyPattern;
 
 	/**
 	 * Json decoded contexts (cache)
@@ -94,6 +94,11 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 * Current results (cache)
 	 */
 	private $_results = array();
+
+	/**
+	 * Current recommendations (cache)
+	 */
+	private $_recommendations = array();
 
 	/**
 	 * Date/time formatters (cache)
@@ -289,7 +294,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 * @param $id group identifier
 	 * @return TRUE if group exists or FALSE if none
 	 */
-	public function hasGroup() {
+	public function hasGroup($id) {
 		$scopes = $this->response->getResponses();
 		return isset($scopes[$id]);
 	}
@@ -322,7 +327,67 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 */
 	public function activeQuery() {
 		$model = $this->getContextJson('model');
-		return (isset($model->queryText) ? $model->queryText : '');
+		if (isset($model->queryText)) {
+			return $model->queryText;
+		}
+		return '';
+	}
+
+	/**
+	 * Get current "showing results for"
+	 *
+	 * @return "showing results for" query or FALSE if none
+	 */
+	public function activeShowingResultsFor() {
+		$model = $this->getContextJson('model');
+		if (isset($model->queryTerms)) {
+			$has = FALSE;
+			$terms = array();
+			foreach ($model->queryTerms as $index => $queryTerm) {
+				if ($queryTerm->type == 'matched' && isset($queryTerm->guidances)) {
+					if (sizeof($queryTerm->guidances) == 1) {
+						$guidance = $queryTerm->guidances[0];
+						if (levenshtein(strtolower($guidance->data[0]), strtolower($queryTerm->value)) > 0) {
+							$terms[] = strtolower($guidance->data[0]);
+							$has = TRUE;
+							continue;
+						}
+					}
+				}
+				$terms[] = $queryTerm->value;
+			}
+			if ($has) {
+				return implode(' ', $terms);
+			}
+		}
+		return FALSE;
+	}
+
+	/**
+	 * Get current "did you mean"
+	 *
+	 * @return "did you mean" queries
+	 */
+	public function activeDidYouMean() {
+		$list = array();
+		$model = $this->getContextJson('model');
+		if (isset($model->queryTerms)) {
+			foreach ($model->queryTerms as $index => $queryTerm) {
+				if ($queryTerm->type == 'ambiguous' && isset($queryTerm->refinements)) {
+					if (sizeof($queryTerm->refinements) != 1) {
+						continue;
+					}
+					$refinement = $queryTerm->refinements[0];
+					if (sizeof($refinement->values) != 1) {
+						continue;
+					}
+					if (levenshtein(strtolower($refinement->values[0]->value), strtolower($queryTerm->value)) > 2) {
+						$list[] = strtolower($refinement->values[0]->value);
+					}
+				}
+			}
+		}
+		return $list;
 	}
 
 	/**
@@ -367,19 +432,51 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		$group = $this->getGroup($groupId);
 		if (isset($model->queryTerms)) {
 			foreach ($model->queryTerms as $index => $queryTerm) {
-				if (($queryTerm->type != 'matched' && $queryTerm->type != 'refined') || !isset($queryTerm->guidances)) {
-					continue;
-				}
-				foreach ($queryTerm->guidances as $guidance) {
-					if (!isset($this->_filters[$guidance->property])) {
-						$this->_filters[$guidance->property] = array();
+				if ($queryTerm->type == 'ambiguous' && isset($queryTerm->refinements)) {
+					if (sizeof($queryTerm->refinements) != 1) {
+						continue;
 					}
-					$this->_filters[$groupId][$guidance->property][] = array(
-						'mode' => 'term',
-						'index' => $index,
-						'property' => $guidance->property,
-						'guidance' => $guidance
+					$refinement = $queryTerm->refinements[0];
+					if (sizeof($refinement->values) != 1) {
+						continue;
+					}
+					$guidance = json_decode(
+						json_encode(
+							array(
+								'mode' => 'guidance',
+								'type' => 'text',
+								'property' => $refinement->property,
+								'data' => array($refinement->values[0]->value)
+							)
+						)
 					);
+					if (levenshtein(strtolower($refinement->values[0]->value), strtolower($queryTerm->value)) > 2) {
+						$this->_filters[$groupId][$refinement->property][] = array(
+							'mode' => 'term',
+							'index' => $index,
+							'property' => $guidance->property,
+							'guidance' => $guidance
+						);
+					} else {
+						$this->_filters[$groupId][$refinement->property][] = array(
+							'mode' => 'guidance',
+							'index' => -1,
+							'property' => $guidance->property,
+							'guidance' => $guidance
+						);
+					}
+				} else if (($queryTerm->type == 'matched' || $queryTerm->type == 'refined') && isset($queryTerm->guidances)) {
+					foreach ($queryTerm->guidances as $guidance) {
+						if (!isset($this->_filters[$guidance->property])) {
+							$this->_filters[$guidance->property] = array();
+						}
+						$this->_filters[$groupId][$guidance->property][] = array(
+							'mode' => 'term',
+							'index' => $index,
+							'property' => $guidance->property,
+							'guidance' => $guidance
+						);
+					}
 				}
 			}
 		}
@@ -411,15 +508,17 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				);
 				if ($propertyId == 'categories') {
 					$urlParameters['guidance'] = '-'.$propertyId;
-				} else if ($filter['mode'] == 'term') {
+				} else if ($filter['mode'] == 'term' && $filter['index'] >= 0) {
 					$urlParameters['refine'] = $filter['index'];
-				} else if ($filter['mode'] == 'guidance') {
+				} else if ($filter['mode'] == 'guidance' && $filter['index'] >= 0) {
 					$urlParameters['guidance'] = $filter['index'];
 				} else {
 					$urlParameters['guidance'] = '-'.$propertyId;
 				}
-				$this->_filters[$groupId][$propertyId][$index]['url'] = $this->buildUrl('', $urlParameters);
-				$this->_filters[$groupId][$propertyId][$index]['urlParameters'] = $urlParameters;
+				$this->_filters[$groupId][$propertyId][$index]['removeAction'] = array(
+					'url' => $this->buildUrl('', $urlParameters),
+					'parameters' => $urlParameters
+				);
 
 				$this->_filters[$groupId][$propertyId][$index]['alternative'] = $this->getAlternative($propertyId, $groupId);
 			}
@@ -544,27 +643,14 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 
 		$this->_refinements[$groupId] = array();
 		$group = $this->getGroup($groupId);
+		$attributes = NULL;
 		if (isset($group->refinements)) {
-			foreach ($group->refinements as $attribute) {
-				// skip tags
-				if ($attribute->property == 'tags') {
-					continue;
-				}
-
-				// select values
-				$refinement = $this->findAttributeRefinement($attribute);
-				if ($refinement) {
-					$this->_refinements[$groupId][$attribute->property] = $refinement;
-				}
-			}
+			$attributes = $group->refinements;
 		} else if (isset($group->search->attributes)) {
-			foreach ($group->search->attributes as $attribute) {
-				// skip tags
-				if ($attribute->property == 'tags') {
-					continue;
-				}
-
-				// select values
+			$attributes = $group->search->attributes;
+		}
+		if ($attributes) {
+			foreach ($attributes as $attribute) {
 				$refinement = $this->findAttributeRefinement($attribute);
 				if ($refinement) {
 					$this->_refinements[$groupId][$attribute->property] = $refinement;
@@ -599,27 +685,14 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 
 		$this->_alternatives[$groupId] = array();
 		$group = $this->getGroup($groupId);
+		$attributes = NULL;
 		if (isset($group->alternatives)) {
-			foreach ($group->alternatives as $attribute) {
-				// skip tags
-				if ($attribute->property == 'tags') {
-					continue;
-				}
-
-				// select values
-				$alternative = $this->findAttributeAlternative($attribute);
-				if ($alternative) {
-					$this->_alternatives[$groupId][$attribute->property] = $alternative;
-				}
-			}
+			$attributes = $group->alternatives;
 		} else if (isset($group->search->alternatives)) {
-			foreach ($group->search->alternatives as $attribute) {
-				// skip tags
-				if ($attribute->property == 'tags') {
-					continue;
-				}
-
-				// select values
+			$attributes = $group->search->alternatives;
+		}
+		if ($attributes) {
+			foreach ($attributes as $attribute) {
 				$alternative = $this->findAttributeAlternative($attribute);
 				if ($alternative) {
 					$this->_alternatives[$groupId][$attribute->property] = $alternative;
@@ -741,6 +814,25 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		return (isset($group->search->total) ? $group->search->total : 0);
 	}
 
+	/**
+	 * Get current recommendations
+	 *
+	 * @param $groupId group identifier
+	 * @return recommendations
+	 */
+	public function getRecommendations($groupId = 'search') {
+		if (isset($this->_recommendations[$groupId])) {
+			return $this->_recommendations[$groupId];
+		}
+
+		$this->_recommendations[$groupId] = array();
+		foreach ($this->getScenarios($groupId) as $scenario) {
+			$this->_recommendations[$groupId] = array_merge($this->_recommendations[$groupId], $scenario['recommendations']);
+		}
+		usort($this->_recommendations[$groupId], array($this, 'sortRecommendations'));
+		return $this->_recommendations[$groupId];
+	}
+
 
 	/**
 	 * Build resource descriptor
@@ -755,7 +847,8 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			'language' => $resource->language,
 			'name' => $resource->name,
 			'properties' => array(),
-			'weight' => isset($resource->weight) ? $resource->weight : 0
+			'weight' => isset($resource->weight) ? $resource->weight : 0,
+			'resource' => $resource
 		);
 		$properties = array();
 		foreach ($resource->properties as $value) {
@@ -782,6 +875,17 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			$disambiguation['refinements'],
 			$excludedPreviews
 		);
+	}
+
+	/**
+	 * Build refinement
+	 *
+	 * @param $refinement refinement
+	 * @param $excludedPreviews list of excluded preview id
+	 * @return refinement or NULL if none
+	 */
+	public function buildRefinement($refinement, $excludedPreviews = array()) {
+		return $this->findAttributeRefinement($refinement['attribute'], $excludedPreviews);
 	}
 
 	/**
@@ -885,18 +989,19 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			);
 			foreach ($refinement->values as $value) {
 				// select preview
-				$resource = NULL;
+				$preview = NULL;
+				$resources = array();
 				if (isset($value->previews)) {
-					foreach ($value->previews as $preview) {
-						if (in_array($preview->id, $previews)) {
+					foreach ($value->previews as $resource) {
+						if (in_array($resource->id, $excludedPreviews)) {
 							continue;
 						}
-						if (in_array($preview->id, $excludedPreviews)) {
-							continue;
+						$resource = $this->buildResource($resource);
+						$resources[] = $resource;
+						if (!$preview && !in_array($resource['id'], $previews)) {
+							$previews[] = $resource['id'];
+							$preview = $resource;
 						}
-						$previews[] = $preview->id;
-						$resource = $this->buildResource($preview);
-						break;
 					}
 				}
 				$urlParameters = array(
@@ -908,9 +1013,12 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				$entries[$refinement->property]['values'][] = array(
 					'name' => $value->value,
 					'population' => $value->population,
-					'url' => $this->buildUrl('', $urlParameters),
-					'urlParameters' => $urlParameters,
-					'preview' => $resource
+					'refineAction' => array(
+						'url' => $this->buildUrl('', $urlParameters),
+						'parameters' => $urlParameters
+					),
+					'preview' => $preview,
+					'resources' => $resources
 				);
 				$count++;
 			}
@@ -979,6 +1087,11 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		$previews = array();
 		$list = array();
 		foreach ($values as $index => $value) {
+			// skip node if no effect
+			if ($value->population == $this->getResultsTotal()) {
+				continue;
+			}
+
 			// skip node if already selected
 			$selected = FALSE;
 			foreach ($filters as $filter) {
@@ -1010,39 +1123,48 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			}
 
 			// build url
-			$urlParameters = array(
+			$urlAddParameters = array(
+				'context' => $this->encodeSequentialContexts(),
+				'guidance' => '+'.$attribute->type,
+				'property' => $attribute->property
+			);
+			$urlSetParameters = array(
 				'context' => $this->encodeSequentialContexts(),
 				'guidance' => $attribute->type,
 				'property' => $attribute->property
 			);
 			if ($attribute->hierarchical) {
-				$urlParameters['hierarchical'] = $depth + 1;
+				$urlAddParameters['hierarchical'] = $depth + 1;
+				$urlSetParameters['hierarchical'] = $depth + 1;
 				for ($i = 0; $i < $depth; $i++) {
-					$urlParameters['value'.$i] = $parents[$i]->data;
+					$urlAddParameters['value'.$i] = $parents[$i]->data;
+					$urlSetParameters['value'.$i] = $parents[$i]->data;
 				}
-				$urlParameters['value'.$depth] = $value->data;
+				$urlAddParameters['value'.$depth] = $value->data;
+				$urlSetParameters['value'.$depth] = $value->data;
 			} else {
 				if ($attribute->type == 'dateRange' || $attribute->type == 'numberRange') {
-					$urlParameters['mode'] = 'range';
+					$urlAddParameters['mode'] = 'range';
+					$urlSetParameters['mode'] = 'range';
 				}
-				$urlParameters['value'] = $value->data;
+				$urlAddParameters['value'] = $value->data;
+				$urlSetParameters['value'] = $value->data;
 			}
 
 			// select preview
 			$preview = NULL;
-			$previewResource = NULL;
+			$resources = array();
 			if (isset($value->previews)) {
 				foreach ($value->previews as $resource) {
-					if (in_array($resource->id, $previews)) {
-						continue;
-					}
 					if (in_array($resource->id, $excludedPreviews)) {
 						continue;
 					}
-					$previews[] = $resource->id;
-					$preview = $this->buildResource($resource);
-					$previewResource = $resource;
-					break;
+					$resource = $this->buildResource($resource);
+					$resources[] = $resource;
+					if (!$preview && !in_array($resource['id'], $previews)) {
+						$previews[] = $resource['id'];
+						$preview = $resource;
+					}
 				}
 			}
 
@@ -1050,11 +1172,17 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			$list[] = array(
 				'index' => $index,
 				'name' => $this->formatAttributeValue($attribute, $index, $value),
-				'url' => $this->buildUrl('', $urlParameters),
-				'urlParameters' => $urlParameters,
 				'population' => $value->population,
+				'addAction' => array(
+					'url' => $this->buildUrl('', $urlAddParameters),
+					'parameters' => $urlAddParameters
+				),
+				'setAction' => array(
+					'url' => $this->buildUrl('', $urlSetParameters),
+					'parameters' => $urlSetParameters
+				),
 				'preview' => $preview,
-				'previewResource' => $previewResource,
+				'resources' => $resources,
 				'value' => $value
 			);
 		}
@@ -1069,9 +1197,10 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				);
 				if ($attribute->hierarchical) {
 					$urlParameters['hierarchical'] = $parentDepth + 1;
-					for ($i = 0; $i <= $parentDepth; $i++) {
+					for ($i = 0; $i < $parentDepth; $i++) {
 						$urlParameters['value'.$i] = $parents[$i]->data;
 					}
+					$urlParameters['value'.$parentDepth] = $parent->data;
 				} else {
 					if ($attribute->type == 'dateRange' || $attribute->type == 'numberRange') {
 						$urlParameters['mode'] = 'range';
@@ -1082,9 +1211,11 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				$parentValues[] = array(
 					'depth' => $parentDepth,
 					'name' => $this->formatAttributeValue($attribute, 0, $parent),
-					'url' => $this->buildUrl('', $urlParameters),
-					'urlParameters' => $urlParameters,
 					'population' => $parent->population,
+					'setAction' => array(
+						'url' => $this->buildUrl('', $urlParameters),
+						'parameters' => $urlParameters
+					),
 					'value' => $parent
 				);
 			}
@@ -1203,19 +1334,18 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 
 			// select preview
 			$preview = NULL;
-			$previewResource = NULL;
+			$resources = array();
 			if (isset($value->previews)) {
 				foreach ($value->previews as $resource) {
-					if (in_array($resource->id, $previews)) {
-						continue;
-					}
 					if (in_array($resource->id, $excludedPreviews)) {
 						continue;
 					}
-					$previews[] = $resource->id;
-					$preview = $this->buildResource($resource);
-					$previewResource = $resource;
-					break;
+					$resource = $this->buildResource($resource);
+					$resources[] = $resource;
+					if (!$preview && !in_array($resource['id'], $previews)) {
+						$previews[] = $resource['id'];
+						$preview = $resource;
+					}
 				}
 			}
 
@@ -1223,11 +1353,13 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			$list[] = array(
 				'index' => $index,
 				'name' => $this->formatAttributeValue($attribute, $index, $value),
-				'url' => $this->buildUrl('', $urlParameters),
-				'urlParameters' => $urlParameters,
 				'population' => $value->population,
+				'setAction' => array(
+					'url' => $this->buildUrl('', $urlParameters),
+					'parameters' => $urlParameters
+				),
 				'preview' => $preview,
-				'previewResource' => $previewResource,
+				'resources' => $resources,
 				'value' => $value
 			);
 		}
@@ -1242,9 +1374,10 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				);
 				if ($attribute->hierarchical) {
 					$urlParameters['hierarchical'] = $parentDepth + 1;
-					for ($i = 0; $i <= $parentDepth; $i++) {
+					for ($i = 0; $i < $parentDepth; $i++) {
 						$urlParameters['value'.$i] = $parents[$i]->data;
 					}
+					$urlParameters['value'.$parentDepth] = $parent->data;
 				} else {
 					if ($attribute->type == 'dateRange' || $attribute->type == 'numberRange') {
 						$urlParameters['mode'] = 'range';
@@ -1255,9 +1388,11 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				$parentValues[] = array(
 					'depth' => $parentDepth,
 					'name' => $this->formatAttributeValue($attribute, 0, $parent),
-					'url' => $this->buildUrl('', $urlParameters),
-					'urlParameters' => $urlParameters,
 					'population' => $parent->population,
+					'setAction' => array(
+						'url' => $this->buildUrl('', $urlParameters),
+						'parameters' => $urlParameters
+					),
 					'value' => $parent
 				);
 			}
@@ -1275,13 +1410,201 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 
 
 	/**
+	 * Build url with parameters
+	 *
+	 * @param $uri base uri
+	 * @param $parameters query parameters
+	 * @param $hash url hash
+	 * @return full uri
+	 */
+	private function buildUrl($uri, $parameters = array(), $hash = NULL) {
+		if (sizeof($parameters) > 0) {
+			$uri .= '?';
+			$i = 0;
+			foreach ($parameters as $key => $value) {
+				if ($i++ > 0) {
+					$uri .= '&';
+				}
+				if (is_string($key)) {
+					if (is_array($value)) {
+						foreach ($value as $index => $item) {
+							if ($index > 0) {
+								$uri .= '&';
+							}
+							$uri .= urlencode($key) . '[]=' . urlencode($item);
+						}
+					} else {
+						$uri .= urlencode($key) . '=' . urlencode($value);
+					}
+				} else {
+					$uri .= urlencode($value) . '=' . urlencode($this->requestString($value));
+				}
+			}
+		}
+		if (strlen($hash) > 0) {
+			$uri .= $hash;
+		}
+		return $uri;
+	}
+
+
+	/**
+	 * Collect hierarchical values.
+	 *
+	 * @param $value current node
+	 * @return property values
+	 */
+	private function collapsePropertyValue($value) {
+		$list = array();
+		$list[] = $value->value;
+		if (isset($value->child)) {
+			$list = array_merge($list, $this->collapsePropertyValue($value->child));
+		}
+		return $list;
+	}
+
+
+	/**
+	 * Parse ISO8601 date format
+	 *
+	 * @param $value date string
+	 * @return gmt timestamp
+	 */
+	private function parseDateISO8601($value) {
+		if (preg_match('/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}).(\d{3})([+\-])(\d{2})(\d{2})$/', $value, $matches)) {
+			$delta = intval($matches[9]) * 60 * 60 + intval($matches[10]) * 60;
+			if ($matches[8] == '-') {
+				$delta = -$delta;
+			}
+			return (mktime($matches[4], $matches[5], $matches[6], $matches[2], $matches[3], $matches[1]) + $delta);
+		}
+		return NULL;
+	}
+
+
+	/**
+	 * Called to sort recommendations by weight
+	 *
+	 */
+	private function sortRecommendations($a, $b) {
+		if ($a['weight'] > $b['weight']) {
+			return -1;
+		} else if ($a['weight'] < $b['weight']) {
+			return 1;
+		}
+		return 0;
+	}
+
+
+	/**
+	 * Format date value
+	 *
+	 * @param $value date in ISO8601 format
+	 * @param $dateFormat date format
+	 * @return formatted date
+	 */
+	private function formatDate($value, $dateFormat = IntlDateFormatter::LONG) {
+		return $this->formatDateTime($value, $dateFormat, IntlDateFormatter::NONE);
+	}
+
+	/**
+	 * Format date/time value
+	 *
+	 * @param $value date/time in ISO8601 format
+	 * @param $dateFormat date format
+	 * @param $timeFormat time format
+	 * @return formatted date/time
+	 */
+	private function formatDateTime($value, $dateFormat = IntlDateFormatter::LONG, $timeFormat = IntlDateFormatter::SHORT) {
+		if (!isset($this->_dateFormatters[$dateFormat]) ||
+			!isset($this->_dateFormatters[$dateFormat][$timeFormat])) {
+			$this->_dateFormatters[$dateFormat][$timeFormat] = IntlDateFormatter::create($this->locale, $dateFormat, $timeFormat);
+		}
+		return $this->_dateFormatters[$dateFormat][$timeFormat]->format($this->parseDateISO8601($value));
+	}
+
+
+	/**
+	 * Format number value as integer
+	 *
+	 * @param $value number
+	 * @return formatted number
+	 */
+	private function formatInteger($value) {
+		return $this->formatNumber($value, NumberFormatter::DECIMAL, NumberFormatter::TYPE_INT64);
+	}
+
+	/**
+	 * Format number value as float
+	 *
+	 * @param $value number
+	 * @return formatted number
+	 */
+	private function formatFloat($value) {
+		return $this->formatNumber($value, NumberFormatter::DECIMAL, NumberFormatter::TYPE_DOUBLE);
+	}
+
+	/**
+	 * Format number value as percents
+	 *
+	 * @param $value number
+	 * @return formatted number
+	 */
+	private function formatPercent($value) {
+		return $this->formatNumber($value, NumberFormatter::PERCENT, NumberFormatter::TYPE_DOUBLE);
+	}
+
+	/**
+	 * Format number value
+	 *
+	 * @param $value number
+	 * @param $format number format
+	 * @param $type number type
+	 * @return formatted number
+	 */
+	private function formatNumber($value, $format = NumberFormatter::DECIMAL, $type = NumberFormatter::TYPE_DOUBLE) {
+		if (!isset($this->_numberFormatters[$format])) {
+			$this->_numberFormatters[$format] = NumberFormatter::create($this->locale, $format);
+		}
+		return $this->_numberFormatters->format($value, $type);
+	}
+
+
+	/**
+	 * Format price value
+	 *
+	 * @param $value price
+	 * @param $rounding round value
+	 * @return formatted price
+	 */
+	private function formatPrice($value, $rounding = 0) {
+		if ($this->_priceFormatter == NULL) {
+			$this->_priceFormatter = NumberFormatter::create($this->locale, NumberFormatter::CURRENCY);
+			if (strlen($this->localeCurrency) > 0) {
+				$this->_priceCode = $this->localeCurrency;
+			} else {
+				$this->_priceCode = $this->_priceFormatter->getTextAttribute(NumberFormatter::CURRENCY_CODE);
+			}
+			if (strlen($this->localeCurrencyPattern) > 0) {
+				$this->_priceFormatter->setPattern($this->localeCurrencyPattern);
+			}
+		}
+		if ($rounding > 0) {
+			$rounding = 1.0 / $rounding;
+			$value = round($value * $rounding) / $rounding;
+		}
+		return $this->_priceFormatter->formatCurrency($value, $this->_priceCode);
+	}
+
+
+	/**
 	 * Format filter's label
 	 *
 	 * @param $property filter property
 	 * @param $guidance filter descriptor
 	 * @return filter's label
 	 */
-	protected function formatFilterValue($property, $guidance) {
+	private function formatFilterValue($property, $guidance) {
 		switch ($property['dataType']) {
 		case 'date':
 			$dateFormat = IntlDateFormatter::SHORT;
@@ -1344,7 +1667,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 * @param $value value descriptor
 	 * @return value's label
 	 */
-	protected function formatAttributeValue($attribute, $index, $value) {
+	private function formatAttributeValue($attribute, $index, $value) {
 		switch ($attribute->type) {
 		case 'dateRange':
 			$dateFormat = IntlDateFormatter::SHORT;
@@ -1411,180 +1734,6 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			return "$from - $to";
 		}
 		return implode(', ', $value->data);
-	}
-
-
-	/**
-	 * Collect hierarchical values.
-	 *
-	 * @param $value current node
-	 * @return property values
-	 */
-	protected function collapsePropertyValue($value) {
-		$list = array();
-		$list[] = $value->value;
-		if (isset($value->child)) {
-			$list = array_merge($list, $this->collapsePropertyValue($value->child));
-		}
-		return $list;
-	}
-
-
-	/**
-	 * Build url with parameters
-	 *
-	 * @param $uri base uri
-	 * @param $parameters query parameters
-	 * @param $hash url hash
-	 * @return full uri
-	 */
-	protected function buildUrl($uri, $parameters = array(), $hash = NULL) {
-		if (sizeof($parameters) > 0) {
-			$uri .= '?';
-			$i = 0;
-			foreach ($parameters as $key => $value) {
-				if ($i++ > 0) {
-					$uri .= '&';
-				}
-				if (is_string($key)) {
-					if (is_array($value)) {
-						foreach ($value as $index => $item) {
-							if ($index > 0) {
-								$uri .= '&';
-							}
-							$uri .= urlencode($key) . '[]=' . urlencode($item);
-						}
-					} else {
-						$uri .= urlencode($key) . '=' . urlencode($value);
-					}
-				} else {
-					$uri .= urlencode($value) . '=' . urlencode(Utils::requestString($value));
-				}
-			}
-		}
-		if (strlen($hash) > 0) {
-			$uri .= $hash;
-		}
-		return $uri;
-	}
-
-
-	/**
-	 * Format date value
-	 *
-	 * @param $value date in ISO8601 format
-	 * @param $dateFormat date format
-	 * @return formatted date
-	 */
-	protected function formatDate($value, $dateFormat = IntlDateFormatter::LONG) {
-		return $this->formatDateTime($value, $dateFormat, IntlDateFormatter::NONE);
-	}
-
-	/**
-	 * Format date/time value
-	 *
-	 * @param $value date/time in ISO8601 format
-	 * @param $dateFormat date format
-	 * @param $timeFormat time format
-	 * @return formatted date/time
-	 */
-	protected function formatDateTime($value, $dateFormat = IntlDateFormatter::LONG, $timeFormat = IntlDateFormatter::SHORT) {
-		if (!isset($this->_dateFormatters[$dateFormat]) ||
-			!isset($this->_dateFormatters[$dateFormat][$timeFormat])) {
-			$this->_dateFormatters[$dateFormat][$timeFormat] = IntlDateFormatter::create($this->locale, $dateFormat, $timeFormat);
-		}
-		return $this->_dateFormatters[$dateFormat][$timeFormat]->format(Utils::parseDateISO8601($value));
-	}
-
-
-	/**
-	 * Format number value as integer
-	 *
-	 * @param $value number
-	 * @return formatted number
-	 */
-	protected function formatInteger($value) {
-		return $this->formatNumber($value, NumberFormatter::DECIMAL, NumberFormatter::TYPE_INT64);
-	}
-
-	/**
-	 * Format number value as float
-	 *
-	 * @param $value number
-	 * @return formatted number
-	 */
-	protected function formatFloat($value) {
-		return $this->formatNumber($value, NumberFormatter::DECIMAL, NumberFormatter::TYPE_DOUBLE);
-	}
-
-	/**
-	 * Format number value as percents
-	 *
-	 * @param $value number
-	 * @return formatted number
-	 */
-	protected function formatPercent($value) {
-		return $this->formatNumber($value, NumberFormatter::PERCENT, NumberFormatter::TYPE_DOUBLE);
-	}
-
-	/**
-	 * Format number value
-	 *
-	 * @param $value number
-	 * @param $format number format
-	 * @param $type number type
-	 * @return formatted number
-	 */
-	protected function formatNumber($value, $format = NumberFormatter::DECIMAL, $type = NumberFormatter::TYPE_DOUBLE) {
-		if (!isset($this->_numberFormatters[$format])) {
-			$this->_numberFormatters[$format] = NumberFormatter::create($this->locale, $format);
-		}
-		return $this->_numberFormatters->format($value, $type);
-	}
-
-
-	/**
-	 * Format price value
-	 *
-	 * @param $value price
-	 * @param $rounding round value
-	 * @return formatted price
-	 */
-	protected function formatPrice($value, $rounding = 0) {
-		if ($this->_priceFormatter == NULL) {
-			$this->_priceFormatter = NumberFormatter::create($this->locale, NumberFormatter::CURRENCY);
-			if (strlen($this->localeCurrency) > 0) {
-				$this->_priceCode = $this->localeCurrency;
-			} else {
-				$this->_priceCode = $this->_priceFormatter->getTextAttribute(NumberFormatter::CURRENCY_CODE);
-			}
-			if (strlen($this->localeCurrencyPattern) > 0) {
-				$this->_priceFormatter->setPattern($this->localeCurrencyPattern);
-			}
-		}
-		if ($rounding > 0) {
-			$rounding = 1.0 / $rounding;
-			$value = round($value * $rounding) / $rounding;
-		}
-		return $this->_priceFormatter->formatCurrency($value, $this->_priceCode);
-	}
-
-
-	/**
-	 * Parse ISO8601 date format
-	 *
-	 * @param $value date string
-	 * @return gmt timestamp
-	 */
-	protected function parseDateISO8601($value) {
-		if (preg_match('/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}).(\d{3})([+\-])(\d{2})(\d{2})$/', $value, $matches)) {
-			$delta = intval($matches[9]) * 60 * 60 + intval($matches[10]) * 60;
-			if ($matches[8] == '-') {
-				$delta = -$delta;
-			}
-			return (mktime($matches[4], $matches[5], $matches[6], $matches[2], $matches[3], $matches[1]) + $delta);
-		}
-		return NULL;
 	}
 }
 
