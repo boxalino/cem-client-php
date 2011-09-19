@@ -35,6 +35,11 @@ class CEM_PR_Interaction extends CEM_AbstractWebHandler {
 	 */
 	protected $options;
 
+	/**
+	 * Value formatter
+	 */
+	protected $formatter;
+
 
 	/**
 	 * Constructor
@@ -42,13 +47,14 @@ class CEM_PR_Interaction extends CEM_AbstractWebHandler {
 	 * @param &$crypto encryption facility
 	 * @param &$request client request reference
 	 * @param &$response client response reference
-	 * @param &$options user-defined options
+	 * @param &$formatter value formatter
 	 */
-	public function __construct(&$crypto, &$request, &$response, &$options) {
+	public function __construct(&$crypto, &$request, &$response, &$options, &$formatter) {
 		parent::__construct($crypto);
 		$this->request = $request;
 		$this->response = $response;
 		$this->options = $options;
+		$this->formatter = $formatter;
 	}
 
 
@@ -77,6 +83,15 @@ class CEM_PR_Interaction extends CEM_AbstractWebHandler {
 	 */
 	public function getOptions() {
 		return $this->options;
+	}
+
+	/**
+	 * Get value formatter
+	 *
+	 * @return value formatter
+	 */
+	public function getFormatter() {
+		return $this->formatter;
 	}
 
 

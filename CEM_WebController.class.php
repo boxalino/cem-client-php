@@ -86,24 +86,9 @@ class CEM_WebController {
 	protected $prInteractionClass;
 
 	/**
-	 * Locale
+	 * Value formatter
 	 */
-	protected $locale;
-
-	/**
-	 * Locale currency
-	 */
-	protected $localeCurrency;
-
-	/**
-	 * Locale currency pattern
-	 */
-	protected $localeCurrencyPattern;
-
-	/**
-	 * Last interaction response
-	 */
-	protected $lastInteraction;
+	protected $formatter;
 
 
 	/**
@@ -126,9 +111,7 @@ class CEM_WebController {
 		$this->readTimeout = 15000;
 		$this->gsInteractionClass = 'CEM_GS_Interaction';
 		$this->prInteractionClass = 'CEM_PR_Interaction';
-		$this->locale = Locale::getDefault();
-		$this->localeCurrency = NULL;
-		$this->localeCurrencyPattern = NULL;
+		$this->formatter = new CEM_WebFormatter(Locale::getDefault(), NULL, NULL);
 		foreach ($options as $key => $value) {
 			$this->$key = $value;
 		}
@@ -279,15 +262,7 @@ class CEM_WebController {
 		// process interaction
 		$this->gs($request, $response, $options);
 
-		$this->lastInteraction = new $this->gsInteractionClass(
-			$this->crypto,
-			$request,
-			$response,
-			$options,
-			$this->locale,
-			$this->localeCurrency,
-			$this->localeCurrencyPattern
-		);
+		$this->lastInteraction = new $this->gsInteractionClass($this->crypto, $request, $response, $options, $this->formatter);
 		return $this->lastInteraction;
 	}
 
@@ -333,7 +308,7 @@ class CEM_WebController {
 		// process interaction
 		$this->pr($request, $response, $options);
 
-		return new $this->prInteractionClass($this->crypto, $request, $response, $options);
+		return new $this->prInteractionClass($this->crypto, $request, $response, $options, $this->formatter);
 	}
 
 	/**
