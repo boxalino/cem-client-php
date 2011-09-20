@@ -319,7 +319,7 @@ class CEM_WebFormatter {
 		if (!isset($this->_numberFormatters[$format])) {
 			$this->_numberFormatters[$format] = NumberFormatter::create($this->locale, $format);
 		}
-		return $this->_numberFormatters->format($value, $type);
+		return $this->_numberFormatters[$format]->format($value, $type);
 	}
 
 
