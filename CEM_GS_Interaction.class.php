@@ -709,6 +709,10 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		$this->_scenarios[$groupId] = array();
 		$group = $this->getGroup($groupId);
 		if (isset($group->scenarios)) {
+			$total = NULL;
+			if (isset($group->search->total)) {
+				$total = $group->search->total;
+			}
 			foreach ($group->scenarios as $scenario) {
 				$refinements = array();
 				foreach ($scenario->attributes as $attribute) {
@@ -716,15 +720,32 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					if (!$refinement) {
 						continue;
 					}
-					$refinements[] = array(
-						'prompt' => $attribute->prompt,
-						'offset' => $attribute->offset,
-						'property' => $attribute->property,
-						'label' => $refinement['label'],
-						'parents' => $refinement['parents'],
-						'values' => $refinement['values'],
-						'attribute' => $refinement['attribute']
-					);
+					$values = array();
+					$usefulValues = 0;
+					foreach ($refinement['values'] as $value) {
+						if ($total !== NULL && $value['population'] >= $total) {
+							continue;
+						}
+						$values[] = $value;
+						if ($total !== NULL && isset($attribute->minimumValuePopulation) && $value['population'] < ($attribute->minimumValuePopulation * $total)) {
+							continue;
+						}
+						if ($total !== NULL && isset($attribute->maximumValuePopulation) && $value['population'] > ($attribute->maximumValuePopulation * $total)) {
+							continue;
+						}
+						$usefulValues++;
+					}
+					if ($usefulValues > 1) {
+						$refinements[] = array(
+							'prompt' => $attribute->prompt,
+							'offset' => $attribute->offset,
+							'property' => $attribute->property,
+							'label' => $refinement['label'],
+							'parents' => $refinement['parents'],
+							'values' => $values,
+							'attribute' => $refinement['attribute']
+						);
+					}
 				}
 				$recommendations = array();
 				foreach ($scenario->recommendations as $resource) {
@@ -942,6 +963,39 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			}
 		}
 		return $list;
+	}
+
+
+	/**
+	 * Print cem debug informations.
+	 *
+	 */
+	public function printDebug() {
+		$info = array(
+			'version' => $this->response->getVersion(),
+			'status'  => $this->response->getStatus(),
+			'time'    => $this->response->getTime(),
+			'message' => $this->response->getMessage()
+		);
+		echo('<div id="cem-debug" class="cem-debug-block cem-debug-spacer"><h1>Debug: info (');
+		printf("%.02f [kb] in %.02f [s]", $this->response->getResponseSize() / 1024, $this->response->getTotalTime());
+		echo(')</h1><div class="json-visible">');
+		CEM_WebFormatter::printJsonObject($info);
+		echo('</div></div>');
+		foreach ($this->request->getRequests() as $index => $request) {
+			if (isset($request['variables'])) {
+				$variables = json_decode(json_encode($request['variables']));
+			} else {
+				$variables = array();
+			}
+			CEM_WebFormatter::printJsonBlock('request.'.$request['type'].(isset($request['action']) ? '['.$request['action'].']' : ''), $variables);
+		}
+		foreach ($this->getGroups() as $id => $scope) {
+			CEM_WebFormatter::printJsonBlock('response.'.$id, $scope);
+		}
+		foreach ($this->getContext() as $name => $scope) {
+			CEM_WebFormatter::printJsonScope($name, $scope);
+		}
 	}
 
 

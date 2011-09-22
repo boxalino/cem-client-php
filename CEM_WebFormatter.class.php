@@ -366,6 +366,114 @@ class CEM_WebFormatter {
 		}
 		return NULL;
 	}
+
+
+	/**
+	 * Print a json variable for debug.
+	 *
+	 * @param $name block name
+	 * @param $object json object
+	 * @param $visibleDepth initial visible depth
+	 */
+	public static function printJsonBlock($name, $object, $visibleDepth = 0) {
+		echo('<div id="cem-debug" class="cem-debug-block cem-debug-spacer"><h1>Debug: '.$name.' (');
+		printf("%.02f [kb]", strlen(json_encode($object)) / 1024);
+		echo(')</h1><div class="json-visible">');
+		self::printJsonObject($object, $visibleDepth);
+		echo('</div></div>');
+	}
+
+	/**
+	 * Print a cem scope for debug.
+	 *
+	 * @param $name block name
+	 * @param $scope cem scope
+	 * @param $visibleDepth initial visible depth
+	 */
+	public static function printJsonScope($name, $scope, $visibleDepth = 0) {
+		$level = $scope['level'];
+		$mode = $scope['mode'];
+		$size = strlen($scope['data']);
+		$object = json_decode($scope['data']);
+		if ($object && sizeof(get_object_vars($object)) > 0) {
+			self::printJsonBlock($level.'::'.$mode.'::'.$name, $object, $visibleDepth);
+		}
+	}
+
+	/**
+	 * Print a json array for debug.
+	 *
+	 * @param $array json array
+	 * @param $visibleDepth initial visible depth
+	 * @param $depth current depth
+	 */
+	public static function printJsonArray($array, $visibleDepth = 0, $depth = 0) {
+		for ($i = 0; $i < sizeof($array); $i++) {
+			echo('<div class="json-array">');
+			self::printJsonValue("$i.", $array[$i], $visibleDepth, $depth);
+			echo('</div>');
+		}
+	}
+
+	/**
+	 * Print a json object for debug.
+	 *
+	 * @param $object json object
+	 * @param $visibleDepth initial visible depth
+	 * @param $depth current depth
+	 */
+	public static function printJsonObject($object, $visibleDepth = 0, $depth = 0) {
+		foreach ($object as $key => $value) {
+			echo('<div class="json-object">');
+			self::printJsonValue($key, $value, $visibleDepth, $depth);
+			echo('</div>');
+		}
+	}
+
+	/**
+	 * Print a json value for debug.
+	 *
+	 * @param $key current key
+	 * @param $value json value
+	 * @param $visibleDepth initial visible depth
+	 * @param $depth current depth
+	 */
+	public static function printJsonValue($key, $value, $visibleDepth = 0, $depth = 0) {
+		$visible = $depth < $visibleDepth;
+		if (is_array($value)) {
+			if (sizeof($value) > 0) {
+				echo('<label><a href="#">'.($visible ? '[-]' : '[+]').' '.$key.'</a></label> (array: ['.sizeof($value).'])');
+				echo('<div class="'.($visible ? 'json-visible' : 'json-hidden').'">');
+				self::printJsonArray($value, $visibleDepth, $depth + 1);
+				echo('</div>');
+			} else {
+				echo('<label>[ ] '.$key.'</label> (array)');
+			}
+		} else if (is_object($value)) {
+			if (sizeof(get_object_vars($value)) > 0) {
+				echo('<label><a href="#">'.($visible ? '[-]' : '[+]').' '.$key.'</a></label> (object: '.implode(', ', array_keys(get_object_vars($value))).')');
+				echo('<div class="'.($visible ? 'json-visible' : 'json-hidden').'">');
+				self::printJsonObject($value, $visibleDepth, $depth + 1);
+				echo('</div>');
+			} else {
+				echo('<label>[ ] '.$key.'</label> (object)');
+			}
+		} else if (is_numeric($value)) {
+			echo('<label>'.$key.'</label> (number): '.$value);
+		} else if (is_bool($value)) {
+			echo('<label>'.$key.'</label> (boolean): '.($value ? 'true' : 'false'));
+		} else {
+			echo(
+				'<label>'.$key.'</label> (string): "'.
+				str_replace(
+					array(' ', "\t", "\n", "\r"),
+					array('&nbsp;', '\\t', '\\n', '\\r'),
+					htmlentities(addcslashes($value, '"'), ENT_COMPAT, 'UTF-8')
+				).
+				'"'
+			);
+		}
+	}
 }
 
 /**
