@@ -258,11 +258,48 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 * @return encoded url query
 	 */
 	public function encodeQuery($parameters = array()) {
+//		$parameters['hid'] = md5(
 		$context = $this->encodeSequentialContexts();
 		if ($context) {
 			$parameters['context'] = $context;
 		}
 		return $this->formatter->formatUrl('', $parameters);
+	}
+
+
+	/**
+	 * Get a pseudo-unique host identifier
+	 *
+	 * @return pseudo-unique host identifier
+	 */
+	public function getHostIdentifier() {
+		return sprintf('%u', crc32($_SERVER['REMOTE_ADDR']));
+	}
+
+	/**
+	 * Get a pseudo-unique visitor identifier
+	 *
+	 * @return pseudo-unique visitor identifier
+	 */
+	public function getVisitorIdentifier() {
+		$profile = $this->getContextJson('profile');
+		if (isset($profile->id)) {
+			return $profile->id;
+		}
+		return '-';
+	}
+
+	/**
+	 * Get visitor age
+	 *
+	 * @return visitor age
+	 */
+	public function getVisitorAge() {
+		$profile = $this->getContextJson('profile');
+		if (isset($profile->age)) {
+			return $profile->age;
+		}
+		return 0;
 	}
 
 
@@ -351,16 +388,15 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		$model = $this->getContextJson('model');
 		if (isset($model->queryTerms)) {
 			foreach ($model->queryTerms as $index => $queryTerm) {
-				if ($queryTerm->type == 'ambiguous' && isset($queryTerm->refinements)) {
-					if (sizeof($queryTerm->refinements) != 1) {
-						continue;
-					}
-					$refinement = $queryTerm->refinements[0];
-					if (sizeof($refinement->values) != 1) {
-						continue;
-					}
-					if (levenshtein(strtolower($refinement->values[0]->value), strtolower($queryTerm->value)) > 2) {
-						$list[] = strtolower($refinement->values[0]->value);
+				if ($queryTerm->type == 'ambiguous' && $queryTerm->termExist && isset($queryTerm->refinements)) {
+					foreach ($queryTerm->refinements as $refinement) {
+						if (sizeof($refinement->values) != 1) {
+							continue;
+						}
+						$value = strtolower($refinement->values[0]->value);
+						if (!in_array($value, $list) && levenshtein($value, strtolower($queryTerm->value)) > 2) {
+							$list[] = $value;
+						}
 					}
 				}
 			}
