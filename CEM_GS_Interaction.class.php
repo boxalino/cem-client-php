@@ -258,7 +258,6 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 * @return encoded url query
 	 */
 	public function encodeQuery($parameters = array()) {
-//		$parameters['hid'] = md5(
 		$context = $this->encodeSequentialContexts();
 		if ($context) {
 			$parameters['context'] = $context;
