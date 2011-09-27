@@ -750,7 +750,11 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			}
 			foreach ($group->scenarios as $scenario) {
 				$refinements = array();
+				$skip = $this->requestStringArray('skip');
 				foreach ($scenario->attributes as $attribute) {
+					if (in_array($attribute->property, $skip)) {
+						continue;
+					}
 					$refinement = $this->getRefinement($attribute->property, $groupId);
 					if (!$refinement) {
 						continue;
@@ -760,6 +764,12 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					foreach ($refinement['values'] as $value) {
 						if ($total !== NULL && $value['population'] >= $total) {
 							continue;
+						}
+						if (sizeof($skip) > 0) {
+							$value['addAction']['parameters']['skip'] = $skip;
+							$value['addAction']['url'] = $this->formatter->formatUrl('', $value['addAction']['parameters']);
+							$value['setAction']['parameters']['skip'] = $skip;
+							$value['setAction']['url'] = $this->formatter->formatUrl('', $value['setAction']['parameters']);
 						}
 						$values[] = $value;
 						if ($total !== NULL && isset($attribute->minimumValuePopulation) && $value['population'] < ($attribute->minimumValuePopulation * $total)) {
@@ -780,6 +790,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 							'values' => $values,
 							'attribute' => $refinement['attribute']
 						);
+						$skip[] = $attribute->property;
 					}
 				}
 				$recommendations = array();
@@ -866,7 +877,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		foreach ($this->getScenarios($groupId) as $scenario) {
 			$this->_recommendations[$groupId] = array_merge($this->_recommendations[$groupId], $scenario['recommendations']);
 		}
-		usort($this->_recommendations[$groupId], array($this, 'sortRecommendations'));
+		usort($this->_recommendations[$groupId], array($this, 'sortByWeight'));
 		return $this->_recommendations[$groupId];
 	}
 
@@ -985,15 +996,23 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					$sum = 0;
 					$list[$property->property] = array();
 					foreach ($property->values as $value) {
-						$list[$property->property][$value->data] = $value->weight;
+						if (!isset($list[$property->property][$value->data])) {
+							$list[$property->property][$value->data] = array('offset' => 0, 'weight' => 0);
+						}
+						$list[$property->property][$value->data]['weight'] += $value->weight;
 						$sum += $value->weight;
 					}
 					if ($sum > 0) {
 						foreach ($list[$property->property] as $key => $value) {
-							$list[$property->property][$key] /= $sum;
+							$list[$property->property][$key]['weight'] /= $sum;
 						}
 					}
-					arsort($list[$property->property]);
+					uasort($list[$property->property], array($this, 'sortByWeight'));
+
+					$offset = 1;
+					foreach ($list[$property->property] as $key => $value) {
+						$list[$property->property][$key]['offset'] = $offset++;
+					}
 				}
 			}
 		}
@@ -1114,11 +1133,13 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 */
 	protected function findAttributeRefinement($attribute, $excludedPreviews = array()) {
 		$guidanceFilters = $this->activeFilters();
+		$preferences = $this->getPreferredPropertyValues();
 		return $this->findAttributeRefinementValues(
 			$attribute,
 			$attribute->values,
 			isset($guidanceFilters[$attribute->property]) ? $guidanceFilters[$attribute->property] : array(),
 			$excludedPreviews,
+			isset($preferences[$attribute->property]) ? $preferences[$attribute->property] : array(),
 			0,
 			array()
 		);
@@ -1131,11 +1152,12 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 * @param $values current node's values
 	 * @param $filters active filters
 	 * @param $excludedPreviews list of excluded preview id
+	 * @param $preferences property preferences
 	 * @param $depth current node's depth
 	 * @param $parents current node's parents
 	 * @return attribute refinement or NULL if none
 	 */
-	protected function findAttributeRefinementValues($attribute, $values, $filters, $excludedPreviews, $depth, $parents) {
+	protected function findAttributeRefinementValues($attribute, $values, $filters, $excludedPreviews, $preferences, $depth, $parents) {
 		// skip node if hierarchical parent
 		if ($attribute->hierarchical && sizeof($values) == 1 && isset($values[0]->children)) {
 			array_push($parents, $values[0]);
@@ -1144,6 +1166,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				$values[0]->children,
 				$filters,
 				$excludedPreviews,
+				$preferences,
 				$depth + 1,
 				$parents
 			);
@@ -1239,9 +1262,10 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			}
 
 			// append value
+			$name = $this->formatter->formatAttributeValue($attribute, $index, $value);
 			$list[] = array(
 				'index' => $index,
-				'name' => $this->formatter->formatAttributeValue($attribute, $index, $value),
+				'name' => $name,
 				'population' => $value->population,
 				'addAction' => array(
 					'url' => $this->formatter->formatUrl('', $urlAddParameters),
@@ -1251,6 +1275,8 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					'url' => $this->formatter->formatUrl('', $urlSetParameters),
 					'parameters' => $urlSetParameters
 				),
+				'preference' => isset($preferences[$name]) && $preferences[$name]['weight'] > 0.1 ? $preferences[$name]['offset'] : 0,
+				'favorite' => FALSE,
 				'preview' => $preview,
 				'resources' => $resources,
 				'value' => $value
@@ -1278,17 +1304,36 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					$urlParameters['value'] = $parent->data;
 				}
 
+				$name = $this->formatter->formatAttributeValue($attribute, 0, $parent);
 				$parentValues[] = array(
 					'depth' => $parentDepth,
-					'name' => $this->formatter->formatAttributeValue($attribute, 0, $parent),
+					'name' => $name,
 					'population' => $parent->population,
 					'setAction' => array(
 						'url' => $this->formatter->formatUrl('', $urlParameters),
 						'parameters' => $urlParameters
 					),
+					'preference' => 0,
+					'favorite' => FALSE,
 					'value' => $parent
 				);
 			}
+
+			// find favorites
+			$favorites = array();
+			foreach ($list as $index => $value) {
+				if ($value['preference'] > 0) {
+					$favorites[$index] = $value['preference'];
+				}
+			}
+			asort($favorites);
+			if (sizeof($favorites) > ceil(sizeof($list) / 3)) {
+				$favorites = array_slice($favorites, 0, ceil(sizeof($list) / 3), TRUE);
+			}
+			foreach ($favorites as $index => $value) {
+				$list[$index]['favorite'] = TRUE;
+			}
+
 			return array(
 				'property' => $attribute->property,
 				'label' => $attribute->name,
@@ -1310,11 +1355,13 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 */
 	protected function findAttributeAlternative($attribute, $excludedPreviews = array()) {
 		$guidanceFilters = $this->activeFilters();
+		$preferences = $this->getPreferredPropertyValues();
 		return $this->findAttributeAlternativeValues(
 			$attribute,
 			$attribute->values,
 			isset($guidanceFilters[$attribute->property]) ? $guidanceFilters[$attribute->property] : array(),
 			$excludedPreviews,
+			isset($preferences[$attribute->property]) ? $preferences[$attribute->property] : array(),
 			0,
 			array()
 		);
@@ -1327,11 +1374,12 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 * @param $values current node's values
 	 * @param $filters active filters
 	 * @param $excludedPreviews list of excluded preview id
+	 * @param $preferences property preferences
 	 * @param $depth current node's depth
 	 * @param $parents current node's parents
 	 * @return attribute alternative or NULL if none
 	 */
-	protected function findAttributeAlternativeValues($attribute, $values, $filters, $excludedPreviews, $depth, $parents) {
+	protected function findAttributeAlternativeValues($attribute, $values, $filters, $excludedPreviews, $preferences, $depth, $parents) {
 		// skip node if hierarchical parent
 		if ($attribute->hierarchical && sizeof($values) == 1 && isset($values[0]->children)) {
 			array_push($parents, $values[0]);
@@ -1340,6 +1388,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				$values[0]->children,
 				$filters,
 				$excludedPreviews,
+				$preferences,
 				$depth + 1,
 				$parents
 			);
@@ -1420,14 +1469,17 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			}
 
 			// append value
+			$name  = $this->formatter->formatAttributeValue($attribute, $index, $value);
 			$list[] = array(
 				'index' => $index,
-				'name' => $this->formatter->formatAttributeValue($attribute, $index, $value),
+				'name' => $name,
 				'population' => $value->population,
 				'setAction' => array(
 					'url' => $this->formatter->formatUrl('', $urlParameters),
 					'parameters' => $urlParameters
 				),
+				'preference' => isset($preferences[$name]) && $preferences[$name]['weight'] > 0.1 && $preferences[$name]['offset'] < 3,
+				'favorite' => FALSE,
 				'preview' => $preview,
 				'resources' => $resources,
 				'value' => $value
@@ -1455,9 +1507,10 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					$urlParameters['value'] = $parent->data;
 				}
 
+				$name = $this->formatter->formatAttributeValue($attribute, 0, $parent);
 				$parentValues[] = array(
 					'depth' => $parentDepth,
-					'name' => $this->formatter->formatAttributeValue($attribute, 0, $parent),
+					'name' => $name,
 					'population' => $parent->population,
 					'setAction' => array(
 						'url' => $this->formatter->formatUrl('', $urlParameters),
@@ -1466,6 +1519,22 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					'value' => $parent
 				);
 			}
+
+			// find favorites
+			$favorites = array();
+			foreach ($list as $index => $value) {
+				if ($value['preference'] > 0) {
+					$favorites[$index] = $value['preference'];
+				}
+			}
+			asort($favorites);
+			if (sizeof($favorites) > ceil(sizeof($list) / 2)) {
+				$favorites = array_slice($favorites, 0, ceil(sizeof($list) / 2), TRUE);
+			}
+			foreach ($favorites as $index => $value) {
+				$list[$index]['favorite'] = TRUE;
+			}
+
 			return array(
 				'property' => $attribute->property,
 				'label' => $attribute->name,
@@ -1496,10 +1565,10 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 
 
 	/**
-	 * Called to sort recommendations by weight
+	 * Called to sort object by weight
 	 *
 	 */
-	private function sortRecommendations($a, $b) {
+	private function sortByWeight($a, $b) {
 		if ($a['weight'] > $b['weight']) {
 			return -1;
 		} else if ($a['weight'] < $b['weight']) {
