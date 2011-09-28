@@ -25,6 +25,11 @@ class CEM_WebStateHandler extends CEM_AbstractWebHandler {
 	 */
 	protected $state;
 
+	/**
+	 * Json decoded contexts (cache)
+	 */
+	private $_jsonContexts = array();
+
 
 	/**
 	 * Constructor
@@ -71,6 +76,51 @@ class CEM_WebStateHandler extends CEM_AbstractWebHandler {
 	 */
 	public function remove(&$state) {
 		$this->state = NULL;
+	}
+
+
+	/**
+	 * Get context scopes
+	 *
+	 * @return context scopes
+	 */
+	public function getContext() {
+		$state = $this->read();
+		if ($state) {
+			return $state->get('context', array());
+		}
+		$state = $this->create();
+		if ($state) {
+			return $state->get('context', array());
+		}
+		return array();
+	}
+
+	/**
+	 * Get context data
+	 *
+	 * @param $name context name
+	 * @return context data
+	 */
+	public function getContextData($name) {
+		$scopes = $this->getContext();
+		if (isset($scopes[$name])) {
+			return $scopes[$name]['data'];
+		}
+		return '';
+	}
+
+	/**
+	 * Get context data from json
+	 *
+	 * @param $name context name
+	 * @return context data (decoded)
+	 */
+	public function getContextJson($name) {
+		if (!isset($this->_jsonContexts[$name])) {
+			$this->_jsonContexts[$name] = @json_decode($this->getContextData($name));
+		}
+		return $this->_jsonContexts[$name];
 	}
 }
 

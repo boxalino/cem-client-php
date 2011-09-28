@@ -23,22 +23,27 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 	/**
 	 * Request variables
 	 */
-	protected $context;
+	protected $context = array();
 
 	/**
 	 * Sequential contexts
 	 */
-	protected $sequentialContexts;
-
-	/**
-	 * Current model
-	 */
-	protected $model = array();
+	protected $sequentialContexts = array();
 
 	/**
 	 * Current user state
 	 */
 	protected $userState = array();
+
+	/**
+	 * User state keys
+	 */
+	protected $userStateKeys = array('pageSize' => 'number', 'ranking' => 'string', 'scenario' => 'string');
+
+	/**
+	 * Current model
+	 */
+	protected $model = array();
 
 
 	/**
@@ -49,7 +54,6 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 	 */
 	public function __construct(&$crypto, $keys = array()) {
 		parent::__construct($crypto, $keys);
-		$this->sequentialContexts = array();
 		$this->parseSequentialContexts();
 	}
 
@@ -127,6 +131,20 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 
 
 	/**
+	 * Register user states
+	 *
+	 * @param $key request variables
+	 * @return this
+	 */
+	public function registerUserStateKeys($keys) {
+		foreach ($keys as $key => $type) {
+			$this->userStateKeys[$key] = $type;
+		}
+		return $this;
+	}
+
+
+	/**
 	 * Called when client state needs to be initialized
 	 *
 	 * @param &$state client state reference
@@ -174,17 +192,27 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 
 		// add state request
 		$userState = array();
-		if ($this->requestExists('pageSize')) {
-			$userState['pageSize'] = $this->requestNumber('pageSize');
-		}
-		if ($this->requestExists('ranking')) {
-			$userState['ranking'] = $this->requestString('ranking');
-		}
-		if ($this->requestExists('displayMode')) {
-			$userState['displayMode'] = $this->requestString('displayMode');
-		}
-		if ($this->requestExists('scenario')) {
-			$userState['scenario'] = $this->requestString('scenario');
+		foreach ($this->userStateKeys as $key => $type) {
+			if (!$this->requestExists($key)) {
+				continue;
+			}
+			switch ($type) {
+			case 'boolean':
+				$userState[$key] = $this->requestBoolean($key);
+				break;
+
+			case 'number':
+				$userState[$key] = $this->requestNumber($key);
+				break;
+
+			case 'array':
+				$userState[$key] = $this->requestStringArray($key);
+				break;
+
+			default:
+				$userState[$key] = $this->requestString($key);
+				break;
+			}
 		}
 		if (sizeof($userState) > 0) {
 			$request->appendRequest('setUserState', array('userState' => $userState));

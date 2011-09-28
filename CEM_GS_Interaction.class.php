@@ -383,23 +383,39 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 * @return "did you mean" queries
 	 */
 	public function activeDidYouMean() {
-		$list = array();
 		$model = $this->getContextJson('model');
-		if (isset($model->queryTerms)) {
-			foreach ($model->queryTerms as $index => $queryTerm) {
-				if ($queryTerm->type == 'ambiguous' && $queryTerm->termExist && isset($queryTerm->refinements)) {
-					foreach ($queryTerm->refinements as $refinement) {
-						if (sizeof($refinement->values) != 1) {
-							continue;
-						}
-						$value = strtolower($refinement->values[0]->value);
-						if (!in_array($value, $list) && levenshtein($value, strtolower($queryTerm->value)) > 2) {
-							$list[] = $value;
-						}
+		if (!isset($model->queryTerms)) {
+			return array();
+		}
+		$list = array();
+		$prefix = '';
+		foreach ($model->queryTerms as $index => $queryTerm) {
+			if ($queryTerm->type != 'ambiguous' || $queryTerm->termExist || !isset($queryTerm->refinements)) {
+				$prefix .= ' '.$queryTerm->value;
+				continue;
+			}
+			foreach ($queryTerm->refinements as $refinement) {
+				foreach ($refinement->values as $value) {
+					$value = trim(strtolower($prefix.' '.$value->value));
+					$distance = levenshtein($value, strtolower($queryTerm->value));
+					if (!isset($list[$value]) && $distance > 0) {
+						$urlParameters = array(
+							'query' => $value
+						);
+						$list[$value] = array(
+							'query' => $value,
+							'queryAction' => array(
+								'url' => $this->formatter->formatUrl('', $urlParameters),
+								'parameters' => $urlParameters
+							),
+							'distance' => $distance
+						);
 					}
 				}
 			}
+			$prefix .= ' '.$queryTerm->value;
 		}
+		uasort($list, array($this, 'sortByDistance'));
 		return $list;
 	}
 
@@ -577,6 +593,27 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			if ($term->type == 'unfiltered' || $term->type == 'unmatched') {
 				continue;
 			}
+			return TRUE;
+		}
+		return FALSE;
+	}
+
+	/**
+	 * Check if current context is filtering results
+	 *
+	 * @return TRUE if context filters results
+	 */
+	public function isFiltering() {
+		$model = $this->getContextJson('model');
+		if (isset($model->queryTerms)) {
+			foreach ($model->queryTerms as $term) {
+				if ($term->type == 'unfiltered' || $term->type == 'unmatched') {
+					continue;
+				}
+				return TRUE;
+			}
+		}
+		if (isset($model->guidances) && sizeof($model->guidances) > 0) {
 			return TRUE;
 		}
 		return FALSE;
@@ -1572,6 +1609,19 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		if ($a['weight'] > $b['weight']) {
 			return -1;
 		} else if ($a['weight'] < $b['weight']) {
+			return 1;
+		}
+		return 0;
+	}
+
+	/**
+	 * Called to sort object by weight
+	 *
+	 */
+	private function sortByDistance($a, $b) {
+		if ($a['distance'] < $b['distance']) {
+			return -1;
+		} else if ($a['distance'] > $b['distance']) {
 			return 1;
 		}
 		return 0;
