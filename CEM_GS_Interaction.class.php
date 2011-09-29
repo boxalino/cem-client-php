@@ -817,7 +817,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 						}
 						$usefulValues++;
 					}
-					if ($usefulValues > 1) {
+					if ($usefulValues > 0) {
 						$refinements[] = array(
 							'prompt' => $attribute->prompt,
 							'offset' => $attribute->offset,
@@ -1319,7 +1319,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				'value' => $value
 			);
 		}
-		if (sizeof($list) > 1) {
+		if (sizeof($list) > 0) {
 			$parentValues = array();
 			foreach ($parents as $parentDepth => $parent) {
 				// build url
