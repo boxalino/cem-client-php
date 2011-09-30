@@ -123,12 +123,21 @@ class CEM_PR_Interaction extends CEM_AbstractWebHandler {
 	}
 
 	/**
-	 * Get time
+	 * Get remote time
 	 *
-	 * @return time (in seconds)
+	 * @return remote time (in seconds)
 	 */
 	public function getTime() {
 		return $this->response->getTime();
+	}
+
+	/**
+	 * Get processing time
+	 *
+	 * @return processing time (in seconds)
+	 */
+	public function getTotalTime() {
+		return $this->response->getTotalTime();
 	}
 
 

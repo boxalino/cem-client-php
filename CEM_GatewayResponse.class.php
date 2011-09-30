@@ -82,9 +82,9 @@ abstract class CEM_GatewayResponse {
 	}
 
 	/**
-	 * Get time
+	 * Get remote time
 	 *
-	 * @return time (in seconds)
+	 * @return remote time (in seconds)
 	 */
 	public function getTime() {
 		return ($this->time / 1000.0);
