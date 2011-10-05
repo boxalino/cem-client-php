@@ -826,7 +826,8 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 						}
 						$usefulValues++;
 					}
-					if ($usefulValues > 0) {
+					// HACK: flaschenpost
+					if ($usefulValues > 1 || ($usefulValues > 0 && $attribute->property == 'awarded')) {
 						$refinements[] = array(
 							'prompt' => $attribute->prompt,
 							'offset' => $attribute->offset,
