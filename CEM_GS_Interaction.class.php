@@ -399,7 +399,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		$list = array();
 		$prefix = '';
 		foreach ($model->queryTerms as $index => $queryTerm) {
-			if ($queryTerm->type != 'ambiguous' || $queryTerm->termExist || !isset($queryTerm->refinements)) {
+			if ($queryTerm->type != 'ambiguous' || (isset($queryTerm->termExist) && $queryTerm->termExist) || !isset($queryTerm->refinements)) {
 				$prefix .= ' '.$queryTerm->value;
 				continue;
 			}
