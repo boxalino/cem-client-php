@@ -796,9 +796,11 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			}
 			foreach ($group->scenarios as $scenario) {
 				$refinements = array();
+				$attributeOrder = array();
 				$skip = $this->requestStringArray('skip');
 				foreach ($scenario->attributes as $attribute) {
-					if (in_array($attribute->property, $skip)) {
+					$attributeOrder[] = $attribute->property;
+					if (!$attribute->valid || in_array($attribute->property, $skip)) {
 						continue;
 					}
 					$refinement = $this->getRefinement($attribute->property, $groupId);
@@ -844,9 +846,18 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				foreach ($scenario->recommendations as $resource) {
 					$recommendations[] = $this->buildResource($resource);
 				}
+				$setAction = array(
+					'context' => $this->encodeSequentialContexts(),
+					'scenario' => $scenario->id
+				);
 				$this->_scenarios[$groupId][$scenario->id] = array(
 					'id' => $scenario->id,
 					'name' => $scenario->name,
+					'setAction' => array(
+						'parameters' => $setAction,
+						'url' => $this->formatter->formatUrl('', $setAction)
+					),
+					'attributeOrder' => $attributeOrder,
 					'refinements' => $refinements,
 					'recommendations' => $recommendations,
 					'scenario' => $scenario
