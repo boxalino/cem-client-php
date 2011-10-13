@@ -404,21 +404,46 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				continue;
 			}
 			foreach ($queryTerm->refinements as $refinement) {
+				$label = '';
+				$property = $this->getProperty($refinement->property);
+				if ($property) {
+					$label = $property['name'];
+				}
 				foreach ($refinement->values as $value) {
-					$value = trim(strtolower($prefix.' '.$value->value));
+					$rawValue = $value->value;
+					$value = trim(strtolower($prefix.' '.$rawValue));
 					$distance = levenshtein($value, strtolower($queryTerm->value));
-					if (!isset($list[$value]) && $distance > 0) {
-						$urlParameters = array(
-							'query' => $value
-						);
-						$list[$value] = array(
-							'query' => $value,
-							'queryAction' => array(
-								'url' => $this->formatter->formatUrl('', $urlParameters),
-								'parameters' => $urlParameters
-							),
-							'distance' => $distance
-						);
+					if (!isset($list[$value])) {
+						if ($distance > 0) {
+							$urlParameters = array(
+								'query' => $value
+							);
+							$list[$value] = array(
+								'label' => $label,
+								'query' => $value,
+								'queryAction' => array(
+									'url' => $this->formatter->formatUrl('', $urlParameters),
+									'parameters' => $urlParameters
+								),
+								'distance' => $distance
+							);
+						} else {
+							$urlParameters = array(
+								'context' => $this->encodeSequentialContexts(),
+								'refine' => $index,
+								'property' => $refinement->property,
+								'value' => $rawValue
+							);
+							$list[$value] = array(
+								'label' => $label,
+								'query' => $value,
+								'queryAction' => array(
+									'url' => $this->formatter->formatUrl('', $urlParameters),
+									'parameters' => $urlParameters
+								),
+								'distance' => $distance
+							);
+						}
 					}
 				}
 			}
@@ -1217,7 +1242,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 */
 	protected function findAttributeRefinementValues($attribute, $values, $filters, $excludedPreviews, $preferences, $depth, $parents) {
 		// skip node if hierarchical parent
-		if ($attribute->hierarchical && sizeof($values) == 1 && isset($values[0]->children)) {
+		if (in_array('hierarchical', $attribute->propertyFlags) && sizeof($values) == 1 && isset($values[0]->children)) {
 			array_push($parents, $values[0]);
 			$refinement = $this->findAttributeRefinementValues(
 				$attribute,
@@ -1247,7 +1272,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			$selected = FALSE;
 			foreach ($filters as $filter) {
 				$selected = TRUE;
-				if ($attribute->hierarchical) {
+				if (in_array('hierarchical', $attribute->propertyFlags)) {
 					if (sizeof($filter['guidance']->data) <= $depth) {
 						$selected = FALSE;
 						continue;
@@ -1284,7 +1309,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				'guidance' => $attribute->type,
 				'property' => $attribute->property
 			);
-			if ($attribute->hierarchical) {
+			if (in_array('hierarchical', $attribute->propertyFlags)) {
 				$urlAddParameters['hierarchical'] = $depth + 1;
 				$urlSetParameters['hierarchical'] = $depth + 1;
 				for ($i = 0; $i < $depth; $i++) {
@@ -1349,7 +1374,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					'guidance' => $attribute->type,
 					'property' => $attribute->property
 				);
-				if ($attribute->hierarchical) {
+				if (in_array('hierarchical', $attribute->propertyFlags)) {
 					$urlParameters['hierarchical'] = $parentDepth + 1;
 					for ($i = 0; $i < $parentDepth; $i++) {
 						$urlParameters['value'.$i] = $parents[$i]->data;
@@ -1439,7 +1464,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 */
 	protected function findAttributeAlternativeValues($attribute, $values, $filters, $excludedPreviews, $preferences, $depth, $parents) {
 		// skip node if hierarchical parent
-		if ($attribute->hierarchical && sizeof($values) == 1 && isset($values[0]->children)) {
+		if (in_array('hierarchical', $attribute->propertyFlags) && sizeof($values) == 1 && isset($values[0]->children)) {
 			array_push($parents, $values[0]);
 			$alternative = $this->findAttributeAlternativeValues(
 				$attribute,
@@ -1464,7 +1489,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			$selected = FALSE;
 			foreach ($filters as $filter) {
 				$selected = TRUE;
-				if ($attribute->hierarchical) {
+				if (in_array('hierarchical', $attribute->propertyFlags)) {
 					if (sizeof($filter['guidance']->data) <= $depth) {
 						$selected = FALSE;
 						continue;
@@ -1496,7 +1521,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				'guidance' => $attribute->type,
 				'property' => $attribute->property
 			);
-			if ($attribute->hierarchical) {
+			if (in_array('hierarchical', $attribute->propertyFlags)) {
 				$urlParameters['hierarchical'] = $depth + 1;
 				for ($i = 0; $i < $depth; $i++) {
 					$urlParameters['value'.$i] = $parents[$i]->data;
@@ -1552,7 +1577,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					'guidance' => $attribute->type,
 					'property' => $attribute->property
 				);
-				if ($attribute->hierarchical) {
+				if (in_array('hierarchical', $attribute->propertyFlags)) {
 					$urlParameters['hierarchical'] = $parentDepth + 1;
 					for ($i = 0; $i < $parentDepth; $i++) {
 						$urlParameters['value'.$i] = $parents[$i]->data;
