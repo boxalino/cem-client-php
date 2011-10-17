@@ -609,6 +609,16 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		return (isset($model->ranking) ? $model->ranking : '@score desc');
 	}
 
+	/** 
+	 * Get current scenario
+	 *
+	 * @return current scenario
+	 */
+	public function activeScenario() {
+		$model = $this->getContextJson('model');
+		return (isset($model->scenario) ? $model->scenario : '');
+	}
+
 
 	/**
 	 * Check if current query is filtering results
@@ -869,7 +879,9 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				}
 				$recommendations = array();
 				foreach ($scenario->recommendations as $resource) {
-					$recommendations[] = $this->buildResource($resource);
+					$resource = $this->buildResource($resource);
+					$resource['scenario'] = $scenario->id;
+					$recommendations[] = $resource;
 				}
 				$setAction = array(
 					'context' => $this->encodeSequentialContexts(),
@@ -958,7 +970,9 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 
 		$this->_recommendations[$groupId] = array();
 		foreach ($this->getScenarios($groupId) as $scenario) {
-			$this->_recommendations[$groupId] = array_merge($this->_recommendations[$groupId], $scenario['recommendations']);
+			foreach ($scenario['recommendations'] as $recommendation) {
+				$this->_recommendations[$groupId][] = $recommendation;
+			}
 		}
 		usort($this->_recommendations[$groupId], array($this, 'sortByWeight'));
 		return $this->_recommendations[$groupId];
