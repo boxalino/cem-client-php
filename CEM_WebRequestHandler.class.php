@@ -91,16 +91,28 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 	}
 
 	/**
-	 * Get sequential context variables
+	 * Get sequential context data
 	 *
 	 * @param $name context name
-	 * @return context variables
+	 * @return context data
 	 */
 	public function getSequentialContext($name) {
 		if (isset($this->sequentialContexts[$name])) {
 			return $this->sequentialContexts[$name]['data'];
 		}
 		return '';
+	}
+
+	/**
+	 * Set sequential context variables
+	 *
+	 * @param $name context name
+	 * @param $data context data
+	 */
+	public function setSequentialContext($name, $data) {
+		if (isset($this->sequentialContexts[$name])) {
+			return $this->sequentialContexts[$name]['data'] = $data;
+		}
 	}
 
 	/**
@@ -222,7 +234,9 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 		$extraSearch = FALSE;
 		$action = 'search';
 		$variables = $this->buildInteractionVariables($options);
-		if ($this->requestExists('detail')) {
+		if (isset($options['action'])) {
+			$action = strval($options['action']);
+		} else if ($this->requestExists('detail')) {
 			$action = 'detail';
 			$variables['sourceFilter'] = '@type:instance&@id:"'.addcslashes($this->requestString('detail'), '"').'"';
 		} else if ($this->requestExists('query')) {
@@ -283,8 +297,6 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 		} else if ($this->requestExists('feedback')) {
 			$action = 'feedback';
 			$variables['weight'] = $this->requestNumber('feedback');
-		} else if (isset($options['action'])) {
-			$action = strval($options['action']);
 		}
 		$request->appendRequest($action, $variables);
 
@@ -306,13 +318,6 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 		$variables = array();
 		foreach ($this->context as $key => $value) {
 			$variables[$key] = $value;
-		}
-
-		// custom overrides
-		if (isset($options['variables'])) {
-			foreach ($options['variables'] as $key => $value) {
-				$variables[$key] = $value;
-			}
 		}
 
 		// base parameters
@@ -359,6 +364,13 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 			$variables['scenario'] = $this->model->scenario;
 		} else if (isset($this->userState->scenario)) {
 			$variables['scenario'] = $this->userState->scenario;
+		}
+
+		// custom overrides
+		if (isset($options['variables'])) {
+			foreach ($options['variables'] as $key => $value) {
+				$variables[$key] = $value;
+			}
 		}
 		return $variables;
 	}

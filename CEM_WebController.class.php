@@ -269,9 +269,13 @@ class CEM_WebController {
 	/**
 	 * Get last interaction if any
 	 *
+	 * @param $lastInteraction optional last interaction to set
 	 * @return last interaction or NULL if none
 	 */
-	public function lastInteraction() {
+	public function lastInteraction($lastInteraction = NULL) {
+		if ($lastInteraction) {
+			$this->lastInteraction = $lastInteraction;
+		}
 		return $this->lastInteraction;
 	}
 
