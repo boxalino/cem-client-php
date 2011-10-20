@@ -238,6 +238,9 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 			$action = strval($options['action']);
 		} else if ($this->requestExists('detail')) {
 			$action = 'detail';
+			if ($this->requestExists('detailTarget')) {
+				$variables['scenarioTarget'] = $this->requestString('detailTarget');
+			}
 			$variables['sourceFilter'] = '@type:instance&@id:"'.addcslashes($this->requestString('detail'), '"').'"';
 		} else if ($this->requestExists('query')) {
 			$action = 'query';

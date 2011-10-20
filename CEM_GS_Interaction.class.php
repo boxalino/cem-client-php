@@ -846,7 +846,10 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					$usefulValues = 0;
 					foreach ($refinement['values'] as $value) {
 						if ($total !== NULL && $value['population'] >= $total) {
-							continue;
+							// HACK: semeuse
+							if ($this->getRequest()->getCustomer() != 'semeuse') {
+								continue;
+							}
 						}
 						if (sizeof($skip) > 0) {
 							$value['addAction']['parameters']['skip'] = $skip;
@@ -863,8 +866,13 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 						}
 						$usefulValues++;
 					}
+
 					// HACK: flaschenpost
-					if ($usefulValues > 1 || ($usefulValues > 0 && $attribute->property == 'awarded')) {
+					if ($this->getRequest()->getCustomer() == 'flaschenpost' && $usefulValues == 1 && $attribute->property == 'awarded') {
+						$usefulValues++;
+					}
+
+					if ($usefulValues > 1) {
 						$refinements[] = array(
 							'prompt' => $attribute->prompt,
 							'offset' => $attribute->offset,
@@ -1279,7 +1287,10 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		foreach ($values as $index => $value) {
 			// skip node if no effect
 			if ($value->population == $this->getResultsTotal()) {
-				continue;
+				// HACK: semeuse
+				if ($this->getRequest()->getCustomer() != 'semeuse') {
+					continue;
+				}
 			}
 
 			// skip node if already selected
