@@ -236,6 +236,13 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 		$variables = $this->buildInteractionVariables($options);
 		if (isset($options['action'])) {
 			$action = strval($options['action']);
+			switch ($options['action']) {
+			case 'query':
+			case 'refine':
+			case 'guidance':
+				$extraSearch = TRUE;
+				break;
+			}
 		} else if ($this->requestExists('detail')) {
 			$action = 'detail';
 			if ($this->requestExists('detailTarget')) {
