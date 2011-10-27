@@ -51,6 +51,11 @@ abstract class CEM_GatewayResponse {
 	 *
 	 */
 	public function __construct() {
+		$this->version = '';
+		$this->status = FALSE;
+		$this->message = '';
+		$this->time = 0;
+		$this->totalTime = 0;
 	}
 
 

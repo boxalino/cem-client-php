@@ -239,7 +239,10 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 			switch ($options['action']) {
 			case 'query':
 			case 'refine':
-			case 'guidance':
+			case 'clearQuery':
+			case 'addGuidance':
+			case 'setGuidance':
+			case 'delGuidance':
 				$extraSearch = TRUE;
 				break;
 			}

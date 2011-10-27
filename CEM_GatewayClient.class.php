@@ -97,20 +97,25 @@ class CEM_GatewayClient {
 			}
 		}
 
+		// set curl request referer
+		$referer = $request->getReferer();
+		if ($referer) {
+			if (!curl_setopt($h, CURLOPT_REFERER,		$referer)) {
+				curl_close($h);
+				return FALSE;
+			}
+		}
+
 		// execute curl request/response
-		$stateId = $this->nextStateId++;
-		$this->states[$stateId] = array(
-			'h' => &$h,
-			's' => &$state
-		);
+		$this->state = $state;
 
 		$time = microtime(TRUE);
 		$responseData = curl_exec($h);
-		$response->setTotalTime(microtime(TRUE) - $time);
 		$code = curl_getinfo($h, CURLINFO_HTTP_CODE);
 		$error = curl_error($h);
+		$response->setTotalTime(microtime(TRUE) - $time);
 
-		unset($this->states[$stateId]);
+		$this->state = NULL;
 
 		// close curl
 		curl_close($h);
@@ -129,14 +134,9 @@ class CEM_GatewayClient {
 
 
 	/**
-	 * @internal Active CURL states
+	 * @internal Current state
 	 */
-	private $states = array();
-
-	/**
-	 * @internal Next CURL state id
-	 */
-	private $nextStateId = 0;
+	private $state = NULL;
 
 
 	/**
@@ -147,17 +147,8 @@ class CEM_GatewayClient {
 	 * @return line size
 	 */
 	private function parseHeader($h, $data) {
-		// find state
-		$state = NULL;
-		foreach ($this->states as $entry) {
-			if ($entry['h'] === $h) {
-				$state = $entry['s'];
-				break;
-			}
-		}
-
 		// parse cookies
-		if ($state != NULL) {
+		if ($this->state != NULL) {
 			$cookieData = NULL;
 			if (stripos($data, "set-cookie:") === 0) {
 				$cookieData = trim(substr($data, strlen("set-cookie:")));
@@ -173,7 +164,7 @@ class CEM_GatewayClient {
 						$parameter = explode('=', $parts[$i]);
 						$parameters[$parameter[0]] = $parameter[1];
 					}
-					$state->setCookie($value[0], $value[1], $parameters);
+					$this->state->setCookie($value[0], $value[1], $parameters);
 				}
 			}
 		}

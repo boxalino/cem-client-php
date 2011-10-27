@@ -146,7 +146,9 @@ class CEM_GS_GatewayResponse extends CEM_GatewayResponse {
 	public function read(&$state, &$data) {
 		$this->responseSize = strlen($data);
 		$doc = new DOMDocument("1.0", 'UTF-8');
-		$doc->loadXML($data);
+		if (!@$doc->loadXML($data)) {
+			return FALSE;
+		}
 		if ($this->visitResponse($doc->documentElement)) {
 			$state->set('context', $this->context);
 			return TRUE;
