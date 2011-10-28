@@ -36,6 +36,11 @@ class CEM_GatewayState {
 	protected $cookies;
 
 	/**
+	 * Changed cookies
+	 */
+	protected $changedCookies;
+
+	/**
 	 * State data
 	 */
 	protected $data;
@@ -49,6 +54,7 @@ class CEM_GatewayState {
 		$this->code = 0;
 		$this->message = "";
 		$this->cookies = array();
+		$this->changedCookies = array();
 		$this->data = array();
 	}
 
@@ -97,6 +103,31 @@ class CEM_GatewayState {
 
 
 	/**
+	 * Reset changed cookies
+	 *
+	 */
+	public function resetChangedCookies() {
+		$this->changedCookies = array();
+	}
+
+	/**
+	 * Get cookies
+	 *
+	 * @param $changedOnly only return changed cookies
+	 * @return cookies
+	 */
+	public function getCookies($changedOnly = FALSE) {
+		if ($changedOnly) {
+			$cookies = array();
+			foreach ($this->changedCookies as $name) {
+				$cookies[$name] = $this->cookies[$name];
+			}
+			return $cookies;
+		}
+		return $this->cookies;
+	}
+
+	/**
 	 * Get cookie header
 	 *
 	 * @return cookie header (or FALSE if none)
@@ -116,34 +147,40 @@ class CEM_GatewayState {
 	}
 
 	/**
-	 * Get cookie value
+	 * Get a cookie
 	 *
 	 * @param $name cookie name
 	 * @return cookie value (or FALSE if none)
 	 */
 	public function getCookie($name) {
 		if (isset($this->cookies[$name])) {
-			return $this->cookies[$name]['value'];
+			return $this->cookies[$name];
 		}
 		return FALSE;
 	}
 
 	/**
-	 * Set an active cookie
+	 * Set a cookie
 	 *
 	 * @param $name cookie name
 	 * @param $value cookie value
-	 * @param $parameters cookie parameters
 	 */
-	public function setCookie($name, $value, $parameters = array()) {
-		$this->cookies[$name] = array(
-			'value' => $value,
-			'parameters' => $parameters
-		);
+	public function setCookie($name, $value) {
+		if (is_array($value)) {
+			$this->cookies[$name] = $value;
+			if (!in_array($name, $this->changedCookies)) {
+				$this->changedCookies[] = $name;
+			}
+		} else {
+			if (!isset($this->cookies[$name])) {
+				$this->cookies[$name] = array('name' => $name, 'value' => '', 'remote' => FALSE, 'expiresTime' => 0);
+			}
+			$this->cookies[$name]['value'] = $value;
+		}
 	}
 
 	/**
-	 * Remove cookie
+	 * Remove a cookie
 	 *
 	 * @param $name cookie name
 	 */

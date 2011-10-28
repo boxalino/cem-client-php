@@ -367,6 +367,10 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			$has = FALSE;
 			$terms = array();
 			foreach ($model->queryTerms as $index => $queryTerm) {
+				if ($queryTerm->type == 'unfiltered' || $queryTerm->type == 'unmatched') {
+					$has = TRUE;
+					continue;
+				}
 				if ($queryTerm->type == 'matched' && isset($queryTerm->guidances)) {
 					if (sizeof($queryTerm->guidances) == 1) {
 						$guidance = $queryTerm->guidances[0];
