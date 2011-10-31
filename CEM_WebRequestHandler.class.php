@@ -111,7 +111,13 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 	 */
 	public function setSequentialContext($name, $data) {
 		if (isset($this->sequentialContexts[$name])) {
-			return $this->sequentialContexts[$name]['data'] = $data;
+			$this->sequentialContexts[$name]['data'] = $data;
+		} else {
+			$this->sequentialContexts[$name] = array(
+				'level' => 'search',
+				'mode' => 'sequential',
+				'data' => $data
+			);
 		}
 	}
 
