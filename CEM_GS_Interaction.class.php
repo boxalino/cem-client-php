@@ -527,7 +527,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					} else {
 						$this->_filters[$groupId][$refinement->property][] = array(
 							'mode' => 'guidance',
-							'index' => -1,
+							'index' => -($index + 1),
 							'property' => $guidance->property,
 							'guidance' => $guidance
 						);
