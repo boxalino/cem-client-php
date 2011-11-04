@@ -47,6 +47,47 @@ class CEM_Analytics {
 
 
 	/**
+	 * This method is called to track an event "vieww" with Boxalino Analytics.
+	 *
+	 * @param $product product identifier
+	 * @param $source optional source identifier
+	 */
+	public function trackDetailView($product, $source = '') {
+		return $this->trackEvent(
+			'view',
+			sprintf('product:%s source:%s', $product, $source)
+		);
+	}
+
+	/**
+	 * This method is called to track an event "add-to-basket" with Boxalino Analytics.
+	 *
+	 * @param $product product identifier
+	 * @param $source optional source identifier
+	 */
+	public function trackAddToBasket($product, $source = '') {
+		return $this->trackEvent(
+			'addToBasket',
+			sprintf('product:%s source:%s', $product, $source)
+		);
+	}
+
+	/**
+	 * This method is called to track an event "purchase" with Boxalino Analytics.
+	 *
+	 * @param $status transaction status (TRUE = confirmed, FALSE = started)
+	 * @param $amount total transaction amount
+	 * @param $count amount of products in the transaction
+	 */
+	public function trackPurchase($status, $amount, $count) {
+		return $this->trackEvent(
+			'purchase',
+			sprintf('status:%s amount:%f products:%d', $status ? '1' : '0', $amount, $count)
+		);
+	}
+
+
+	/**
 	 * Track an event with Boxalino Analytics.
 	 *
 	 * @param $name event name
@@ -90,32 +131,6 @@ class CEM_Analytics {
 
 		// send request
 		return ($this->client->postFields($this->url, $parameters) == 200);
-	}
-
-	/**
-	 * This method is called to track an event "add-to-basket" with Boxalino Analytics.
-	 *
-	 * @param $product product identifier
-	 */
-	public function trackAddToBasket($product) {
-		return $this->trackEvent(
-			'addToBasket',
-			sprintf('product:%s', $product)
-		);
-	}
-
-	/**
-	 * This method is called to track an event "purchase" with Boxalino Analytics.
-	 *
-	 * @param $status transaction status (TRUE = confirmed, FALSE = started)
-	 * @param $amount total transaction amount
-	 * @param $products amount of products in the transaction
-	 */
-	public function trackPurchase($status, $amount, $products) {
-		return $this->trackEvent(
-			'purchase',
-			sprintf('status:%s amount:%f products:%d', $status ? '1' : '0', $amount, $products)
-		);
 	}
 }
 
