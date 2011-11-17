@@ -21,9 +21,24 @@
  */
 class CEM_HttpClient {
 	/**
-	 * @internal cURL handle
+	 * @internal cURL username
 	 */
-	private $curl;
+	private $username;
+
+	/**
+	 * @internal cURL password
+	 */
+	private $password;
+
+	/**
+	 * @internal cURL connection timeout
+	 */
+	private $connectionTimeout;
+
+	/**
+	 * @internal cURL read timeout
+	 */
+	private $readTimeout;
 
 	/**
 	 * @internal Last cURL info
@@ -70,37 +85,10 @@ class CEM_HttpClient {
 	 * @param $readTimeout read timeout in ms (optional)
 	 */
 	public function __construct($username = FALSE, $password = FALSE, $connectionTimeout = 1000, $readTimeout = 15000) {
-		// open curl
-		$this->curl = curl_init();
-		if (!$this->curl) {
-			throw new Exception("Cannot initialize cURL");
-		}
-
-		// set base options
-		if (!curl_setopt_array(
-			$this->curl,
-			array(
-				CURLOPT_CONNECTTIMEOUT_MS => $connectionTimeout,
-				CURLOPT_TIMEOUT_MS => $readTimeout,
-				CURLOPT_SSL_VERIFYPEER => FALSE,
-				CURLOPT_RETURNTRANSFER => TRUE,
-				CURLOPT_HEADER => FALSE,
-				CURLOPT_HEADERFUNCTION => array($this, 'parseHeader')
-			)
-		)) {
-			throw new Exception("Cannot configure cURL (base)");
-		}
-
-		// set http authentication
-		if ($username && $password && !curl_setopt_array(
-			$this->curl,
-			array(
-				CURLOPT_HTTPAUTH => CURLAUTH_ANY,
-				CURLOPT_USERPWD => $username.':'.$password
-			)
-		)) {
-			throw new Exception("Cannot configure cURL (http-auth)");
-		}
+		$this->username = $username;
+		$this->password = $password;
+		$this->connectionTimeout = $connectionTimeout;
+		$this->readTimeout = $readTimeout;
 	}
 
 
@@ -298,18 +286,47 @@ class CEM_HttpClient {
 	 * @return http code
 	 */
 	public function process($method, $url, $referer = FALSE, $headers = array(), $postData = FALSE) {
-		// check curl
-		if ($this->curl == NULL) {
-			throw new Exception("cURL handle closed");
+		$time = microtime(TRUE);
+
+		// open curl
+		$curl = curl_init();
+		if (!$curl) {
+			throw new Exception("Cannot initialize cURL");
+		}
+
+		// set base options
+		if (!curl_setopt_array(
+			$curl,
+			array(
+				CURLOPT_CONNECTTIMEOUT_MS => $this->connectionTimeout,
+				CURLOPT_TIMEOUT_MS => $this->readTimeout,
+				CURLOPT_SSL_VERIFYPEER => FALSE,
+				CURLOPT_RETURNTRANSFER => TRUE,
+				CURLOPT_HEADER => FALSE,
+				CURLOPT_HEADERFUNCTION => array($this, 'parseHeader')
+			)
+		)) {
+			throw new Exception("Cannot configure cURL (base)");
+		}
+
+		// set http authentication
+		if ($this->username && $this->password && !curl_setopt_array(
+			$curl,
+			array(
+				CURLOPT_HTTPAUTH => CURLAUTH_ANY,
+				CURLOPT_USERPWD => $this->username.':'.$this->password
+			)
+		)) {
+			throw new Exception("Cannot configure cURL (http-auth)");
 		}
 
 		// set url
-		if (!curl_setopt($this->curl, CURLOPT_URL, $url)) {
+		if (!curl_setopt($curl, CURLOPT_URL, $url)) {
 			throw new Exception("Cannot configure cURL (url)");
 		}
 
 		// set method
-		if (!curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, $method)) {
+		if (!curl_setopt($curl, CURLOPT_CUSTOMREQUEST, $method)) {
 			throw new Exception("Cannot configure cURL (method)");
 		}
 
@@ -318,12 +335,12 @@ class CEM_HttpClient {
 		foreach ($headers as $header) {
 			$headerLines[] = $header[0].': '.$header[1];
 		}
-		if (sizeof($headerLines) > 0 && !curl_setopt($this->curl, CURLOPT_HTTPHEADER, $headerLines)) {
+		if (sizeof($headerLines) > 0 && !curl_setopt($curl, CURLOPT_HTTPHEADER, $headerLines)) {
 			throw new Exception("Cannot configure cURL (headers)");
 		}
 
 		// set post fields
-		if ($postData !== FALSE && !curl_setopt($this->curl, CURLOPT_POSTFIELDS, $postData)) {
+		if ($postData !== FALSE && !curl_setopt($curl, CURLOPT_POSTFIELDS, $postData)) {
 			throw new Exception("Cannot configure cURL (post fields)");
 		}
 
@@ -335,23 +352,24 @@ class CEM_HttpClient {
 			}
 			$cookieHeader .= urlencode($cookie['name']).'='.urlencode($cookie['value']);
 		}
-		if (strlen($cookieHeader) > 0 && !curl_setopt($this->curl, CURLOPT_COOKIE, $cookieHeader)) {
+		if (strlen($cookieHeader) > 0 && !curl_setopt($curl, CURLOPT_COOKIE, $cookieHeader)) {
 			throw new Exception("Cannot configure cURL (cookies)");
 		}
 
 		// set referer
-		if (strlen($referer) > 0 && !curl_setopt($this->curl, CURLOPT_REFERER, $referer)) {
+		if (strlen($referer) > 0 && !curl_setopt($curl, CURLOPT_REFERER, $referer)) {
 			throw new Exception("Cannot configure cURL (referer)");
 		}
 
 		// execute curl request
 		$this->responseStatus = NULL;
 		$this->responseHeaders = array();
-		$time = microtime(TRUE);
-		$this->responseBody = curl_exec($this->curl);
-		$this->curlInfo = curl_getinfo($this->curl);
-		$this->curlError = curl_error($this->curl);
-		$this->time = microtime(TRUE) - $time;
+		$this->responseBody = curl_exec($curl);
+		$this->curlInfo = curl_getinfo($curl);
+		$this->curlError = curl_error($curl);
+
+		// close curl
+		curl_close($curl);
 
 		// parse response headers
 		$redirectUrl = NULL;
@@ -399,22 +417,14 @@ class CEM_HttpClient {
 			}
 		}
 
+		// fetch time
+		$this->time += microtime(TRUE) - $time;
+
 		// follow redirect
 		if ($redirectUrl) {
 			return $this->process('GET', $redirectUrl, $referer, $headers, array());
 		}
 		return $this->curlInfo['http_code'];
-	}
-
-	/**
-	 * Close http client
-	 *
-	 */
-	public function close() {
-		if ($this->curl != NULL) {
-			curl_close($this->curl);
-			$this->curl = NULL;
-		}
 	}
 
 

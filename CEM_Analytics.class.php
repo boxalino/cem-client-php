@@ -19,16 +19,21 @@
  *
  * @author nitro@boxalino.com
  */
-class CEM_Analytics {
+class CEM_Analytics extends CEM_HttpClient {
 	/**
 	 * @internal Tracker URL
 	 */
 	private $url;
 
 	/**
-	 * @internal Http client
+	 * @internal Visitor id
 	 */
-	protected $client;
+	private $visitorId = '';
+
+	/**
+	 * @internal Visitor age
+	 */
+	private $visitorAge = 0;
 
 
 	/**
@@ -41,13 +46,107 @@ class CEM_Analytics {
 	 * @param $readTimeout read timeout ms (optional)
 	 */
 	public function __construct($url, $username = FALSE, $password = FALSE, $connectionTimeout = 1000, $readTimeout = 1000) {
+		parent::__construct(FALSE, FALSE, $connectionTimeout, $readTimeout);
 		$this->url = $url;
-		$this->client = new CEM_HttpClient($username, $password, $connectionTimeout, $readTimeout);
 	}
 
 
 	/**
-	 * This method is called to track an event "vieww" with Boxalino Analytics.
+	 * Set current visitor
+	 *
+	 * @param $visitorId visitor identifier
+	 * @param $visitorAge visitor age
+	 */
+	public function setVisitor($visitorId, $visitorAge) {
+		$this->visitorId = $visitorId;
+		$this->visitorAge = $visitorAge;
+	}
+
+
+	/**
+	 * This method is called to track an event "query" with Boxalino Analytics.
+	 *
+	 * @param $query query text
+	 * @param $source optional source identifier
+	 */
+	public function trackQuery($query, $source = '') {
+		return $this->trackEvent(
+			'query',
+			sprintf('query:%s source:%s', urlencode($query), urlencode($source))
+		);
+	}
+
+	/**
+	 * This method is called to track an event "refine-query" with Boxalino Analytics.
+	 *
+	 * @param $term term text
+	 * @param $property selected property
+	 * @param $value selected value
+	 */
+	public function trackRefineQuery($term, $property, $value) {
+		return $this->trackEvent(
+			'refineQuery',
+			sprintf('term:%s property:%s value:%s', urlencode($term), urlencode($property), urlencode($value))
+		);
+	}
+
+	/**
+	 * This method is called to track an event "set-guidance" with Boxalino Analytics.
+	 *
+	 * @param $property changed property
+	 * @param $value changed value
+	 */
+	public function trackSetGuidance($property, $value) {
+		return $this->trackEvent(
+			'setGuidance',
+			sprintf('property:%s value:%s', urlencode($property), urlencode($value))
+		);
+	}
+
+	/**
+	 * This method is called to track an event "remove-guidance" with Boxalino Analytics.
+	 *
+	 * @param $property removed property
+	 */
+	public function trackRemoveGuidance($property) {
+		return $this->trackEvent(
+			'removeGuidance',
+			sprintf('property:%s', urlencode($property))
+		);
+	}
+
+	/**
+	 * This method is called to track an event "recommendation-view" with Boxalino Analytics.
+	 *
+	 * @param $products product identifiers (productId => strategy)
+	 */
+	public function trackRecommendationView($products) {
+		$payload = array();
+		foreach ($products as $productId => $strategy) {
+			$payload[] = urlencode($productId).'='.urlencode($strategy);
+		}
+		return $this->trackEvent(
+			'recommendationView',
+			implode(' ', $payload)
+		);
+	}
+
+	/**
+	 * This method is called to track an event "recommendation-click" with Boxalino Analytics.
+	 *
+	 * @param $product product identifier
+	 * @param $position product position
+	 * @param $strategy recommendation strategy
+	 */
+	public function trackRecommendationClick($product, $position, $strategy) {
+		return $this->trackEvent(
+			'recommendationClick',
+			sprintf('product:%s position:%s strategy:%s', urlencode($product), urlencode($position), urlencode($strategy))
+		);
+	}
+
+	/**
+	 * This method is called to track an event "detail-view" with Boxalino Analytics.
 	 *
 	 * @param $product product identifier
 	 * @param $source optional source identifier
@@ -55,7 +154,7 @@ class CEM_Analytics {
 	public function trackDetailView($product, $source = '') {
 		return $this->trackEvent(
 			'view',
-			sprintf('product:%s source:%s', $product, $source)
+			sprintf('product:%s source:%s', urlencode($product), urlencode($source))
 		);
 	}
 
@@ -68,7 +167,7 @@ class CEM_Analytics {
 	public function trackAddToBasket($product, $source = '') {
 		return $this->trackEvent(
 			'addToBasket',
-			sprintf('product:%s source:%s', $product, $source)
+			sprintf('product:%s source:%s', urlencode($product), urlencode($source))
 		);
 	}
 
@@ -82,7 +181,7 @@ class CEM_Analytics {
 	public function trackPurchase($status, $amount, $count) {
 		return $this->trackEvent(
 			'purchase',
-			sprintf('status:%s amount:%f products:%d', $status ? '1' : '0', $amount, $count)
+			sprintf('status:%s amount:%f products:%d', $status ? '1' : '0', floatval($amount), intval($count))
 		);
 	}
 
@@ -102,6 +201,8 @@ class CEM_Analytics {
 			'clientReferer' => '',
 			'serverAddress' => '',
 			'serverHost' => '',
+			'visitorId' => $this->visitorId,
+			'visitorAge' => $this->visitorAge,
 			'eventName' => $name,
 			'eventDescription' => $description
 		);
@@ -124,13 +225,13 @@ class CEM_Analytics {
 			$parameters['serverHost'] = $_SERVER['HTTP_HOST'];
 		}
 
-		// forward cookie
+		// forward cookie(s)
 		if (isset($_COOKIE['cemt'])) {
-			$this->client->setCookie('cemt', $_COOKIE['cemt']);
+			$this->setCookie('cemt', $_COOKIE['cemt']);
 		}
 
 		// send request
-		return ($this->client->postFields($this->url, $parameters) == 200);
+		return ($this->postFields($this->url, $parameters) == 200);
 	}
 }
 

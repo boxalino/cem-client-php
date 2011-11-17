@@ -19,64 +19,43 @@
  *
  * @author nitro@boxalino.com
  */
-class CEM_GatewayClient {
-	/**
-	 * @internal Gateway url
-	 */
-	protected $url;
-
-	/**
-	 * @internal Http client
-	 */
-	protected $client;
-
-
+class CEM_GatewayClient extends CEM_HttpClient {
 	/**
 	 * Constructor
 	 *
-	 * @param $url gateway url
 	 * @param $connectionTimeout connection timeout (defaults to 10[s])
 	 * @param $readTimeout read timeout (defaults to 15[s])
 	 */
-	public function __construct($url, $connectionTimeout = 10000, $readTimeout = 15000) {
-		$this->url = $url;
-		$this->client = new CEM_HttpClient(FALSE, FALSE, $connectionTimeout, $readTimeout);
+	public function __construct($connectionTimeout = 10000, $readTimeout = 15000) {
+		parent::__construct(FALSE, FALSE, $connectionTimeout, $readTimeout);
 	}
 
 
 	/**
 	 * Process gateway request/response interaction
 	 *
+	 * @param $url gateway url
 	 * @param &$state client state reference
 	 * @param &$request gateway request reference
 	 * @param &$response gateway response reference
 	 * @return TRUE on success or FALSE otherwise
 	 */
-	public function process(&$state, &$request, &$response) {
+	public function exec($url, &$state, &$request, &$response) {
 		// forward cookies
 		foreach ($state->getCookies() as $cookie) {
-			$this->client->setCookie($cookie['name'], $cookie['value']);
+			$this->setCookie($cookie['name'], $cookie['value']);
 		}
 
 		// perform request
 		$requestBody = $request->write($state);
 		if ($requestBody) {
-			$this->client->post(
-				$this->url,
-				$request->getContentType(),
-				$requestBody,
-				$request->getReferer()
-			);
+			$this->post($url, $request->getContentType(), $requestBody, $request->getReferer());
 		} else {
-			$this->client->get(
-				$this->url,
-				array(),
-				$request->getReferer()
-			);
+			$this->get($url, array(), $request->getReferer());
 		}
 
 		// forward cookies
-		foreach ($this->client->getCookies() as $name => $cookie) {
+		foreach ($this->getCookies() as $name => $cookie) {
 			$state->setCookie($name, $cookie);
 		}
 
@@ -89,10 +68,10 @@ class CEM_GatewayClient {
 		exit;*/
 
 		// parse response
-		$state->setStatus($this->client->getCode(), $this->client->getError());
-		$response->setTotalTime($this->client->getTime());
-		$responseBody = $this->client->getBody();
-		if ($responseBody && $this->client->getCode() >= 200 && $this->client->getCode() < 300) {
+		$state->setStatus($this->getCode(), $this->getError());
+		$response->setTotalTime($this->getTime());
+		$responseBody = $this->getBody();
+		if ($responseBody && $this->getCode() >= 200 && $this->getCode() < 300) {
 			return $response->read($state, $responseBody);
 		}
 		return FALSE;

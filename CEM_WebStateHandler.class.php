@@ -86,14 +86,10 @@ class CEM_WebStateHandler extends CEM_AbstractWebHandler {
 	 */
 	public function getContext() {
 		$state = $this->read();
-		if ($state) {
-			return $state->get('context', array());
+		if (!$state) {
+			$state = $this->create();
 		}
-		$state = $this->create();
-		if ($state) {
-			return $state->get('context', array());
-		}
-		return array();
+		return ($state ? $state->get('context', array()) : array());
 	}
 
 	/**

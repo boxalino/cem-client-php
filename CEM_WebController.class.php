@@ -90,6 +90,11 @@ class CEM_WebController {
 	 */
 	protected $formatter;
 
+	/**
+	 * Gateway client
+	 */
+	protected $client;
+
 
 	/**
 	 * Constructor
@@ -115,6 +120,8 @@ class CEM_WebController {
 		foreach ($options as $key => $value) {
 			$this->$key = $value;
 		}
+
+		$this->client = new CEM_GatewayClient($this->connectionTimeout, $this->readTimeout);
 		$this->lastInteraction = NULL;
 	}
 
@@ -431,11 +438,10 @@ class CEM_WebController {
 		list($state, $created) = $this->getState();
 
 		// process interaction
-		$client = new CEM_GatewayClient($this->url . '/gs/gateway/client-1.4', $this->connectionTimeout, $this->readTimeout);
 		if ($this->requestHandler && !$this->requestHandler->onInteraction($state, $request, $options)) {
 			return;
 		}
-		if ($client->process($state, $request, $response)) {
+		if ($this->client->exec($this->url . '/gs/gateway/client-1.4', $state, $request, $response)) {
 			if ($this->responseHandler) {
 				$this->responseHandler->onInteraction($state, $request, $response, $options);
 			}
@@ -463,11 +469,10 @@ class CEM_WebController {
 		list($state, $created) = $this->getState();
 
 		// process recommendation
-		$client = new CEM_GatewayClient($this->url . '/pr/gateway/client-1.4', $this->connectionTimeout, $this->readTimeout);
 		if ($this->requestHandler && !$this->requestHandler->onRecommendation($state, $request, $options)) {
 			return;
 		}
-		if ($client->process($state, $request, $response)) {
+		if ($this->client->exec($this->url . '/pr/gateway/client-1.4', $state, $request, $response)) {
 			if ($this->responseHandler) {
 				$this->responseHandler->onRecommendation($state, $request, $response, $options);
 			}
