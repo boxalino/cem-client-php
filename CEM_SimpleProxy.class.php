@@ -71,7 +71,6 @@ class CEM_SimpleProxy {
 			$requestHeaders = array();
 			$requestHeaders[] = array('Host', $urlParts['host']);
 			$requestHeaders[] = array('Via', '1.1 (Proxy)');
-//			CURLOPT_ENCODING => 'identity',
 			if (function_exists('apache_request_headers')) {
 				foreach (apache_request_headers() as $name => $value) {
 					$key = strtolower($name);

@@ -286,7 +286,7 @@ class CEM_HttpClient {
 	 * @return http code
 	 */
 	public function process($method, $url, $referer = FALSE, $headers = array(), $postData = FALSE) {
-		$time = microtime(TRUE);
+		$beginTime = microtime(TRUE);
 
 		// open curl
 		$curl = curl_init();
@@ -302,6 +302,7 @@ class CEM_HttpClient {
 				CURLOPT_TIMEOUT_MS => $this->readTimeout,
 				CURLOPT_SSL_VERIFYPEER => FALSE,
 				CURLOPT_RETURNTRANSFER => TRUE,
+				CURLOPT_ENCODING => 'identity',
 				CURLOPT_HEADER => FALSE,
 				CURLOPT_HEADERFUNCTION => array($this, 'parseHeader')
 			)
@@ -418,7 +419,7 @@ class CEM_HttpClient {
 		}
 
 		// fetch time
-		$this->time += microtime(TRUE) - $time;
+		$this->time += microtime(TRUE) - $beginTime;
 
 		// follow redirect
 		if ($redirectUrl) {
