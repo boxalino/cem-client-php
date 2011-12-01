@@ -1289,14 +1289,6 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		$previews = array();
 		$list = array();
 		foreach ($values as $index => $value) {
-			// skip node if no effect
-			if ($value->population == $this->getResultsTotal()) {
-				// HACK: semeuse
-				if ($this->getRequest()->getCustomer() != 'semeuse') {
-					continue;
-				}
-			}
-
 			// skip node if already selected
 			$selected = FALSE;
 			foreach ($filters as $filter) {
@@ -1324,7 +1316,31 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				}
 			}
 			if ($selected) {
+				if (in_array('hierarchical', $attribute->propertyFlags) && isset($value->children)) {
+					array_push($parents, $values[0]);
+					$refinement = $this->findAttributeRefinementValues(
+						$attribute,
+						$value->children,
+						$filters,
+						$excludedPreviews,
+						$preferences,
+						$depth + 1,
+						$parents
+					);
+					if ($refinement) {
+						return $refinement;
+					}
+					array_pop($parents);
+				}
 				continue;
+			}
+
+			// skip node if no effect
+			if ($value->population == $this->getResultsTotal()) {
+				// HACK: semeuse
+				if ($this->getRequest()->getCustomer() != 'semeuse') {
+					continue;
+				}
 			}
 
 			// build url
@@ -1541,6 +1557,22 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				}
 			}
 			if ($selected) {
+				if (in_array('hierarchical', $attribute->propertyFlags) && isset($value->children)) {
+					array_push($parents, $values[0]);
+					$alternative = $this->findAttributeAlternativeValues(
+						$attribute,
+						$value->children,
+						$filters,
+						$excludedPreviews,
+						$preferences,
+						$depth + 1,
+						$parents
+					);
+					if ($alternative) {
+						return $alternative;
+					}
+					array_pop($parents);
+				}
 				continue;
 			}
 
