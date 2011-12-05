@@ -403,8 +403,8 @@ class CEM_HttpClient {
 						$parameter = explode('=', $parts[$i]);
 						$cookie[trim($parameter[0])] = trim($parameter[1]);
 					}
-					$cookie['name'] = trim($value[0]);
-					$cookie['value'] = trim($value[1]);
+					$cookie['name'] = urldecode(trim($value[0]));
+					$cookie['value'] = urldecode(trim($value[1]));
 					$cookie['remote'] = TRUE;
 					if (isset($cookie['expires'])) {
 						$time = strptime($cookie['expires'], '%a, %d-%b-%Y %H:%M:%S GMT');
