@@ -240,7 +240,21 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 		$extraSearch = FALSE;
 		$action = 'search';
 		$variables = $this->buildInteractionVariables($options);
-		if (isset($options['action'])) {
+		if (isset($options['batch'])) {
+			foreach ($options['batch'] as $item) {
+				$action = 'search';
+				if (isset($item['action'])) {
+					$action = $item['action'];
+				}
+				$variables = $this->buildInteractionVariables($options);
+				if (isset($item['variables'])) {
+					foreach ($item['variables'] as $key => $value) {
+						$variables[$key] = $value;
+					}
+				}
+				$request->appendRequest($action, $variables);
+			}
+		} else if (isset($options['action'])) {
 			$action = strval($options['action']);
 			switch ($options['action']) {
 			case 'query':
