@@ -200,6 +200,11 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 		foreach ($this->sequentialContexts as $name => $value) {
 			$contexts[$name] = $value;
 		}
+		if (isset($options['contexts'])) {
+			foreach ($options['contexts'] as $name => $value) {
+				$contexts[$name] = $value;
+			}
+		}
 		$state->set('context', $contexts);
 
 		// get cem model context
