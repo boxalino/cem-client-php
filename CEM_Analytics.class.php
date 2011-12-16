@@ -35,6 +35,11 @@ class CEM_Analytics extends CEM_HttpClient {
 	 */
 	private $visitorAge = 0;
 
+	/**
+	 * @internal Language
+	 */
+	private $language = '';
+	
 
 	/**
 	 * Constructor
@@ -56,10 +61,12 @@ class CEM_Analytics extends CEM_HttpClient {
 	 *
 	 * @param $visitorId visitor identifier
 	 * @param $visitorAge visitor age
+	 * @param $language visitor language
 	 */
-	public function setVisitor($visitorId, $visitorAge) {
+	public function setVisitor($visitorId, $visitorAge, $language) {
 		$this->visitorId = $visitorId;
 		$this->visitorAge = $visitorAge;
+		$this->language = $language;
 	}
 
 
@@ -68,57 +75,75 @@ class CEM_Analytics extends CEM_HttpClient {
 	 *
 	 * @param $query query text
 	 * @param $source optional source identifier
+	 * @param $meta optional meta-data
 	 */
-	public function trackQuery($query, $source = '') {
+	public function trackQuery($query, $source = '', $meta = '') {
 		return $this->trackEvent(
 			'query',
-			sprintf('query:%s source:%s', urlencode($query), urlencode($source))
+			sprintf('query:%s source:%s meta:%s', urlencode($query), urlencode($source), urlencode($meta))
 		);
 	}
 
 	/**
-	 * This method is called to track an event "refine-query" with Boxalino Analytics.
+	 * This method is called to track an event "refineQuery" with Boxalino Analytics.
 	 *
 	 * @param $term term text
 	 * @param $property selected property
 	 * @param $value selected value
+	 * @param $meta optional meta-data
 	 */
-	public function trackRefineQuery($term, $property, $value) {
+	public function trackRefineQuery($term, $property, $value, $meta = '') {
 		return $this->trackEvent(
 			'refineQuery',
-			sprintf('term:%s property:%s value:%s', urlencode($term), urlencode($property), urlencode($value))
+			sprintf('term:%s property:%s value:%s meta:%s', urlencode($term), urlencode($property), urlencode($value), urlencode($meta))
 		);
 	}
 
 	/**
-	 * This method is called to track an event "set-guidance" with Boxalino Analytics.
+	 * This method is called to track an event "setGuidance" with Boxalino Analytics.
 	 *
 	 * @param $property changed property
 	 * @param $value changed value
+	 * @param $meta optional meta-data
 	 */
-	public function trackSetGuidance($property, $value) {
+	public function trackSetGuidance($property, $value, $meta = '') {
 		return $this->trackEvent(
 			'setGuidance',
-			sprintf('property:%s value:%s', urlencode($property), urlencode($value))
+			sprintf('property:%s value:%s meta:%s', urlencode($property), urlencode($value), urlencode($meta))
 		);
 	}
 
 	/**
-	 * This method is called to track an event "remove-guidance" with Boxalino Analytics.
+	 * This method is called to track an event "removeGuidance" with Boxalino Analytics.
 	 *
 	 * @param $property removed property
+	 * @param $meta optional meta-data
 	 */
-	public function trackRemoveGuidance($property) {
+	public function trackRemoveGuidance($property, $meta = '') {
 		return $this->trackEvent(
 			'removeGuidance',
-			sprintf('property:%s', urlencode($property))
+			sprintf('property:%s meta:%s', urlencode($property), urlencode($meta))
 		);
 	}
 
 	/**
-	 * This method is called to track an event "recommendation-view" with Boxalino Analytics.
+	 * This method is called to track an event "page" with Boxalino Analytics.
+	 *
+	 * @param $page page index
+	 * @param $meta optional meta-data
+	 */
+	public function trackPage($page, $meta = '') {
+		return $this->trackEvent(
+			'page',
+			sprintf('page:%d meta:%s', intval($page), urlencode($meta))
+		);
+	}
+
+	/**
+	 * This method is called to track an event "recommendationView" with Boxalino Analytics.
 	 *
 	 * @param $products product identifiers (productId => strategy)
+	 * @param $meta optional meta-data
 	 */
 	public function trackRecommendationView($products) {
 		$payload = array();
@@ -127,61 +152,93 @@ class CEM_Analytics extends CEM_HttpClient {
 		}
 		return $this->trackEvent(
 			'recommendationView',
-			implode(' ', $payload)
+			sprintf('products:%s meta:%s', implode(',', $payload), urlencode($meta))
 		);
 	}
 
 	/**
-	 * This method is called to track an event "recommendation-click" with Boxalino Analytics.
+	 * This method is called to track an event "recommendationClick" with Boxalino Analytics.
 	 *
 	 * @param $product product identifier
 	 * @param $position product position
 	 * @param $strategy recommendation strategy
+	 * @param $meta optional meta-data
 	 */
 	public function trackRecommendationClick($product, $position, $strategy) {
 		return $this->trackEvent(
 			'recommendationClick',
-			sprintf('product:%s position:%s strategy:%s', urlencode($product), urlencode($position), urlencode($strategy))
+			sprintf('product:%s position:%s strategy:%s', urlencode($product), urlencode($position), urlencode($strategy), urlencode($meta))
 		);
 	}
 
 	/**
-	 * This method is called to track an event "detail-view" with Boxalino Analytics.
+	 * This method is called to track an event "categoryView" with Boxalino Analytics.
 	 *
-	 * @param $product product identifier
-	 * @param $source optional source identifier
+	 * @param $id category identifier
+	 * @param $name optional category name
+	 * @param $meta optional meta-data
 	 */
-	public function trackDetailView($product, $source = '') {
+	public function trackCategoryView($id, $name = '', $meta = '') {
 		return $this->trackEvent(
-			'view',
-			sprintf('product:%s source:%s', urlencode($product), urlencode($source))
+			'categoryView',
+			sprintf('id:%s name:%s meta:%s', urlencode($id), urlencode($name), urlencode($meta))
 		);
 	}
 
 	/**
-	 * This method is called to track an event "add-to-basket" with Boxalino Analytics.
+	 * This method is called to track an event "productView" with Boxalino Analytics.
 	 *
-	 * @param $product product identifier
-	 * @param $source optional source identifier
+	 * @param $id product identifier
+	 * @param $name optional product name
+	 * @param $meta optional meta-data
 	 */
-	public function trackAddToBasket($product, $source = '') {
+	public function trackProductView($id, $name = '', $meta = '') {
+		return $this->trackEvent(
+			'productView',
+			sprintf('id:%s name:%s meta:%s', urlencode($id), urlencode($name), urlencode($meta))
+		);
+	}
+
+	/**
+	 * This method is called to track an event "addToBasket" with Boxalino Analytics.
+	 *
+	 * @param $id product identifier
+	 * @param $name optional product name
+	 * @param $meta optional meta-data
+	 */
+	public function trackAddToBasket($id, $name = '', $meta = '') {
 		return $this->trackEvent(
 			'addToBasket',
-			sprintf('product:%s source:%s', urlencode($product), urlencode($source))
+			sprintf('id:%s name:%s meta:%s', urlencode($id), urlencode($name), urlencode($meta))
 		);
 	}
 
 	/**
-	 * This method is called to track an event "purchase" with Boxalino Analytics.
+	 * This method is called to track an event "purchaseTry" with Boxalino Analytics.
+	 *
+	 * @param $amount total transaction amount
+	 * @param $products product identifiers in the transaction
+	 * @param $meta optional meta-data
+	 */
+	public function trackPurchaseTry($amount, $products = array(), $meta = '') {
+		return $this->trackEvent(
+			'purchaseTry',
+			sprintf('amount:%f products:%s meta:%s', floatval($amount), urlencode(implode(',', $products)), urlencode($meta))
+		);
+	}
+
+	/**
+	 * This method is called to track an event "purchaseDone" with Boxalino Analytics.
 	 *
 	 * @param $status transaction status (TRUE = confirmed, FALSE = started)
 	 * @param $amount total transaction amount
-	 * @param $count amount of products in the transaction
+	 * @param $products product identifiers in the transaction
+	 * @param $meta optional meta-data
 	 */
-	public function trackPurchase($status, $amount, $count) {
+	public function trackPurchase($status, $amount, $products = array(), $meta = '') {
 		return $this->trackEvent(
-			'purchase',
-			sprintf('status:%s amount:%f products:%d', $status ? '1' : '0', floatval($amount), intval($count))
+			'purchaseDone',
+			sprintf('status:%s amount:%f products:%s meta:%s', $status ? '1' : '0', floatval($amount), urlencode(implode(',', $products)), urlencode($meta))
 		);
 	}
 
@@ -203,6 +260,7 @@ class CEM_Analytics extends CEM_HttpClient {
 			'serverHost' => '',
 			'visitorId' => $this->visitorId,
 			'visitorAge' => $this->visitorAge,
+			'language' => $this->language,
 			'eventName' => $name,
 			'eventDescription' => $description
 		);
