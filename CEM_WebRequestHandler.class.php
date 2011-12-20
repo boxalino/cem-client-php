@@ -202,7 +202,11 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 		}
 		if (isset($options['contexts'])) {
 			foreach ($options['contexts'] as $name => $value) {
-				$contexts[$name] = $value;
+				if ($value) {
+					$contexts[$name] = $value;
+				} else if (isset($contexts[$name])) {
+					unset($contexts[$name]);
+				}
 			}
 		}
 		$state->set('context', $contexts);

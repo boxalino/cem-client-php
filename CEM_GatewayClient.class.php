@@ -61,11 +61,10 @@ class CEM_GatewayClient extends CEM_HttpClient {
 
 		// debug
 /*		echo('<pre>');
-		print_r($this->client);
-		echo($requestBody."\n".$this->client->getBody());
+		echo($requestBody."\n".$this->getBody());
 		echo('</pre>');
-		echo("<pre style=\"width: 100%; overflow: auto; background-color: white; color: black;\">" . htmlentities($requestData, ENT_COMPAT, 'UTF-8')."\n".htmlentities($responseData, ENT_COMPAT, 'UTF-8') . "</pre>");
-		exit;*/
+//		echo("<pre style=\"width: 100%; overflow: auto; background-color: white; color: black;\">" . htmlentities($requestData, ENT_COMPAT, 'UTF-8')."\n".htmlentities($responseData, ENT_COMPAT, 'UTF-8') . "</pre>");
+*/
 
 		// parse response
 		$state->setStatus($this->getCode(), $this->getError());

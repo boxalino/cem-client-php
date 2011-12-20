@@ -217,11 +217,11 @@ class CEM_WebStateCookieHandler extends CEM_WebStateHandler {
 	 */
 	public function remove(&$state) {
 		// clear cem, levels, state data cookies
-		writeCookies($this->prefix.'a');
-		writeCookies($this->prefix.'b');
-		writeCookies($this->prefix.'c');
-		writeCookies($this->prefix.'d');
-		writeCookies($this->prefix.'e');
+		$this->writeCookies($this->prefix.'a');
+		$this->writeCookies($this->prefix.'b');
+		$this->writeCookies($this->prefix.'c');
+		$this->writeCookies($this->prefix.'d');
+		$this->writeCookies($this->prefix.'e');
 
 		parent::remove($state);
 	}
