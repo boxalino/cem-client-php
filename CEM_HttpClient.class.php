@@ -298,8 +298,6 @@ class CEM_HttpClient {
 		if (!curl_setopt_array(
 			$curl,
 			array(
-				CURLOPT_CONNECTTIMEOUT_MS => $this->connectionTimeout,
-				CURLOPT_TIMEOUT_MS => $this->readTimeout,
 				CURLOPT_SSL_VERIFYPEER => FALSE,
 				CURLOPT_RETURNTRANSFER => TRUE,
 				CURLOPT_ENCODING => 'identity',
@@ -308,6 +306,19 @@ class CEM_HttpClient {
 			)
 		)) {
 			throw new Exception("Cannot configure cURL (base)");
+		}
+
+		// set timeout if supported
+		if (defined('CURLOPT_CONNECTTIMEOUT_MS') && defined('CURLOPT_TIMEOUT_MS')) {
+			if (!curl_setopt_array(
+				$curl,
+				array(
+					CURLOPT_CONNECTTIMEOUT_MS => $this->connectionTimeout,
+					CURLOPT_TIMEOUT_MS => $this->readTimeout
+				)
+			)) {
+				throw new Exception("Cannot configure cURL (base)");
+			}
 		}
 
 		// set http authentication

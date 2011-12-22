@@ -39,7 +39,7 @@ class CEM_Analytics extends CEM_HttpClient {
 	 * @internal Language
 	 */
 	private $language = '';
-	
+
 
 	/**
 	 * Constructor

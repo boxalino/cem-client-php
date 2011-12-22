@@ -935,7 +935,11 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					continue;
 				}
 				$resource = $this->buildResource($result->views[0]);
-				$resource['score'] = $result->score;
+				if (isset($result->score)) {
+					$resource['score'] = $result->score;
+				} else {
+					$resource['score'] = 0;
+				}
 				$resource['offset'] = $group->search->offset + $index;
 				$this->_results[$groupId][] = $resource;
 			}
@@ -1008,12 +1012,14 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			'resource' => $resource
 		);
 		$properties = array();
-		foreach ($resource->properties as $value) {
-			$list = $this->collapsePropertyValue($value);
-			if (!isset($data[$value->property])) {
-				$data[$value->property] = sizeof($list) > 1 ? $list : $list[0];
+		if (isset($resource->properties)) {
+			foreach ($resource->properties as $value) {
+				$list = $this->collapsePropertyValue($value);
+				if (!isset($data[$value->property])) {
+					$data[$value->property] = sizeof($list) > 1 ? $list : $list[0];
+				}
+				$data['properties'][$value->property][] = sizeof($list) > 1 ? $list : $list[0];
 			}
-			$data['properties'][$value->property][] = sizeof($list) > 1 ? $list : $list[0];
 		}
 		return $data;
 	}
