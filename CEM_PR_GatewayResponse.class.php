@@ -10,7 +10,7 @@
  *
  * Boxalino CEM client library in PHP.
  *
- * (C) 2009-2011 - Boxalino AG
+ * (C) 2009-2012 - Boxalino AG
  */
 
 

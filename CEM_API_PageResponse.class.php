@@ -10,7 +10,7 @@
  *
  * Boxalino CEM client library in PHP.
  *
- * (C) 2009-2011 - Boxalino AG
+ * (C) 2009-2012 - Boxalino AG
  */
 
 
@@ -113,7 +113,21 @@ class CEM_API_PageResponse extends CEM_GatewayResponse {
 	 * @return cem context
 	 */
 	public function getContext() {
-		return $this->context;
+		return (isset($this->context['value']) ? $this->context['value'] : NULL);
+	}
+
+	/**
+	 * Get decoded cem context
+	 *
+	 * @return decoded cem context
+	 */
+	public function decodeContext() {
+		$crypto = new CEM_WebEncryption(
+			isset($this->context['key']) ? $this->context['key'] : '',
+			isset($this->context['iv']) ? $this->context['iv'] : ''
+		);
+		$handler = new CEM_WebRequestHandler($crypto);
+		return $handler->getSequentialContexts();
 	}
 
 	/**
@@ -187,7 +201,11 @@ class CEM_API_PageResponse extends CEM_GatewayResponse {
 			case XML_ELEMENT_NODE:
 				switch ($child->tagName) {
 				case 'context':
-					$this->context = $this->visitTexts($child);
+					$this->context = array(
+						'key' => $child->getAttribute('key'),
+						'iv' => $child->getAttribute('iv'),
+						'value' => $this->visitTexts($child)
+					);
 					break;
 
 				case 'results':
