@@ -43,7 +43,12 @@ abstract class CEM_GatewayResponse {
 	/**
 	 * Processing time
 	 */
-	protected $totalTime;	
+	protected $totalTime;
+
+	/**
+	 * Cryptographic parameters
+	 */
+	protected $crypto;
 
 
 	/**
@@ -56,6 +61,10 @@ abstract class CEM_GatewayResponse {
 		$this->message = '';
 		$this->time = 0;
 		$this->totalTime = 0;
+		$this->crypto = array(
+			'key' => '',
+			'iv' => ''
+		);
 	}
 
 
@@ -111,6 +120,15 @@ abstract class CEM_GatewayResponse {
 	 */
 	public function setTotalTime($time) {
 		$this->totalTime = $time;
+	}
+
+	/**
+	 * Get cryptographic engine
+	 *
+	 * @return cryptographic engine
+	 */
+	public function getCrypto() {
+		return new CEM_WebEncryption($this->crypto['key'], $this->crypto['iv']);
 	}
 
 

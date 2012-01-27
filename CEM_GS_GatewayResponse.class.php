@@ -171,8 +171,10 @@ class CEM_GS_GatewayResponse extends CEM_GatewayResponse {
 
 		// get attributes
 		$this->version = $node->getAttribute('version');
-		$this->status = $node->getAttribute('status') == 'true';
+		$this->status = $node->getAttribute('status') == 'true' || $node->getAttribute('success') == 'true';
 		$this->time = $node->getAttribute('time');
+		$this->crypto['key'] = $node->getAttribute('cryptoKey');
+		$this->crypto['iv'] = $node->getAttribute('cryptoIV');
 		$this->customer = $node->getAttribute('customer');
 		$this->dialog = $node->getAttribute('dialog');
 		$this->language = $node->getAttribute('language');

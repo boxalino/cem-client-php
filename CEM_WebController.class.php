@@ -441,7 +441,7 @@ class CEM_WebController {
 		if ($this->requestHandler && !$this->requestHandler->onInteraction($state, $request, $options)) {
 			return;
 		}
-		if ($this->client->exec($this->url . '/gs/gateway/client-1.4', $state, $request, $response)) {
+		if (strlen($this->url) > 0 && $this->client->exec($this->url . '/gs/gateway/client-1.4', $state, $request, $response)) {
 			if ($this->responseHandler) {
 				$this->responseHandler->onInteraction($state, $request, $response, $options);
 			}
@@ -472,7 +472,7 @@ class CEM_WebController {
 		if ($this->requestHandler && !$this->requestHandler->onRecommendation($state, $request, $options)) {
 			return;
 		}
-		if ($this->client->exec($this->url . '/pr/gateway/client-1.4', $state, $request, $response)) {
+		if (strlen($this->url) > 0 && $this->client->exec($this->url . '/pr/gateway/client-1.4', $state, $request, $response)) {
 			if ($this->responseHandler) {
 				$this->responseHandler->onRecommendation($state, $request, $response, $options);
 			}

@@ -113,7 +113,7 @@ class CEM_API_PageResponse extends CEM_GatewayResponse {
 	 * @return cem context
 	 */
 	public function getContext() {
-		return (isset($this->context['value']) ? $this->context['value'] : NULL);
+		return $this->context;
 	}
 
 	/**
@@ -122,11 +122,7 @@ class CEM_API_PageResponse extends CEM_GatewayResponse {
 	 * @return decoded cem context
 	 */
 	public function decodeContext() {
-		$crypto = new CEM_WebEncryption(
-			isset($this->context['key']) ? $this->context['key'] : '',
-			isset($this->context['iv']) ? $this->context['iv'] : ''
-		);
-		$handler = new CEM_WebRequestHandler($crypto);
+		$handler = new CEM_WebRequestHandler($this->getCrypto());
 		return $handler->getSequentialContexts();
 	}
 
@@ -182,8 +178,10 @@ class CEM_API_PageResponse extends CEM_GatewayResponse {
 
 		// get attributes
 		$this->version = $node->getAttribute('version');
-		$this->status = $node->getAttribute('status') == 'true';
+		$this->status = $node->getAttribute('status') == 'true' || $node->getAttribute('success') == 'true';
 		$this->time = $node->getAttribute('totalTime');
+		$this->crypto['key'] = $node->getAttribute('cryptoKey');
+		$this->crypto['iv'] = $node->getAttribute('cryptoIV');
 
 		// visit children
 		$this->context = NULL;
@@ -201,11 +199,7 @@ class CEM_API_PageResponse extends CEM_GatewayResponse {
 			case XML_ELEMENT_NODE:
 				switch ($child->tagName) {
 				case 'context':
-					$this->context = array(
-						'key' => $child->getAttribute('key'),
-						'iv' => $child->getAttribute('iv'),
-						'value' => $this->visitTexts($child)
-					);
+					$this->context = $this->visitTexts($child);
 					break;
 
 				case 'results':
