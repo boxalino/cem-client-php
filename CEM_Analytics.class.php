@@ -25,21 +25,6 @@ class CEM_Analytics extends CEM_HttpClient {
 	 */
 	private $url;
 
-	/**
-	 * @internal Visitor id
-	 */
-	private $visitorId = '';
-
-	/**
-	 * @internal Visitor age
-	 */
-	private $visitorAge = 0;
-
-	/**
-	 * @internal Language
-	 */
-	private $language = '';
-
 
 	/**
 	 * Constructor
@@ -53,20 +38,6 @@ class CEM_Analytics extends CEM_HttpClient {
 	public function __construct($url, $username = FALSE, $password = FALSE, $connectionTimeout = 1000, $readTimeout = 1000) {
 		parent::__construct(FALSE, FALSE, $connectionTimeout, $readTimeout);
 		$this->url = $url;
-	}
-
-
-	/**
-	 * Set current visitor
-	 *
-	 * @param $visitorId visitor identifier
-	 * @param $visitorAge visitor age
-	 * @param $language visitor language
-	 */
-	public function setVisitor($visitorId, $visitorAge, $language) {
-		$this->visitorId = $visitorId;
-		$this->visitorAge = $visitorAge;
-		$this->language = $language;
 	}
 
 
@@ -258,9 +229,6 @@ class CEM_Analytics extends CEM_HttpClient {
 			'clientReferer' => '',
 			'serverAddress' => '',
 			'serverHost' => '',
-			'visitorId' => $this->visitorId,
-			'visitorAge' => $this->visitorAge,
-			'language' => $this->language,
 			'eventName' => $name,
 			'eventDescription' => $description
 		);
@@ -286,6 +254,9 @@ class CEM_Analytics extends CEM_HttpClient {
 		// forward cookie(s)
 		if (isset($_COOKIE['cemt'])) {
 			$this->setCookie('cemt', $_COOKIE['cemt']);
+		}
+		if (isset($_COOKIE['cemv'])) {
+			$this->setCookie('cemv', $_COOKIE['cemv']);
 		}
 
 		// send request

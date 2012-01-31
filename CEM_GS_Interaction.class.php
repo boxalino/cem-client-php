@@ -1420,22 +1420,32 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			$parentValues = array();
 			foreach ($parents as $parentDepth => $parent) {
 				// build url
-				$urlParameters = array(
+				$urlAddParameters = array(
+					'context' => $this->encodeSequentialContexts(),
+					'guidance' => '+'.$attribute->type,
+					'property' => $attribute->property
+				);
+				$urlSetParameters = array(
 					'context' => $this->encodeSequentialContexts(),
 					'guidance' => $attribute->type,
 					'property' => $attribute->property
 				);
 				if (in_array('hierarchical', $attribute->propertyFlags)) {
-					$urlParameters['hierarchical'] = $parentDepth + 1;
+					$urlAddParameters['hierarchical'] = $parentDepth + 1;
+					$urlSetParameters['hierarchical'] = $parentDepth + 1;
 					for ($i = 0; $i < $parentDepth; $i++) {
-						$urlParameters['value'.$i] = $parents[$i]->data;
+						$urlAddParameters['value'.$i] = $parents[$i]->data;
+						$urlSetParameters['value'.$i] = $parents[$i]->data;
 					}
-					$urlParameters['value'.$parentDepth] = $parent->data;
+					$urlAddParameters['value'.$parentDepth] = $parent->data;
+					$urlSetParameters['value'.$parentDepth] = $parent->data;
 				} else {
 					if ($attribute->type == 'dateRange' || $attribute->type == 'numberRange') {
-						$urlParameters['mode'] = 'range';
+						$urlAddParameters['mode'] = 'range';
+						$urlSetParameters['mode'] = 'range';
 					}
-					$urlParameters['value'] = $parent->data;
+					$urlAddParameters['value'] = $parent->data;
+					$urlSetParameters['value'] = $parent->data;
 				}
 
 				$name = $this->formatter->formatAttributeValue($attribute, 0, $parent);
@@ -1443,9 +1453,13 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					'depth' => $parentDepth,
 					'name' => $name,
 					'population' => $parent->population,
+					'addAction' => array(
+						'url' => $this->formatter->formatUrl('', $urlAddParameters),
+						'parameters' => $urlAddParameters
+					),
 					'setAction' => array(
-						'url' => $this->formatter->formatUrl('', $urlParameters),
-						'parameters' => $urlParameters
+						'url' => $this->formatter->formatUrl('', $urlSetParameters),
+						'parameters' => $urlSetParameters
 					),
 					'preference' => 0,
 					'favorite' => FALSE,
