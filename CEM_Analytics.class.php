@@ -42,6 +42,32 @@ class CEM_Analytics extends CEM_HttpClient {
 
 
 	/**
+	 * This method is called to track an event "client request" with Boxalino Analytics.
+	 *
+	 * @param $trackIdle optional track-idle flag
+	 * @param $meta optional meta-data
+	 */
+	public function trackClientRequest($trackIdle = FALSE, $meta = '') {
+		return $this->trackEvent(
+			'request',
+			sprintf('idle:%s meta:%s', $trackIdle ? '1' : '0', urlencode($meta))
+		);
+	}
+
+	/**
+	 * This method is called to track an event "client idle" with Boxalino Analytics.
+	 *
+	 * @param $meta optional meta-data
+	 */
+	public function trackClientIdle($meta = '') {
+		return $this->trackEvent(
+			'idle',
+			sprintf('meta:%s', urlencode($meta))
+		);
+	}
+
+
+	/**
 	 * This method is called to track an event "query" with Boxalino Analytics.
 	 *
 	 * @param $query query text
