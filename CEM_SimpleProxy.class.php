@@ -58,7 +58,7 @@ class CEM_SimpleProxy {
 	 * @param $password destination password for authentication (optional)
 	 * @param $connectionTimeout connect timeout ms (optional)
 	 * @param $readTimeout read timeout ms (optional)
-	 * @param $allowedCookies allowed cookies (optional)
+	 * @param $allowedCookies allowed cookies (optional, regexp if '/.../')
 	 */
 	public function __construct($url, $username = FALSE, $password = FALSE, $connectionTimeout = 1000, $readTimeout = 15000, $allowedCookies = array()) {
 		try {
@@ -89,9 +89,13 @@ class CEM_SimpleProxy {
 			}
 
 			// forward http cookies
-			foreach ($allowedCookies as $allowedCookie) {
-				if (isset($_COOKIE[$allowedCookie])) {
-					$this->client->setCookie($allowedCookie, $_COOKIE[$allowedCookie]);
+			foreach ($_COOKIE as $name => $value) {
+				foreach ($allowedCookies as $allowedCookie) {
+					if ($name == $allowedCookie ||
+						(strpos($allowedCookie, '/') === 0 && preg_match($allowedCookie, $name))) {
+						$this->client->setCookie($name, $value);
+						break;
+					}
 				}
 			}
 
@@ -155,16 +159,19 @@ class CEM_SimpleProxy {
 	/**
 	 * Get response cookies
 	 *
-	 * @param $allowedCookies allowed cookies (optional)
+	 * @param $allowedCookies allowed cookies (optional, regexp if '/.../')
 	 * @return response cookies
 	 */
 	public function getCookies($allowedCookies = array()) {
 		$cookies = array();
 		foreach ($this->client->getCookies() as $name => $cookie) {
-			if (!in_array($name, $allowedCookies)) {
-				continue;
+			foreach ($allowedCookies as $allowedCookie) {
+				if ($name == $allowedCookie ||
+					(strpos($allowedCookie, '/') === 0 && preg_match($allowedCookie, $name))) {
+					$cookies[$name] = $cookie;
+					break;
+				}
 			}
-			$cookies[$name] = $cookie;
 		}
 		return $cookies;
 	}
@@ -172,7 +179,7 @@ class CEM_SimpleProxy {
 	/**
 	 * Get response headers
 	 *
-	 * @param $allowedCookies allowed cookies (optional)
+	 * @param $allowedCookies allowed cookies (optional, regexp if '/.../')
 	 * @param $cookiePath cookie path (optional)
 	 * @return response headers
 	 */
@@ -226,7 +233,7 @@ class CEM_SimpleProxy {
 	/**
 	 * Write proxied content (status, headers, body)
 	 *
-	 * @param $allowedCookies allowed cookies (optional)
+	 * @param $allowedCookies allowed cookies (optional, regexp if '/.../')
 	 * @param $cookiePath cookie path (optional)
 	 * @return TRUE on success, FALSE on failure
 	 */

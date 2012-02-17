@@ -21,6 +21,44 @@
  */
 class CEM_HttpClient {
 	/**
+	 * Build full url
+	 *
+	 * @param $url http url
+	 * @param $parameters request parameters map (optional)
+	 * @return full url
+	 */
+	public static function buildUrl($url, $parameters = array()) {
+		// build url with parameters
+		if (sizeof($parameters) > 0) {
+			$urlInfo = parse_url($url);
+			$url = $urlInfo['scheme'].'://';
+			if (isset($urlInfo['user']) && isset($urlInfo['pass'])) {
+				$url .= $urlInfo['user'].':'.$urlInfo['pass'].'@';
+			}
+			$url .= $urlInfo['host'];
+			if (isset($urlInfo['port'])) {
+				$url .= ':'.$urlInfo['port'];
+			}
+			$url .= $urlInfo['path'];
+			if (isset($urlInfo['query']) && strlen($urlInfo['query']) > 0) {
+				$url .= '?'.$urlInfo['query'].'&';
+			} else {
+				$url .= '?';
+			}
+			$list = array();
+			foreach ($parameters as $k => $v) {
+				$list[] = urlencode($k).'='.urlencode($v);
+			}
+			$url .= implode('&', $list);
+			if (isset($urlInfo['fragment'])) {
+				$url .= '#'.$urlInfo['fragment'];
+			}
+		}
+		return $url;
+	}
+
+
+	/**
 	 * @internal cURL username
 	 */
 	private $username;
@@ -208,27 +246,7 @@ class CEM_HttpClient {
 	 * @return http code
 	 */
 	public function get($url, $parameters = array(), $referer = FALSE, $headers = array()) {
-		// build url with parameters
-		if (sizeof($parameters) > 0) {
-			$urlInfo = parse_url($url);
-			$url = $urlInfo['scheme'].'://';
-			if (isset($urlInfo['user']) && isset($urlInfo['pass'])) {
-				$url .= $urlInfo['user'].':'.$urlInfo['pass'].'@';
-			}
-			$url .= $urlInfo['host'];
-			if (isset($urlInfo['port'])) {
-				$url .= ':'.$urlInfo['port'];
-			}
-			if (isset($urlInfo['query']) && strlen($urlInfo['query']) > 0) {
-				$url .= '?'.$urlInfo['query'].'&';
-			} else {
-				$url .= '?';
-			}
-			if (isset($urlInfo['fragment'])) {
-				$url .= '#'.$urlInfo['fragment'];
-			}
-		}
-		return $this->process('GET', $url, $referer, $headers);
+		return $this->process('GET', CEM_HttpClient::buildUrl($url, $parameters), $referer, $headers);
 	}
 
 	/**
