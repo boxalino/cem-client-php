@@ -145,6 +145,16 @@ class CEM_API_PageResponse extends CEM_GatewayResponse {
 	}
 
 	/**
+	 * Check if html block exists
+	 *
+	 * @param $id block id
+	 * @return TRUE if block exists, FALSE otherwise
+	 */
+	public function hasBlock($id) {
+		return isset($this->blocks[$id]);
+	}
+
+	/**
 	 * Get html block
 	 *
 	 * @param $id block id
