@@ -1568,8 +1568,14 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 						$selected = FALSE;
 						continue;
 					}
-					for ($i = 0; $i < sizeof($value->data); $i++) {
-						$selected = $selected && ($filter['guidance']->data[$i] === $value->data[$i]);
+					if ($attribute->type == 'numberRange') {
+						for ($i = 0; $i < sizeof($value->data); $i++) {
+							$selected = $selected && ($filter['guidance']->data[$i] == $value->data[$i]);
+						}
+					} else {
+						for ($i = 0; $i < sizeof($value->data); $i++) {
+							$selected = $selected && ($filter['guidance']->data[$i] === $value->data[$i]);
+						}
 					}
 				}
 				if ($selected) {
