@@ -54,11 +54,22 @@ abstract class CEM_GatewayRequest {
 	}
 
 	/**
+	 * Get request body character set
+	 *
+	 * @return request body character set
+	 */
+	public function getContentCharset() {
+		return 'UTF-8';
+	}
+
+	/**
 	 * Get request body content-type
 	 *
 	 * @return request body content-type
 	 */
-	public abstract function getContentType();
+	public function getContentType() {
+		return 'application/octet-stream';
+	}
 
 	/**
 	 * Called to write the request

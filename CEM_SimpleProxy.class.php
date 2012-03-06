@@ -108,7 +108,7 @@ class CEM_SimpleProxy {
 
 				case 'POST':
 					if (sizeof($_POST) > 0) {
-						$this->client->postFields($url, $_POST, FALSE, $requestHeaders);
+						$this->client->postFields($url, $_POST, 'UTF-8', FALSE, $requestHeaders);
 						break;
 					}
 					if (!$requestContentType) {

@@ -20,6 +20,46 @@
  * @author nitro@boxalino.com
  */
 class CEM_HttpClient {
+	/** Allowed encoding */
+	private static $allowedEncodings = NULL;
+
+
+	/**
+	 * Convert string encoding
+	 *
+	 * @param $value input value
+	 * @param $charset target charset
+	 * @return encoded value
+	 */
+	public static function convertEncoding($value, $charset = 'UTF-8') {
+		if (self::$allowedEncodings == NULL) {
+			self::$allowedEncodings = array(mb_internal_encoding());
+			foreach (array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 15) as $i) {
+				self::$allowedEncodings[] = sprintf('ISO-8859-%d', $i);
+			}
+			self::$allowedEncodings = array_unique(self::$allowedEncodings);
+		}
+		if (strcasecmp(mb_detect_encoding($value, array_unique(array_merge(array($charset), self::$allowedEncodings))), $charset) != 0) {
+			return mb_convert_encoding($value, $charset, mb_internal_encoding());
+		}
+		return $value;
+	}
+
+	/**
+	 * Convert parameters encoding
+	 *
+	 * @param $parameters input parameters
+	 * @param $charset target charset
+	 * @return encoded parameters
+	 */
+	public static function convertParametersEncoding($parameters, $charset = 'UTF-8') {
+		$list = array();
+		foreach ($parameters as $key => $value) {
+			$list[$key] = self::convertEncoding($value, $charset);
+		}
+		return $list;
+	}
+
 	/**
 	 * Build full url
 	 *
@@ -46,7 +86,7 @@ class CEM_HttpClient {
 				$url .= '?';
 			}
 			$list = array();
-			foreach ($parameters as $k => $v) {
+			foreach (self::convertParametersEncoding($parameters) as $k => $v) {
 				$list[] = urlencode($k).'='.urlencode($v);
 			}
 			$url .= implode('&', $list);
@@ -283,14 +323,14 @@ class CEM_HttpClient {
 	 * Process POST request (fields)
 	 *
 	 * @param $url http url
-	 * @param $parameters request parameters map (optional)
+	 * @param $parameters request parameters map
+	 * @param $charset request charset (optional)
 	 * @param $referer http referer url (optional)
 	 * @param $headers http headers pairs (optional)
 	 * @return http code
 	 */
-	public function postFields($url, $parameters = array(), $referer = FALSE, $headers = array()) {
-		$headers[] = array('Content-Type', 'multipart/form-data');
-		return $this->process('POST', $url, $referer, $headers, $parameters);
+	public function postFields($url, $parameters, $charset = 'UTF-8', $referer = FALSE, $headers = array()) {
+		return $this->post($url, 'multipart/form-data; charset='.$charset, self::convertParametersEncoding($parameters, $charset), $referer, $headers);
 	}
 
 	/**

@@ -48,7 +48,9 @@ class CEM_GatewayClient extends CEM_HttpClient {
 
 		// perform request
 		$requestBody = $request->write($state);
-		if ($requestBody) {
+		if (is_array($requestBody)) {
+			$this->postFields($url, $requestBody, $request->getContentCharset(), $request->getReferer());
+		} else if ($requestBody) {
 			$this->post($url, $request->getContentType(), $requestBody, $request->getReferer());
 		} else {
 			$this->get($url, array(), $request->getReferer());
@@ -58,13 +60,6 @@ class CEM_GatewayClient extends CEM_HttpClient {
 		foreach ($this->getCookies() as $name => $cookie) {
 			$state->setCookie($name, $cookie);
 		}
-
-		// debug
-/*		echo('<pre>');
-		echo($requestBody."\n".$this->getBody());
-		echo('</pre>');
-//		echo("<pre style=\"width: 100%; overflow: auto; background-color: white; color: black;\">" . htmlentities($requestData, ENT_COMPAT, 'UTF-8')."\n".htmlentities($responseData, ENT_COMPAT, 'UTF-8') . "</pre>");
-*/
 
 		// parse response
 		$state->setStatus($this->getCode(), $this->getError());
