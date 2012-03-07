@@ -21,84 +21,26 @@
  */
 class CEM_GatewayState {
 	/**
-	 * Http status code
-	 */
-	protected $code;
-
-	/**
-	 * Http status message
-	 */
-	protected $message;
-
-	/**
 	 * Active cookies
 	 */
-	protected $cookies;
+	protected $cookies = array();
 
 	/**
 	 * Changed cookies
 	 */
-	protected $changedCookies;
+	protected $changedCookies = array();
 
 	/**
 	 * State data
 	 */
-	protected $data;
-	
+	protected $data = array();
+
 
 	/**
 	 * Constructor
 	 *
 	 */
 	public function __construct() {
-		$this->code = 0;
-		$this->message = "";
-		$this->cookies = array();
-		$this->changedCookies = array();
-		$this->data = array();
-	}
-
-
-	/**
-	 * Get last http status code
-	 *
-	 * @return last http status code
-	 */
-	public function getHttpCode() {
-		return $this->code;
-	}
-
-	/**
-	 * Get last http status message
-	 *
-	 * @return last http status message (or "" if none)
-	 */
-	public function getMessage() {
-		switch ($this->code) {
-		case 401:
-			return "Unauthorized (wrong username or password)";
-
-		case 403:
-			return "Forbidden";
-
-		case 404:
-			return "Not found";
-
-		case 500:
-			return "Server error";
-		}
-		return $this->message;
-	}
-
-	/**
-	 * Set status
-	 *
-	 * @param code last http status code
-	 * @param message last http status message
-	 */
-	public function setStatus($code, $message) {
-		$this->code = $code;
-		$this->message = $message;
 	}
 
 

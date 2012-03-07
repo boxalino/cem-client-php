@@ -23,7 +23,7 @@ abstract class CEM_GatewayRequest {
 	/**
 	 * Http referer
 	 */
-	protected $referer;
+	protected $referer = NULL;
 	
 
 	/**
@@ -31,7 +31,6 @@ abstract class CEM_GatewayRequest {
 	 *
 	 */
 	public function __construct() {
-		$this->referer = NULL;
 	}
 
 

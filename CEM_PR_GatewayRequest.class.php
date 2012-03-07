@@ -35,17 +35,17 @@ class CEM_PR_GatewayRequest extends CEM_GatewayRequest {
 	/**
 	 * Request format
 	 */
-	protected $requestFormat;
+	protected $requestFormat = CEM_PR_FORMAT_JSON;
 
 	/**
 	 * Requests
 	 */
-	protected $requests;
+	protected $requests = array();
 
 	/**
 	 * Response format
 	 */
-	protected $responseFormat;
+	protected $responseFormat = CEM_PR_FORMAT_JSON;
 
 
 	/**
@@ -56,9 +56,6 @@ class CEM_PR_GatewayRequest extends CEM_GatewayRequest {
 	public function __construct($customer) {
 		parent::__construct();
 		$this->customer = $customer;
-		$this->requestFormat = CEM_PR_FORMAT_JSON;
-		$this->requests = array();
-		$this->responseFormat = CEM_PR_FORMAT_JSON;
 	}
 
 

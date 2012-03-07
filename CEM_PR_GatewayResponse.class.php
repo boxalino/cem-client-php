@@ -23,22 +23,22 @@ class CEM_PR_GatewayResponse extends CEM_GatewayResponse {
 	/**
 	 * Customer identifier
 	 */
-	protected $customer;
+	protected $customer = NULL;
 
 	/**
 	 * Response format
 	 */
-	protected $responseFormat;
+	protected $responseFormat = NULL;
 
 	/**
 	 * Response scope
 	 */
-	protected $responses;
+	protected $responses = array();
 
 	/**
 	 * Response size
 	 */
-	protected $responseSize;
+	protected $responseSize = 0;
 
 
 	/**
@@ -47,10 +47,6 @@ class CEM_PR_GatewayResponse extends CEM_GatewayResponse {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$this->customer = NULL;
-		$this->responseFormat = NULL;
-		$this->responseSize = 0;
-		$this->responses = array();
 	}
 
 

@@ -23,7 +23,7 @@ class CEM_WebStateHandler extends CEM_AbstractWebHandler {
 	/**
 	 * Cached state
 	 */
-	protected $state;
+	protected $state = NULL;
 
 	/**
 	 * Json decoded contexts (cache)
@@ -38,7 +38,6 @@ class CEM_WebStateHandler extends CEM_AbstractWebHandler {
 	 */
 	public function __construct(&$crypto) {
 		parent::__construct($crypto);
-		$this->state = NULL;
 	}
 
 

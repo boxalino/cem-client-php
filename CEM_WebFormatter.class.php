@@ -36,6 +36,11 @@ class CEM_WebFormatter {
 	private $localeCurrencyPattern;
 
 	/**
+	 * Default url parameters
+	 */
+	private $defaultUrlParameters = array();
+
+	/**
 	 * Date/time formatters (cache)
 	 */
 	private $_dateFormatters = array();
@@ -59,14 +64,16 @@ class CEM_WebFormatter {
 	/**
 	 * Constructor
 	 *
-	 * @param &$locale locale name
-	 * @param &$localeCurrency locale currency code
-	 * @param &$localeCurrencyPattern locale currency pattern
+	 * @param $locale locale name
+	 * @param $localeCurrency locale currency code
+	 * @param $localeCurrencyPattern locale currency pattern
+	 * @param $defaultUrlParameters default url parameters
 	 */
-	public function __construct($locale, $localeCurrency, $localeCurrencyPattern) {
+	public function __construct($locale, $localeCurrency, $localeCurrencyPattern, $defaultUrlParameters = array()) {
 		$this->locale = $locale;
 		$this->localeCurrency = $localeCurrency;
 		$this->localeCurrencyPattern = $localeCurrencyPattern;
+		$this->defaultUrlParameters = $defaultUrlParameters;
 	}
 
 
@@ -211,41 +218,32 @@ class CEM_WebFormatter {
 
 
 	/**
+	 * Get complete url parameters
+	 *
+	 * @param $parameters query parameters
+	 * @return full parameters
+	 */
+	public function getUrlParameters($parameters) {
+		$list = array();
+		foreach ($this->defaultUrlParameters as $k => $v) {
+			$list[$k] = $v;
+		}
+		foreach ($parameters as $k => $v) {
+			$list[$k] = $v;
+		}
+		return $list;
+	}
+
+	/**
 	 * Format url with parameters
 	 *
 	 * @param $uri base uri
 	 * @param $parameters query parameters
-	 * @param $hash url hash
+	 * @param $fragment fragment
 	 * @return full uri
 	 */
-	public function formatUrl($uri, $parameters = array(), $hash = NULL) {
-		if (sizeof($parameters) > 0) {
-			$uri .= '?';
-			$i = 0;
-			foreach ($parameters as $key => $value) {
-				if ($i++ > 0) {
-					$uri .= '&';
-				}
-				if (is_string($key)) {
-					if (is_array($value)) {
-						foreach ($value as $index => $item) {
-							if ($index > 0) {
-								$uri .= '&';
-							}
-							$uri .= urlencode($key) . '[]=' . urlencode($item);
-						}
-					} else {
-						$uri .= urlencode($key) . '=' . urlencode($value);
-					}
-				} else {
-					$uri .= urlencode($value) . '=' . urlencode($this->requestString($value));
-				}
-			}
-		}
-		if (strlen($hash) > 0) {
-			$uri .= $hash;
-		}
-		return $uri;
+	public function formatUrl($uri, $parameters = array(), $fragment = NULL) {
+		return CEM_HttpClient::buildUrl($uri, $this->getUrlParameters($parameters), $fragment);
 	}
 
 

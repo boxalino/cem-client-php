@@ -62,11 +62,9 @@ class CEM_GatewayClient extends CEM_HttpClient {
 		}
 
 		// parse response
-		$state->setStatus($this->getCode(), $this->getError());
-		$response->setTotalTime($this->getTime());
-		$responseBody = $this->getBody();
-		if ($responseBody && $this->getCode() >= 200 && $this->getCode() < 300) {
-			return $response->read($state, $responseBody);
+		$response->setTransport($this->getCode(), $this->getError(), $this->getTime(), $this->getBody());
+		if ($this->getBody() && $this->getCode() >= 200 && $this->getCode() < 300) {
+			return $response->read($state, $this->getBody());
 		}
 		return FALSE;
 	}

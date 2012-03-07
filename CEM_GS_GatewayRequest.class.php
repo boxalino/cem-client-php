@@ -48,17 +48,17 @@ class CEM_GS_GatewayRequest extends CEM_GatewayRequest {
 	/**
 	 * Request format
 	 */
-	protected $requestFormat;
+	protected $requestFormat = CEM_GS_FORMAT_JSON;
 
 	/**
 	 * Requests array
 	 */
-	protected $requests;
+	protected $requests = array();
 
 	/**
 	 * Response format
 	 */
-	protected $responseFormat;
+	protected $responseFormat = CEM_GS_FORMAT_JSON;
 
 
 	/**
@@ -73,9 +73,6 @@ class CEM_GS_GatewayRequest extends CEM_GatewayRequest {
 		$this->customer = $customer;
 		$this->dialog = $dialog;
 		$this->language = $language;
-		$this->requestFormat = CEM_GS_FORMAT_JSON;
-		$this->responseFormat = CEM_GS_FORMAT_JSON;
-		$this->requests = array();
 	}
 
 

@@ -21,11 +21,6 @@
  */
 class CEM_WebEncryption {
 	/**
-	 * Hash algorithm
-	 */
-	protected $hash;
-
-	/**
 	 * Encryption key
 	 */
 	protected $key;
@@ -36,24 +31,29 @@ class CEM_WebEncryption {
 	protected $iv;
 
 	/**
+	 * Hash algorithm
+	 */
+	protected $hash = 'sha256';
+
+	/**
 	 * Encryption algorithm
 	 */
-	protected $algo;
+	protected $algo = MCRYPT_RIJNDAEL_256;
 
 	/**
 	 * Encryption algorithm path
 	 */
-	protected $algoPath;
+	protected $algoPath = '';
 
 	/**
 	 * Encryption mode
 	 */
-	protected $mode;
+	protected $mode = MCRYPT_MODE_CBC;
 
 	/**
 	 * Encryption mode path
 	 */
-	protected $modePath;
+	protected $modePath = '';
 
 
 	/**
@@ -64,13 +64,13 @@ class CEM_WebEncryption {
 	 * @param $options encryption options
 	 */
 	public function __construct($secret, $iv, $options = array()) {
-		$this->hash = isset($options['hash']) ? $options['hash'] : 'sha256';
+		foreach ($options as $key => $value) {
+			if (property_exists($this, $key)) {
+				$this->$key = $value;
+			}
+		}
 		$this->key = hash($this->hash, $secret, TRUE);
 		$this->iv = hash($this->hash, $iv, TRUE);
-		$this->algo = isset($options['algo']) ? $options['algo'] : MCRYPT_RIJNDAEL_256;
-		$this->algoPath = isset($options['algoPath']) ? $options['algoPath'] : '';
-		$this->mode = isset($options['mode']) ? $options['mode'] : MCRYPT_MODE_CBC;
-		$this->modePath = isset($options['modePath']) ? $options['modePath'] : '';
 	}
 
 

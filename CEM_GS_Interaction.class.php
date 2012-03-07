@@ -427,7 +427,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 								'query' => $value,
 								'queryAction' => array(
 									'url' => $this->formatter->formatUrl('', $urlParameters),
-									'parameters' => $urlParameters
+									'parameters' => $this->formatter->getUrlParameters($urlParameters)
 								),
 								'distance' => $distance
 							);
@@ -443,7 +443,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 								'query' => $value,
 								'queryAction' => array(
 									'url' => $this->formatter->formatUrl('', $urlParameters),
-									'parameters' => $urlParameters
+									'parameters' => $this->formatter->getUrlParameters($urlParameters)
 								),
 								'distance' => $distance
 							);
@@ -584,7 +584,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				}
 				$this->_filters[$groupId][$propertyId][$index]['removeAction'] = array(
 					'url' => $this->formatter->formatUrl('', $urlParameters),
-					'parameters' => $urlParameters
+					'parameters' => $this->formatter->getUrlParameters($urlParameters)
 				);
 
 				$this->_filters[$groupId][$propertyId][$index]['alternative'] = $this->getAlternative($propertyId, $groupId);
@@ -895,7 +895,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					$resource['scenario'] = $scenario->id;
 					$recommendations[] = $resource;
 				}
-				$setAction = array(
+				$urlParameters = array(
 					'context' => $this->encodeSequentialContexts(),
 					'scenario' => $scenario->id
 				);
@@ -903,8 +903,8 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					'id' => $scenario->id,
 					'name' => $scenario->name,
 					'setAction' => array(
-						'parameters' => $setAction,
-						'url' => $this->formatter->formatUrl('', $setAction)
+						'url' => $this->formatter->formatUrl('', $urlParameters),
+						'parameters' => $this->formatter->getUrlParameters($urlParameters)
 					),
 					'attributeOrder' => $attributeOrder,
 					'refinements' => $refinements,
@@ -1219,7 +1219,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					'population' => $value->population,
 					'refineAction' => array(
 						'url' => $this->formatter->formatUrl('', $urlParameters),
-						'parameters' => $urlParameters
+						'parameters' => $this->formatter->getUrlParameters($urlParameters)
 					),
 					'preview' => $preview,
 					'resources' => $resources
@@ -1403,11 +1403,11 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				'population' => $value->population,
 				'addAction' => array(
 					'url' => $this->formatter->formatUrl('', $urlAddParameters),
-					'parameters' => $urlAddParameters
+					'parameters' => $this->formatter->getUrlParameters($urlAddParameters)
 				),
 				'setAction' => array(
 					'url' => $this->formatter->formatUrl('', $urlSetParameters),
-					'parameters' => $urlSetParameters
+					'parameters' => $this->formatter->getUrlParameters($urlSetParameters)
 				),
 				'preference' => isset($preferences[$name]) && $preferences[$name]['weight'] > 0.1 ? $preferences[$name]['offset'] : 0,
 				'favorite' => FALSE,
@@ -1455,11 +1455,11 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					'population' => $parent->population,
 					'addAction' => array(
 						'url' => $this->formatter->formatUrl('', $urlAddParameters),
-						'parameters' => $urlAddParameters
+						'parameters' => $this->formatter->getUrlParameters($urlAddParameters)
 					),
 					'setAction' => array(
 						'url' => $this->formatter->formatUrl('', $urlSetParameters),
-						'parameters' => $urlSetParameters
+						'parameters' => $this->formatter->getUrlParameters($urlSetParameters)
 					),
 					'preference' => 0,
 					'favorite' => FALSE,
@@ -1646,7 +1646,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				'population' => $value->population,
 				'setAction' => array(
 					'url' => $this->formatter->formatUrl('', $urlParameters),
-					'parameters' => $urlParameters
+					'parameters' => $this->formatter->getUrlParameters($urlParameters)
 				),
 				'preference' => isset($preferences[$name]) && $preferences[$name]['weight'] > 0.1 && $preferences[$name]['offset'] < 3,
 				'favorite' => FALSE,
@@ -1684,7 +1684,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					'population' => $parent->population,
 					'setAction' => array(
 						'url' => $this->formatter->formatUrl('', $urlParameters),
-						'parameters' => $urlParameters
+						'parameters' => $this->formatter->getUrlParameters($urlParameters)
 					),
 					'value' => $parent
 				);

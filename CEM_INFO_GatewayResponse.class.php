@@ -23,7 +23,7 @@ class CEM_INFO_GatewayResponse extends CEM_GatewayResponse {
 	/**
 	 * Text response
 	 */
-	protected $text;
+	protected $text = NULL;
 
 
 	/**
@@ -32,7 +32,6 @@ class CEM_INFO_GatewayResponse extends CEM_GatewayResponse {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$this->text = NULL;
 	}
 
 

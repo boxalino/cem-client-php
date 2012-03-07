@@ -39,8 +39,12 @@ class CEM_HttpClient {
 			}
 			self::$allowedEncodings = array_unique(self::$allowedEncodings);
 		}
-		if (strcasecmp(mb_detect_encoding($value, array_unique(array_merge(array($charset), self::$allowedEncodings))), $charset) != 0) {
-			return mb_convert_encoding($value, $charset, mb_internal_encoding());
+		if (is_array($value)) {
+			foreach ($value as $key => $item) {
+				$value[$key] = self::convertEncoding($item, $charset);
+			}
+		} else if (strcasecmp(mb_detect_encoding($value, array_unique(array_merge(array($charset), self::$allowedEncodings))), $charset) != 0) {
+			$value = mb_convert_encoding($value, $charset, mb_internal_encoding());
 		}
 		return $value;
 	}
@@ -61,38 +65,80 @@ class CEM_HttpClient {
 	}
 
 	/**
+	 * Build url-encoded key/value list
+	 *
+	 * @param $parameters parameters
+	 * @return key/value list
+	 */
+	public static function buildKVList($parameters) {
+		$list = array();
+		foreach ($parameters as $k => $v) {
+			$k = urlencode($k);
+			if (is_array($v)) {
+				foreach ($v as $i => $vi) {
+					$list[] = $k.'['.urlencode($i).']='.urlencode($vi);
+				}
+			} else {
+				$list[] = $k.'='.urlencode($v);
+			}
+		}
+		return implode('&', $list);
+	}
+
+	/**
 	 * Build full url
 	 *
 	 * @param $url http url
 	 * @param $parameters request parameters map (optional)
+	 * @param $fragment new fragment (optional)
 	 * @return full url
 	 */
-	public static function buildUrl($url, $parameters = array()) {
+	public static function buildUrl($url, $parameters = array(), $fragment = NULL) {
 		// build url with parameters
-		if (sizeof($parameters) > 0) {
+		if (strlen($url) > 0) {
 			$urlInfo = parse_url($url);
-			$url = $urlInfo['scheme'].'://';
-			if (isset($urlInfo['user']) && isset($urlInfo['pass'])) {
-				$url .= $urlInfo['user'].':'.$urlInfo['pass'].'@';
+			$url = array();
+			if (isset($urlInfo['scheme'])) {
+				$url[] = $urlInfo['scheme'].'://';
+				if (isset($urlInfo['user']) && isset($urlInfo['pass'])) {
+					$url[] = $urlInfo['user'].':'.$urlInfo['pass'].'@';
+				}
+				if (isset($urlInfo['host'])) {
+					$url[] = $urlInfo['host'];
+					if (isset($urlInfo['port'])) {
+						$url[] = ':'.$urlInfo['port'];
+					}
+				}
+				if (isset($urlInfo['path']) && strlen($urlInfo['path']) > 0) {
+					$url[] = $urlInfo['path'];
+				} else {
+					$url[] = '/';
+				}
+			} else if (isset($urlInfo['path'])) {
+				$url[] = $urlInfo['path'];
 			}
-			$url .= $urlInfo['host'];
-			if (isset($urlInfo['port'])) {
-				$url .= ':'.$urlInfo['port'];
-			}
-			$url .= $urlInfo['path'];
 			if (isset($urlInfo['query']) && strlen($urlInfo['query']) > 0) {
-				$url .= '?'.$urlInfo['query'].'&';
-			} else {
-				$url .= '?';
+				$url[] = '?'.$urlInfo['query'];
+				if (sizeof($parameters) > 0) {
+					$url[] = '&';
+				}
+			} else if (sizeof($parameters) > 0) {
+				$url[] = '?';
 			}
-			$list = array();
-			foreach (self::convertParametersEncoding($parameters) as $k => $v) {
-				$list[] = urlencode($k).'='.urlencode($v);
+			$url[] = self::buildKVList(self::convertParametersEncoding($parameters));
+			if (strlen($fragment) > 0) {
+				$url[] = '#'.urlencode($fragment);
+			} else if (isset($urlInfo['fragment'])) {
+				$url[] = '#'.urlencode($urlInfo['fragment']);
 			}
-			$url .= implode('&', $list);
-			if (isset($urlInfo['fragment'])) {
-				$url .= '#'.$urlInfo['fragment'];
-			}
+			return implode('', $url);
+		}
+		$url = '';
+		if (sizeof($parameters) > 0) {
+			$url .= '?'.self::buildKVList(self::convertParametersEncoding($parameters));
+		}
+		if (strlen($fragment) > 0) {
+			$url .= '#'.urlencode($fragment);
 		}
 		return $url;
 	}
@@ -330,7 +376,13 @@ class CEM_HttpClient {
 	 * @return http code
 	 */
 	public function postFields($url, $parameters, $charset = 'UTF-8', $referer = FALSE, $headers = array()) {
-		return $this->post($url, 'multipart/form-data; charset='.$charset, self::convertParametersEncoding($parameters, $charset), $referer, $headers);
+		return $this->post(
+			$url,
+			'application/x-www-form-urlencoded; charset='.$charset,
+			self::buildKVList(self::convertParametersEncoding($parameters, $charset)),
+			$referer,
+			$headers
+		);
 	}
 
 	/**

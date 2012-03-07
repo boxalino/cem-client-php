@@ -23,37 +23,37 @@ class CEM_GS_GatewayResponse extends CEM_GatewayResponse {
 	/**
 	 * Customer identifier
 	 */
-	protected $customer;
+	protected $customer = NULL;
 
 	/**
 	 * Dialog identifier
 	 */
-	protected $dialog;
+	protected $dialog = NULL;
 
 	/**
 	 * Language identifier
 	 */
-	protected $language;
+	protected $language = NULL;
 
 	/**
 	 * Response format
 	 */
-	protected $responseFormat;
+	protected $responseFormat = NULL;
 
 	/**
 	 * Response scope
 	 */
-	protected $responses;
+	protected $responses = array();
 
 	/**
 	 * Response size
 	 */
-	protected $responseSize;
+	protected $responseSize = 0;
 
 	/**
 	 * Context scopes
 	 */
-	protected $context;
+	protected $context = NULL;
 
 
 	/**
@@ -62,13 +62,6 @@ class CEM_GS_GatewayResponse extends CEM_GatewayResponse {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$this->customer = NULL;
-		$this->dialog = NULL;
-		$this->language = NULL;
-		$this->responseFormat = NULL;
-		$this->responseSize = 0;
-		$this->responses = array();
-		$this->context = array();
 	}
 
 

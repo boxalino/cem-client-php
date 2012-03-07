@@ -21,34 +21,34 @@
  */
 abstract class CEM_GatewayResponse {
 	/**
+	 * Server error
+	 */
+	protected $transport = NULL;
+
+	/**
 	 * Server version
 	 */
-	protected $version;
+	protected $version = '';
 
 	/**
 	 * Response status
 	 */
-	protected $status;
+	protected $status = FALSE;
 
 	/**
 	 * Response message
 	 */
-	protected $message;
+	protected $message = '';
 
 	/**
 	 * Response time
 	 */
-	protected $time;
-
-	/**
-	 * Processing time
-	 */
-	protected $totalTime;
+	protected $time = 0;
 
 	/**
 	 * Cryptographic parameters
 	 */
-	protected $crypto;
+	protected $crypto = array('key' => '', 'iv' => '');
 
 
 	/**
@@ -56,14 +56,41 @@ abstract class CEM_GatewayResponse {
 	 *
 	 */
 	public function __construct() {
-		$this->version = '';
-		$this->status = FALSE;
-		$this->message = '';
-		$this->time = 0;
-		$this->totalTime = 0;
-		$this->crypto = array(
-			'key' => '',
-			'iv' => ''
+	}
+
+
+	/**
+	 * Get processing time
+	 *
+	 * @return processing time (in seconds)
+	 */
+	public function getTotalTime() {
+		return isset($this->transport['time']) ? $this->transport['time'] : 0;
+	}
+
+	/**
+	 * Get server transport information
+	 *
+	 * @return server transport information
+	 */
+	public function getTransport() {
+		return $this->transport;
+	}
+
+	/**
+	 * Called to set server transport information
+	 *
+	 * @param $code http code
+	 * @param $message http error message
+	 * @param $time total transport time
+	 * @param $data body data
+	 */
+	public function setTransport($code, $message, $time, $data) {
+		$this->transport = array(
+			'code' => $code,
+			'message' => $message,
+			'time' => $time,
+			'data' => $data
 		);
 	}
 
@@ -102,24 +129,6 @@ abstract class CEM_GatewayResponse {
 	 */
 	public function getTime() {
 		return ($this->time / 1000.0);
-	}
-
-	/**
-	 * Get processing time
-	 *
-	 * @return processing time (in seconds)
-	 */
-	public function getTotalTime() {
-		return $this->totalTime;
-	}
-
-	/**
-	 * Called to set processing time
-	 *
-	 * @param $time processing time (in seconds)
-	 */
-	public function setTotalTime($time) {
-		$this->totalTime = $time;
 	}
 
 	/**

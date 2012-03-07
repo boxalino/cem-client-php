@@ -23,52 +23,52 @@ class CEM_API_PageResponse extends CEM_GatewayResponse {
 	/**
 	 * Response size
 	 */
-	protected $responseSize;
+	protected $responseSize = 0;
 
 	/**
 	 * Context
 	 */
-	protected $context;
+	protected $context = NULL;
 
 	/**
 	 * Results offset
 	 */
-	protected $resultsOffset;
+	protected $resultsOffset = 0;
 
 	/**
 	 * Results total
 	 */
-	protected $resultsTotal;
+	protected $resultsTotal = 0;
 
 	/**
 	 * Results page index
 	 */
-	protected $resultsPageIndex;
+	protected $resultsPageIndex = 0;
 
 	/**
 	 * Results page count
 	 */
-	protected $resultsPageCount;
+	protected $resultsPageCount = 0;
 
 	/**
 	 * Results page size
 	 */
-	protected $resultsPageSize;
+	protected $resultsPageSize = 0;
 
 	/**
 	 * Results
 	 */
-	protected $results;
+	protected $results = array();
 
 	/**
 	 * Recommendations
 	 */
-	protected $recommendations;
+	protected $recommendations = array();
 
 	/**
 	 * HTML blocks
 	 */
-	protected $blocks;
+	protected $blocks = array();
 
 
 	/**
@@ -77,16 +77,6 @@ class CEM_API_PageResponse extends CEM_GatewayResponse {
 	 */
 	public function __construct() {
 		parent::__construct();
-		$this->responseSize = 0;
-		$this->context = NULL;
-		$this->resultsOffset = 0;
-		$this->resultsTotal = 0;
-		$this->resultsPageIndex = 0;
-		$this->resultsPageCount = 0;
-		$this->resultsPageSize = 0;
-		$this->results = array();
-		$this->recommendations = array();
-		$this->blocks = array();
 	}
 
 

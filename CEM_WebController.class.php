@@ -26,66 +26,6 @@ class CEM_WebController {
 	protected $crypto;
 
 	/**
-	 * CEM server url
-	 */
-	protected $url;
-
-	/**
-	 * Customer account (defaults to 'default')
-	 */
-	protected $customer;
-
-	/**
-	 * Index (defaults to 'default')
-	 */
-	protected $index;
-
-	/**
-	 * Language (defaults to 'en')
-	 */
-	protected $language;
-
-	/**
-	 * Dialog (defaults to 'search')
-	 */
-	protected $dialog;
-
-	/**
-	 * State handler
-	 */
-	protected $stateHandler;
-
-	/**
-	 * Request handler
-	 */
-	protected $requestHandler;
-
-	/**
-	 * Response handler
-	 */
-	protected $responseHandler;
-
-	/**
-	 * Connection timeout [ms]
-	 */
-	protected $connectionTimeout;
-
-	/**
-	 * Read timeout [ms]
-	 */
-	protected $readTimeout;
-
-	/**
-	 * G-S interaction class
-	 */
-	protected $gsInteractionClass;
-
-	/**
-	 * P-R interaction class
-	 */
-	protected $prInteractionClass;
-
-	/**
 	 * Value formatter
 	 */
 	protected $formatter;
@@ -95,6 +35,71 @@ class CEM_WebController {
 	 */
 	protected $client;
 
+	/**
+	 * CEM server url
+	 */
+	protected $url = 'http://root:@localhost:9000';
+
+	/**
+	 * Customer account (defaults to 'default')
+	 */
+	protected $customer = 'default';
+
+	/**
+	 * Index (defaults to 'default')
+	 */
+	protected $index = 'default';
+
+	/**
+	 * Language (defaults to 'en')
+	 */
+	protected $language = 'en';
+
+	/**
+	 * Dialog (defaults to 'search')
+	 */
+	protected $dialog = 'standard';
+
+	/**
+	 * State handler
+	 */
+	protected $stateHandler = NULL;
+
+	/**
+	 * Request handler
+	 */
+	protected $requestHandler = NULL;
+
+	/**
+	 * Response handler
+	 */
+	protected $responseHandler = NULL;
+
+	/**
+	 * Connection timeout [ms]
+	 */
+	protected $connectionTimeout = 10000;
+
+	/**
+	 * Read timeout [ms]
+	 */
+	protected $readTimeout = 15000;
+
+	/**
+	 * G-S interaction class
+	 */
+	protected $gsInteractionClass = 'CEM_GS_Interaction';
+
+	/**
+	 * P-R interaction class
+	 */
+	protected $prInteractionClass = 'CEM_PR_Interaction';
+
+	/**
+	 * Last interaction
+	 */
+	protected $lastInteraction = NULL;
+	
 
 	/**
 	 * Constructor
@@ -104,25 +109,13 @@ class CEM_WebController {
 	 */
 	public function __construct(&$crypto, $options = array()) {
 		$this->crypto = $crypto;
-		$this->url = 'http://root:@localhost:9000';
-		$this->customer = 'default';
-		$this->index = 'default';
-		$this->language = 'en';
-		$this->dialog = 'standard';
-		$this->stateHandler = NULL;
-		$this->requestHandler = NULL;
-		$this->responseHandler = NULL;
-		$this->connectionTimeout = 10000;
-		$this->readTimeout = 15000;
-		$this->gsInteractionClass = 'CEM_GS_Interaction';
-		$this->prInteractionClass = 'CEM_PR_Interaction';
 		$this->formatter = new CEM_WebFormatter(Locale::getDefault(), NULL, NULL);
-		foreach ($options as $key => $value) {
-			$this->$key = $value;
-		}
-
 		$this->client = new CEM_GatewayClient($this->connectionTimeout, $this->readTimeout);
-		$this->lastInteraction = NULL;
+		foreach ($options as $key => $value) {
+			if (property_exists($this, $key)) {
+				$this->$key = $value;
+			}
+		}
 	}
 
 
