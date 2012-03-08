@@ -1341,14 +1341,6 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				continue;
 			}
 
-			// skip node if no effect
-			if ($value->population == $this->getResultsTotal()) {
-				// HACK: semeuse
-				if ($this->getRequest()->getCustomer() != 'semeuse') {
-					continue;
-				}
-			}
-
 			// build url
 			$urlAddParameters = array(
 				'context' => $this->encodeSequentialContexts(),
@@ -1401,6 +1393,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				'index' => $index,
 				'name' => $name,
 				'population' => $value->population,
+				'filtering' => $value->population < $this->getResultsTotal(),
 				'addAction' => array(
 					'url' => $this->formatter->formatUrl('', $urlAddParameters),
 					'parameters' => $this->formatter->getUrlParameters($urlAddParameters)
@@ -1430,6 +1423,10 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					'guidance' => $attribute->type,
 					'property' => $attribute->property
 				);
+				$urlRemoveParameters = array(
+					'context' => $this->encodeSequentialContexts(),
+					'guidance' => '-'.$attribute->property
+				);
 				if (in_array('hierarchical', $attribute->propertyFlags)) {
 					$urlAddParameters['hierarchical'] = $parentDepth + 1;
 					$urlSetParameters['hierarchical'] = $parentDepth + 1;
@@ -1453,6 +1450,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					'depth' => $parentDepth,
 					'name' => $name,
 					'population' => $parent->population,
+					'filtering' => FALSE,
 					'addAction' => array(
 						'url' => $this->formatter->formatUrl('', $urlAddParameters),
 						'parameters' => $this->formatter->getUrlParameters($urlAddParameters)
@@ -1460,6 +1458,10 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					'setAction' => array(
 						'url' => $this->formatter->formatUrl('', $urlSetParameters),
 						'parameters' => $this->formatter->getUrlParameters($urlSetParameters)
+					),
+					'removeAction' => array(
+						'url' => $this->formatter->formatUrl('', $urlRemoveParameters),
+						'parameters' => $this->formatter->getUrlParameters($urlRemoveParameters)
 					),
 					'preference' => 0,
 					'favorite' => FALSE,
@@ -1644,6 +1646,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				'index' => $index,
 				'name' => $name,
 				'population' => $value->population,
+				'filtering' => $value->population < $this->getResultsTotal(),
 				'setAction' => array(
 					'url' => $this->formatter->formatUrl('', $urlParameters),
 					'parameters' => $this->formatter->getUrlParameters($urlParameters)
@@ -1659,22 +1662,26 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			$parentValues = array();
 			foreach ($parents as $parentDepth => $parent) {
 				// build url
-				$urlParameters = array(
+				$urlSetParameters = array(
 					'context' => $this->encodeSequentialContexts(),
 					'guidance' => $attribute->type,
 					'property' => $attribute->property
 				);
+				$urlRemoveParameters = array(
+					'context' => $this->encodeSequentialContexts(),
+					'guidance' => '-'.$attribute->property
+				);
 				if (in_array('hierarchical', $attribute->propertyFlags)) {
-					$urlParameters['hierarchical'] = $parentDepth + 1;
+					$urlSetParameters['hierarchical'] = $parentDepth + 1;
 					for ($i = 0; $i < $parentDepth; $i++) {
-						$urlParameters['value'.$i] = $parents[$i]->data;
+						$urlSetParameters['value'.$i] = $parents[$i]->data;
 					}
-					$urlParameters['value'.$parentDepth] = $parent->data;
+					$urlSetParameters['value'.$parentDepth] = $parent->data;
 				} else {
 					if ($attribute->type == 'dateRange' || $attribute->type == 'numberRange') {
-						$urlParameters['mode'] = 'range';
+						$urlSetParameters['mode'] = 'range';
 					}
-					$urlParameters['value'] = $parent->data;
+					$urlSetParameters['value'] = $parent->data;
 				}
 
 				$name = $this->formatter->formatAttributeValue($attribute, 0, $parent);
@@ -1682,9 +1689,14 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					'depth' => $parentDepth,
 					'name' => $name,
 					'population' => $parent->population,
+					'filtering' => FALSE,
 					'setAction' => array(
-						'url' => $this->formatter->formatUrl('', $urlParameters),
-						'parameters' => $this->formatter->getUrlParameters($urlParameters)
+						'url' => $this->formatter->formatUrl('', $urlSetParameters),
+						'parameters' => $this->formatter->getUrlParameters($urlSetParameters)
+					),
+					'removeAction' => array(
+						'url' => $this->formatter->formatUrl('', $urlRemoveParameters),
+						'parameters' => $this->formatter->getUrlParameters($urlRemoveParameters)
 					),
 					'value' => $parent
 				);
