@@ -300,6 +300,7 @@ class CEM_WebController {
 				$query,
 				$size,
 				$contextual,
+				isset($options['parserProperties']) ? $options['parserProperties'] : array('title', 'body'),
 				isset($options['includedProperties']) ? $options['includedProperties'] : array(),
 				isset($options['excludedProperties']) ? $options['excludedProperties'] : array('title'),
 				isset($options['filterProperties']) ? $options['filterProperties'] : array('title', 'body'),

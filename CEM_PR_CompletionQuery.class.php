@@ -51,6 +51,11 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 	protected $resultLimit;
 
 	/**
+	 * Parser properties
+	 */
+	protected $parserProperties;
+
+	/**
 	 * Included properties
 	 */
 	protected $includedProperties;
@@ -85,13 +90,14 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 	 * @param $queryText query text
 	 * @param $suggestionLimit suggestion limit
 	 * @param $resultLimit result limit
+	 * @param $parserProperties query parser properties
 	 * @param $includedProperties included properties
 	 * @param $excludedProperties excluded properties
 	 * @param $filterProperties filter properties
 	 * @param $scorerProperties scorer properties
 	 * @param $disambiguationPriorities disambiguation priorities
 	 */
-	public function __construct($index, $language, $filter, $queryText, $suggestionLimit, $resultLimit, $includedProperties = array(), $excludedProperties = array(), $filterProperties = array(), $scorerProperties = array(), $disambiguationPriorities = array()) {
+	public function __construct($index, $language, $filter, $queryText, $suggestionLimit, $resultLimit, $parserProperties = array(), $includedProperties = array(), $excludedProperties = array(), $filterProperties = array(), $scorerProperties = array(), $disambiguationPriorities = array()) {
 		parent::__construct('kb/query', 'complete');
 		$this->index = $index;
 		$this->language = $language;
@@ -99,6 +105,7 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 		$this->queryText = $queryText;
 		$this->suggestionLimit = $suggestionLimit;
 		$this->resultLimit = $resultLimit;
+		$this->parserProperties = $parserProperties;
 		$this->includedProperties = $includedProperties;
 		$this->excludedProperties = $excludedProperties;
 		$this->filterProperties = $filterProperties;
@@ -132,6 +139,7 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 		$query["resultPopulation"] = $this->resultLimit * 2;
 		$query["resultLimit"] = $this->resultLimit;
 		$query["termPopulation"] = 100;
+		$query["parserProperties"] = $this->parserProperties;
 		$query["includedProperties"] = $this->includedProperties;
 		$query["excludedProperties"] = $this->excludedProperties;
 		$query["filterProperties"] = $this->filterProperties;
