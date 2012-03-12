@@ -1217,6 +1217,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				$entries[$refinement->property]['values'][] = array(
 					'name' => $value->value,
 					'population' => $value->population,
+					'filtering' => $value->population < $this->getResultsTotal(),
 					'refineAction' => array(
 						'url' => $this->formatter->formatUrl('', $urlParameters),
 						'parameters' => $this->formatter->getUrlParameters($urlParameters)
@@ -1292,6 +1293,8 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		}
 
 		// find valid values
+		$totalSelected = 0;
+		$totalFiltering = 0;
 		$previews = array();
 		$list = array();
 		foreach ($values as $index => $value) {
@@ -1321,24 +1324,21 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					break;
 				}
 			}
-			if ($selected) {
-				if (in_array('hierarchical', $attribute->propertyFlags) && isset($value->children)) {
-					array_push($parents, $values[0]);
-					$refinement = $this->findAttributeRefinementValues(
-						$attribute,
-						$value->children,
-						$filters,
-						$excludedPreviews,
-						$preferences,
-						$depth + 1,
-						$parents
-					);
-					if ($refinement) {
-						return $refinement;
-					}
-					array_pop($parents);
+			if ($selected && in_array('hierarchical', $attribute->propertyFlags) && isset($value->children)) {
+				array_push($parents, $values[0]);
+				$refinement = $this->findAttributeRefinementValues(
+					$attribute,
+					$value->children,
+					$filters,
+					$excludedPreviews,
+					$preferences,
+					$depth + 1,
+					$parents
+				);
+				if ($refinement) {
+					return $refinement;
 				}
-				continue;
+				array_pop($parents);
 			}
 
 			// build url
@@ -1351,6 +1351,10 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				'context' => $this->encodeSequentialContexts(),
 				'guidance' => $attribute->type,
 				'property' => $attribute->property
+			);
+			$urlRemoveParameters = array(
+				'context' => $this->encodeSequentialContexts(),
+				'guidance' => '-'.$attribute->property
 			);
 			if (in_array('hierarchical', $attribute->propertyFlags)) {
 				$urlAddParameters['hierarchical'] = $depth + 1;
@@ -1388,11 +1392,18 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			}
 
 			// append value
+			if ($selected) {
+				$totalSelected++;
+			}
+			if ($value->population < $this->getResultsTotal()) {
+				$totalFiltering++;
+			}
 			$name = $this->formatter->formatAttributeValue($attribute, $index, $value);
 			$list[] = array(
 				'index' => $index,
 				'name' => $name,
 				'population' => $value->population,
+				'selected' => $selected,
 				'filtering' => $value->population < $this->getResultsTotal(),
 				'addAction' => array(
 					'url' => $this->formatter->formatUrl('', $urlAddParameters),
@@ -1401,6 +1412,10 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				'setAction' => array(
 					'url' => $this->formatter->formatUrl('', $urlSetParameters),
 					'parameters' => $this->formatter->getUrlParameters($urlSetParameters)
+				),
+				'removeAction' => array(
+					'url' => $this->formatter->formatUrl('', $urlRemoveParameters),
+					'parameters' => $this->formatter->getUrlParameters($urlRemoveParameters)
 				),
 				'preference' => isset($preferences[$name]) && $preferences[$name]['weight'] > 0.1 ? $preferences[$name]['offset'] : 0,
 				'favorite' => FALSE,
@@ -1450,6 +1465,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					'depth' => $parentDepth,
 					'name' => $name,
 					'population' => $parent->population,
+					'selected' => TRUE,
 					'filtering' => FALSE,
 					'addAction' => array(
 						'url' => $this->formatter->formatUrl('', $urlAddParameters),
@@ -1489,6 +1505,9 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				'label' => $attribute->name,
 				'parents' => $parentValues,
 				'values' => $list,
+				'valuesSelected' => $totalSelected,
+				'valuesFiltering' => $totalFiltering,
+				'valuesWithPreview' => sizeof($previews),
 				'attribute' => $attribute
 			);
 		}
@@ -1549,6 +1568,8 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		}
 
 		// find valid values
+		$totalSelected = 0;
+		$totalFiltering = 0;
 		$previews = array();
 		$list = array();
 		foreach ($values as $index => $value) {
@@ -1584,43 +1605,54 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					break;
 				}
 			}
-			if ($selected) {
-				if (in_array('hierarchical', $attribute->propertyFlags) && isset($value->children)) {
-					array_push($parents, $values[0]);
-					$alternative = $this->findAttributeAlternativeValues(
-						$attribute,
-						$value->children,
-						$filters,
-						$excludedPreviews,
-						$preferences,
-						$depth + 1,
-						$parents
-					);
-					if ($alternative) {
-						return $alternative;
-					}
-					array_pop($parents);
+			if ($selected && in_array('hierarchical', $attribute->propertyFlags) && isset($value->children)) {
+				array_push($parents, $values[0]);
+				$alternative = $this->findAttributeAlternativeValues(
+					$attribute,
+					$value->children,
+					$filters,
+					$excludedPreviews,
+					$preferences,
+					$depth + 1,
+					$parents
+				);
+				if ($alternative) {
+					return $alternative;
 				}
-				continue;
+				array_pop($parents);
 			}
 
-			// build name & url
-			$urlParameters = array(
+			// build actions
+			$urlAddParameters = array(
+				'context' => $this->encodeSequentialContexts(),
+				'guidance' => '+'.$attribute->type,
+				'property' => $attribute->property
+			);
+			$urlSetParameters = array(
 				'context' => $this->encodeSequentialContexts(),
 				'guidance' => $attribute->type,
 				'property' => $attribute->property
 			);
+			$urlRemoveParameters = array(
+				'context' => $this->encodeSequentialContexts(),
+				'guidance' => '-'.$attribute->property
+			);
 			if (in_array('hierarchical', $attribute->propertyFlags)) {
-				$urlParameters['hierarchical'] = $depth + 1;
+				$urlAddParameters['hierarchical'] = $depth + 1;
+				$urlSetParameters['hierarchical'] = $depth + 1;
 				for ($i = 0; $i < $depth; $i++) {
-					$urlParameters['value'.$i] = $parents[$i]->data;
+					$urlAddParameters['value'.$i] = $parents[$i]->data;
+					$urlSetParameters['value'.$i] = $parents[$i]->data;
 				}
-				$urlParameters['value'.$depth] = $value->data;
+				$urlAddParameters['value'.$depth] = $value->data;
+				$urlSetParameters['value'.$depth] = $value->data;
 			} else {
 				if ($attribute->type == 'dateRange' || $attribute->type == 'numberRange') {
-					$urlParameters['mode'] = 'range';
+					$urlAddParameters['mode'] = 'range';
+					$urlSetParameters['mode'] = 'range';
 				}
-				$urlParameters['value'] = $value->data;
+				$urlAddParameters['value'] = $value->data;
+				$urlSetParameters['value'] = $value->data;
 			}
 
 			// select preview
@@ -1641,15 +1673,29 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			}
 
 			// append value
+			if ($selected) {
+				$totalSelected++;
+			} else {
+				$totalFiltering++;
+			}
 			$name  = $this->formatter->formatAttributeValue($attribute, $index, $value);
 			$list[] = array(
 				'index' => $index,
 				'name' => $name,
 				'population' => $value->population,
-				'filtering' => $value->population < $this->getResultsTotal(),
+				'selected' => $selected,
+				'filtering' => !$selected,
+				'addAction' => array(
+					'url' => $this->formatter->formatUrl('', $urlAddParameters),
+					'parameters' => $this->formatter->getUrlParameters($urlAddParameters)
+				),
 				'setAction' => array(
-					'url' => $this->formatter->formatUrl('', $urlParameters),
-					'parameters' => $this->formatter->getUrlParameters($urlParameters)
+					'url' => $this->formatter->formatUrl('', $urlSetParameters),
+					'parameters' => $this->formatter->getUrlParameters($urlSetParameters)
+				),
+				'removeAction' => array(
+					'url' => $this->formatter->formatUrl('', $urlRemoveParameters),
+					'parameters' => $this->formatter->getUrlParameters($urlRemoveParameters)
 				),
 				'preference' => isset($preferences[$name]) && $preferences[$name]['weight'] > 0.1 && $preferences[$name]['offset'] < 3,
 				'favorite' => FALSE,
@@ -1662,6 +1708,11 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			$parentValues = array();
 			foreach ($parents as $parentDepth => $parent) {
 				// build url
+				$urlAddParameters = array(
+					'context' => $this->encodeSequentialContexts(),
+					'guidance' => '+'.$attribute->type,
+					'property' => $attribute->property
+				);
 				$urlSetParameters = array(
 					'context' => $this->encodeSequentialContexts(),
 					'guidance' => $attribute->type,
@@ -1672,15 +1723,20 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					'guidance' => '-'.$attribute->property
 				);
 				if (in_array('hierarchical', $attribute->propertyFlags)) {
+					$urlAddParameters['hierarchical'] = $parentDepth + 1;
 					$urlSetParameters['hierarchical'] = $parentDepth + 1;
 					for ($i = 0; $i < $parentDepth; $i++) {
+						$urlAddParameters['value'.$i] = $parents[$i]->data;
 						$urlSetParameters['value'.$i] = $parents[$i]->data;
 					}
+					$urlAddParameters['value'.$parentDepth] = $parent->data;
 					$urlSetParameters['value'.$parentDepth] = $parent->data;
 				} else {
 					if ($attribute->type == 'dateRange' || $attribute->type == 'numberRange') {
+						$urlAddParameters['mode'] = 'range';
 						$urlSetParameters['mode'] = 'range';
 					}
+					$urlAddParameters['value'] = $parent->data;
 					$urlSetParameters['value'] = $parent->data;
 				}
 
@@ -1689,7 +1745,12 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					'depth' => $parentDepth,
 					'name' => $name,
 					'population' => $parent->population,
+					'selected' => TRUE,
 					'filtering' => FALSE,
+					'addAction' => array(
+						'url' => $this->formatter->formatUrl('', $urlAddParameters),
+						'parameters' => $this->formatter->getUrlParameters($urlAddParameters)
+					),
 					'setAction' => array(
 						'url' => $this->formatter->formatUrl('', $urlSetParameters),
 						'parameters' => $this->formatter->getUrlParameters($urlSetParameters)
@@ -1722,6 +1783,8 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				'label' => $attribute->name,
 				'parents' => $parentValues,
 				'values' => $list,
+				'valuesSelected' => $totalSelected,
+				'valuesFiltering' => $totalFiltering,
 				'valuesWithPreview' => sizeof($previews),
 				'attribute' => $attribute
 			);
