@@ -517,6 +517,9 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 							)
 						)
 					);
+					if (!isset($this->_filters[$groupId][$refinement->property])) {
+						$this->_filters[$groupId][$refinement->property] = array();
+					}
 					if (levenshtein(strtolower($refinement->values[0]->value), strtolower($queryTerm->value)) > 2) {
 						$this->_filters[$groupId][$refinement->property][] = array(
 							'mode' => 'term',
@@ -534,8 +537,8 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					}
 				} else if (($queryTerm->type == 'matched' || $queryTerm->type == 'refined') && isset($queryTerm->guidances)) {
 					foreach ($queryTerm->guidances as $guidance) {
-						if (!isset($this->_filters[$guidance->property])) {
-							$this->_filters[$guidance->property] = array();
+						if (!isset($this->_filters[$groupId][$guidance->property])) {
+							$this->_filters[$groupId][$guidance->property] = array();
 						}
 						$this->_filters[$groupId][$guidance->property][] = array(
 							'mode' => 'term',
@@ -549,8 +552,8 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		}
 		if (isset($model->guidances)) {
 			foreach ($model->guidances as $index => $guidance) {
-				if (!isset($this->_filters[$guidance->property])) {
-					$this->_filters[$guidance->property] = array();
+				if (!isset($this->_filters[$groupId][$guidance->property])) {
+					$this->_filters[$groupId][$guidance->property] = array();
 				}
 				$this->_filters[$groupId][$guidance->property][] = array(
 					'mode' => 'guidance',
@@ -586,7 +589,11 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					'url' => $this->formatter->formatUrl('', $urlParameters),
 					'parameters' => $this->formatter->getUrlParameters($urlParameters)
 				);
-
+			}
+		}
+		foreach ($this->_filters[$groupId] as $propertyId => $filters) {
+			$property = $this->getProperty($propertyId, $groupId);
+			foreach ($filters as $index => $filter) {
 				$this->_filters[$groupId][$propertyId][$index]['alternative'] = $this->getAlternative($propertyId, $groupId);
 			}
 		}
@@ -1300,6 +1307,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		foreach ($values as $index => $value) {
 			// skip node if already selected
 			$selected = FALSE;
+			$selectedFilter = NULL;
 			foreach ($filters as $filter) {
 				$selected = TRUE;
 				if (in_array('hierarchical', $attribute->propertyFlags)) {
@@ -1321,6 +1329,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					}
 				}
 				if ($selected) {
+					$selectedFilter = $filter;
 					break;
 				}
 			}
@@ -1372,6 +1381,9 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				}
 				$urlAddParameters['value'] = $value->data;
 				$urlSetParameters['value'] = $value->data;
+			}
+			if ($selectedFilter) {
+				$urlRemoveParameters = $selectedFilter['removeAction']['parameters'];
 			}
 
 			// select preview
@@ -1575,6 +1587,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		foreach ($values as $index => $value) {
 			// skip node if already selected
 			$selected = FALSE;
+			$selectedFilter = NULL;
 			foreach ($filters as $filter) {
 				$selected = TRUE;
 				if (in_array('hierarchical', $attribute->propertyFlags)) {
@@ -1602,6 +1615,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					}
 				}
 				if ($selected) {
+					$selectedFilter = $filter;
 					break;
 				}
 			}
@@ -1653,6 +1667,9 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				}
 				$urlAddParameters['value'] = $value->data;
 				$urlSetParameters['value'] = $value->data;
+			}
+			if ($selectedFilter) {
+				$urlRemoveParameters = $selectedFilter['removeAction']['parameters'];
 			}
 
 			// select preview
