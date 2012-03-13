@@ -305,7 +305,8 @@ class CEM_WebController {
 				isset($options['excludedProperties']) ? $options['excludedProperties'] : array('title'),
 				isset($options['filterProperties']) ? $options['filterProperties'] : array('title', 'body'),
 				isset($options['scorerProperties']) ? $options['scorerProperties'] : array('title', 'body'),
-				isset($options['disambiguationPriorities']) ? $options['disambiguationPriorities'] : array()
+				isset($options['disambiguationPriorities']) ? $options['disambiguationPriorities'] : array(),
+				isset($options['resultQuery']) ? $options['resultQuery'] : array()
 			)
 		);
 		$response = new CEM_PR_GatewayResponse();

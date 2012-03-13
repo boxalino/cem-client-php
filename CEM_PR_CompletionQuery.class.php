@@ -44,7 +44,7 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 	 * Maximum amount of suggestions
 	 */
 	protected $suggestionLimit;
- 
+
 	/**
 	 * Maximum amount of contextual recommendations
 	 */
@@ -64,7 +64,7 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 	 * Excluded properties
 	 */
 	protected $excludedProperties;
- 
+
 	/**
 	 * Filter properties
 	 */
@@ -74,11 +74,16 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 	 * Scorer properties
 	 */
 	protected $scorerProperties;
- 
+
 	/**
 	 * Disambiguation priorities
 	 */
 	protected $disambiguationPriorities;
+
+	/**
+	 * Results/recommendation query
+	 */
+	protected $resultQuery;
 
 
 	/**
@@ -96,8 +101,9 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 	 * @param $filterProperties filter properties
 	 * @param $scorerProperties scorer properties
 	 * @param $disambiguationPriorities disambiguation priorities
+	 * @param $resultQuery result query
 	 */
-	public function __construct($index, $language, $filter, $queryText, $suggestionLimit, $resultLimit, $parserProperties = array(), $includedProperties = array(), $excludedProperties = array(), $filterProperties = array(), $scorerProperties = array(), $disambiguationPriorities = array()) {
+	public function __construct($index, $language, $filter, $queryText, $suggestionLimit, $resultLimit, $parserProperties = array(), $includedProperties = array(), $excludedProperties = array(), $filterProperties = array(), $scorerProperties = array(), $disambiguationPriorities = array(), $resultQuery = array()) {
 		parent::__construct('kb/query', 'complete');
 		$this->index = $index;
 		$this->language = $language;
@@ -111,6 +117,11 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 		$this->filterProperties = $filterProperties;
 		$this->scorerProperties = $scorerProperties;
 		$this->disambiguationPriorities = $disambiguationPriorities;
+		$this->resultQuery = array(
+			'filter' => isset($resultQuery['filter']) ? $resultQuery['filter'] : $filter,
+			'scorer' => isset($resultQuery['scorer']) ? $resultQuery['scorer'] : NULL,
+			'ranking' => isset($resultQuery['ranking']) ? $resultQuery['ranking'] : NULL
+		);
 	}
 
 
@@ -145,6 +156,7 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 		$query["filterProperties"] = $this->filterProperties;
 		$query["scorerProperties"] = $this->scorerProperties;
 		$query["disambiguationPriorities"] = $this->disambiguationPriorities;
+		$query["resultQuery"] = $this->resultQuery;
 		return $query;
 	}
 }
