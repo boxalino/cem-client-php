@@ -343,7 +343,7 @@ class CEM_WebController {
 					),
 					'filter' => isset($options['filter']) ? $options['filter'] : '@type:instance',
 					'scorer' => isset($options['scorer']) ? $options['scorer'] : '',
-					'ranking' => isset($options['ranking']) ? $options['ranking'] : '@random asc'
+					'ranking' => isset($options['ranking']) ? $options['ranking'] : '@score desc, @random asc'
 				),
 				isset($cemModel->queryText) ? $cemModel->queryText : '',
 				isset($cemModel->queryTerms) ? $cemModel->queryTerms : array(),
@@ -395,7 +395,7 @@ class CEM_WebController {
 					),
 					'filter' => isset($options['filter']) ? $options['filter'] : '@type:instance',
 					'scorer' => isset($options['scorer']) ? $options['scorer'] : '',
-					'ranking' => isset($options['ranking']) ? $options['ranking'] : '@random asc'
+					'ranking' => isset($options['ranking']) ? $options['ranking'] : '@score desc, @random asc'
 				),
 				isset($cemModel->queryText) ? $cemModel->queryText : '',
 				isset($cemModel->queryTerms) ? $cemModel->queryTerms : array(),

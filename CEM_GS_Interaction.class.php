@@ -1325,7 +1325,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				}
 			}
 			if ($selected && in_array('hierarchical', $attribute->propertyFlags) && isset($value->children)) {
-				array_push($parents, $values[0]);
+				array_push($parents, $value);
 				$refinement = $this->findAttributeRefinementValues(
 					$attribute,
 					$value->children,
@@ -1606,7 +1606,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				}
 			}
 			if ($selected && in_array('hierarchical', $attribute->propertyFlags) && isset($value->children)) {
-				array_push($parents, $values[0]);
+				array_push($parents, $value);
 				$alternative = $this->findAttributeAlternativeValues(
 					$attribute,
 					$value->children,
@@ -1747,6 +1747,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					'population' => $parent->population,
 					'selected' => TRUE,
 					'filtering' => FALSE,
+					'last' => sizeof($parentValues) == sizeof($parents) - 1,
 					'addAction' => array(
 						'url' => $this->formatter->formatUrl('', $urlAddParameters),
 						'parameters' => $this->formatter->getUrlParameters($urlAddParameters)
