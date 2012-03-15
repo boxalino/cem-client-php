@@ -256,20 +256,22 @@ class CEM_WebStateCookieHandler extends CEM_WebStateHandler {
 		if ($data) {
 			$offset = 0;
 			while ($offset < strlen($data)) {
-				if (($offset + $this->chunkLength) < strlen($data)) {
-					$chunk = substr($data, $offset, $this->chunkLength);
+				$name = $prefix.$i;
+				$chunkLength = $this->chunkLength - strlen($name) - 1;
+				if (($offset + $chunkLength) < strlen($data)) {
+					$chunk = substr($data, $offset, $chunkLength);
 				} else {
 					$chunk = substr($data, $offset);
 				}
 				setcookie(
-					$prefix.$i,
+					$name,
 					$chunk,
 					$visitor ? time() + $this->expiry : 0,
 					$this->path,
 					$this->domain,
 					$this->secure
 				);
-				$offset += $this->chunkLength;
+				$offset += strlen($chunk);
 				$i++;
 			}
 		}
