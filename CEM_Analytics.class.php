@@ -278,11 +278,10 @@ class CEM_Analytics extends CEM_HttpClient {
 		}
 
 		// forward cookie(s)
-		if (isset($_COOKIE['cemt'])) {
-			$this->setCookie('cemt', $_COOKIE['cemt']);
-		}
-		if (isset($_COOKIE['cemv'])) {
-			$this->setCookie('cemv', $_COOKIE['cemv']);
+		foreach ($_COOKIE as $key => $value) {
+			if (strpos($key, 'cem') === 0) {
+				$this->setCookie($key, $value);
+			}
 		}
 
 		// send request
