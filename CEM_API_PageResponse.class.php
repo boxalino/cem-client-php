@@ -31,6 +31,11 @@ class CEM_API_PageResponse extends CEM_GatewayResponse {
 	protected $context = NULL;
 
 	/**
+	 * Active query
+	 */
+	protected $query = '';
+
+	/**
 	 * Results offset
 	 */
 	protected $resultsOffset = 0;
@@ -117,6 +122,15 @@ class CEM_API_PageResponse extends CEM_GatewayResponse {
 	}
 
 	/**
+	 * Get cem query
+	 *
+	 * @return cem query
+	 */
+	public function getQuery() {
+		return $this->query;
+	}
+
+	/**
 	 * Get cem results
 	 *
 	 * @return cem results
@@ -185,6 +199,7 @@ class CEM_API_PageResponse extends CEM_GatewayResponse {
 
 		// visit children
 		$this->context = NULL;
+		$this->query = '';
 		$this->resultsOffset = 0;
 		$this->resultsTotal = 0;
 		$this->resultsPageIndex = 0;
@@ -200,6 +215,10 @@ class CEM_API_PageResponse extends CEM_GatewayResponse {
 				switch ($child->tagName) {
 				case 'context':
 					$this->context = $this->visitTexts($child);
+					break;
+
+				case 'query':
+					$this->query = $this->visitTexts($child);
 					break;
 
 				case 'results':
@@ -292,17 +311,17 @@ class CEM_API_PageResponse extends CEM_GatewayResponse {
 	 * @return text content
 	 */
 	protected function visitTexts(&$node) {
-		$text = '';
+		$text = array();
 		for ($i = 0; $i < $node->childNodes->length; $i++) {
 			$child = $node->childNodes->item($i);
 			switch ($child->nodeType) {
 			case XML_TEXT_NODE:
 			case XML_CDATA_SECTION_NODE:
-				$text .= $child->data;
+				$text[] = $child->data;
 				break;
 			}
 		}
-		return $text;
+		return implode(' ', $text);
 	}
 }
 

@@ -38,7 +38,7 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 	/**
 	 * User state keys
 	 */
-	protected $userStateKeys = array('pageSize' => 'number', 'ranking' => 'string', 'scenario' => 'string');
+	protected $userStateKeys = array('pageSize' => 'number');
 
 	/**
 	 * Current model
@@ -392,8 +392,6 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 			$query['ranking'] = $this->requestString('ranking');
 		} else if (isset($this->model->ranking)) {
 			$query['ranking'] = $this->model->ranking;
-		} else if (isset($this->userState->ranking)) {
-			$query['ranking'] = $this->userState->ranking;
 		}
 		if (sizeof($query) > 0) {
 			$variables['query'] = $query;
@@ -404,8 +402,6 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 			$variables['scenario'] = $this->requestString('scenario');
 		} else if (isset($this->model->scenario)) {
 			$variables['scenario'] = $this->model->scenario;
-		} else if (isset($this->userState->scenario)) {
-			$variables['scenario'] = $this->userState->scenario;
 		}
 
 		// custom overrides

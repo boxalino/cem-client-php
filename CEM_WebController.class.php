@@ -260,10 +260,13 @@ class CEM_WebController {
 		$response = new CEM_GS_GatewayResponse();
 
 		// process interaction
-		$this->gs($request, $response, $options);
+		$this->gs($request, $response, $options, $useCache);
 
-		$this->lastInteraction = new $this->gsInteractionClass($this->crypto, $request, $response, $options, $this->formatter);
-		return $this->lastInteraction;
+		$interaction = new $this->gsInteractionClass($this->crypto, $request, $response, $options, $this->formatter);
+		if ($useCache) {
+			$this->lastInteraction = $interaction;
+		}
+		return $interaction;
 	}
 
 	/**
@@ -427,8 +430,9 @@ class CEM_WebController {
 	 * @param &$request guided-search request
 	 * @param &$response guided-search response
 	 * @param $options interaction options passed to handlers
+	 * @param $saveState save state
 	 */
-	public function gs(&$request, &$response, $options = array()) {
+	public function gs(&$request, &$response, $options = array(), $saveState = TRUE) {
 		// get cem state
 		list($state, $created) = $this->getState();
 
@@ -447,7 +451,7 @@ class CEM_WebController {
 		}
 
 		// write client state
-		if ($this->stateHandler) {
+		if ($this->stateHandler && $saveState) {
 			$this->stateHandler->write($state);
 		}
 	}
