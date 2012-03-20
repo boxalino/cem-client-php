@@ -73,13 +73,17 @@ class CEM_HttpClient {
 	public static function buildKVList($parameters) {
 		$list = array();
 		foreach ($parameters as $k => $v) {
-			$k = urlencode($k);
-			if (is_array($v)) {
-				foreach ($v as $i => $vi) {
-					$list[] = $k.'['.urlencode($i).']='.urlencode($vi);
-				}
+			if (strpos($k, '__') === 0 && is_array($v) && sizeof($v) == 2) {
+				$list[] = urlencode($v[0]).'='.urlencode($v[1]);
 			} else {
-				$list[] = $k.'='.urlencode($v);
+				$k = urlencode($k);
+				if (is_array($v)) {
+					foreach ($v as $i => $vi) {
+						$list[] = $k.'['.urlencode($i).']='.urlencode($vi);
+					}
+				} else {
+					$list[] = $k.'='.urlencode($v);
+				}
 			}
 		}
 		return implode('&', $list);
