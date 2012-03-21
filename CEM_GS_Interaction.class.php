@@ -891,6 +891,9 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 							'label' => $refinement['label'],
 							'parents' => $refinement['parents'],
 							'values' => $values,
+							'valuesSelected' => $refinement['valuesSelected'],
+							'valuesFiltering' => $refinement['valuesFiltering'],
+							'valuesWithPreview' => $refinement['valuesWithPreview'],
 							'attribute' => $refinement['attribute']
 						);
 						$skip[] = $attribute->property;
