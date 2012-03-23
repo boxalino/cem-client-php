@@ -403,7 +403,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		$list = array();
 		$prefix = '';
 		foreach ($model->queryTerms as $index => $queryTerm) {
-			if ($queryTerm->type != 'ambiguous' || (isset($queryTerm->termExist) && $queryTerm->termExist) || !isset($queryTerm->refinements)) {
+			if ($queryTerm->type != 'ambiguous' || !isset($queryTerm->refinements)) {
 				$prefix .= ' '.$queryTerm->value;
 				continue;
 			}
@@ -419,18 +419,20 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					$distance = levenshtein($value, strtolower($queryTerm->value));
 					if (!isset($list[$value])) {
 						if ($distance > 0) {
-							$urlParameters = array(
-								'query' => $value
-							);
-							$list[$value] = array(
-								'label' => $label,
-								'query' => $value,
-								'queryAction' => array(
-									'url' => $this->formatter->formatUrl('', $urlParameters),
-									'parameters' => $this->formatter->getUrlParameters($urlParameters)
-								),
-								'distance' => $distance
-							);
+							if ($distance < strlen($queryTerm->value) / 5.0) {
+								$urlParameters = array(
+									'query' => $value
+								);
+								$list[$value] = array(
+									'label' => $label,
+									'query' => $value,
+									'queryAction' => array(
+										'url' => $this->formatter->formatUrl('', $urlParameters),
+										'parameters' => $this->formatter->getUrlParameters($urlParameters)
+									),
+									'distance' => $distance
+								);
+							}
 						} else {
 							$urlParameters = array(
 								'context' => $this->encodeSequentialContexts(),
@@ -453,8 +455,11 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			}
 			$prefix .= ' '.$queryTerm->value;
 		}
-		uasort($list, array($this, 'sortByDistance'));
-		return $list;
+		if (sizeof($list) > 1) {
+			uasort($list, array($this, 'sortByDistance'));
+			return $list;
+		}
+		return array();
 	}
 
 	/**
@@ -517,20 +522,24 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 							)
 						)
 					);
-					if (!isset($this->_filters[$groupId][$refinement->property])) {
-						$this->_filters[$groupId][$refinement->property] = array();
-					}
-					if (levenshtein(strtolower($refinement->values[0]->value), strtolower($queryTerm->value)) > 2) {
-						$this->_filters[$groupId][$refinement->property][] = array(
-							'mode' => 'term',
-							'index' => $index,
-							'property' => $guidance->property,
-							'guidance' => $guidance
-						);
-					} else {
+					$distance = levenshtein(strtolower($refinement->values[0]->value), strtolower($queryTerm->value));
+					if ($distance <= 2) {
+						if (!isset($this->_filters[$groupId][$refinement->property])) {
+							$this->_filters[$groupId][$refinement->property] = array();
+						}
 						$this->_filters[$groupId][$refinement->property][] = array(
 							'mode' => 'guidance',
 							'index' => -($index + 1),
+							'property' => $guidance->property,
+							'guidance' => $guidance
+						);
+					}  else if ($distance < strlen($queryTerm->value) / 5.0) {
+						if (!isset($this->_filters[$groupId][$refinement->property])) {
+							$this->_filters[$groupId][$refinement->property] = array();
+						}
+						$this->_filters[$groupId][$refinement->property][] = array(
+							'mode' => 'term',
+							'index' => $index,
 							'property' => $guidance->property,
 							'guidance' => $guidance
 						);
@@ -1633,7 +1642,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					$depth + 1,
 					$parents
 				);
-				if ($alternative) {
+				if ($alternative && sizeof($alternative['parents']) > sizeof($parents)) {
 					return $alternative;
 				}
 				array_pop($parents);
