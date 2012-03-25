@@ -363,6 +363,11 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 */
 	public function activeShowingResultsFor() {
 		$model = $this->getContextJson('model');
+		if (isset($model->queryText)) {
+			if (strcmp($model->queryText, Utils::requestString('query')) != 0) {
+				return $model->queryText;
+			}
+		}
 		if (isset($model->queryTerms)) {
 			$has = FALSE;
 			$terms = array();

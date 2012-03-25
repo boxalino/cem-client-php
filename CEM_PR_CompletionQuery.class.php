@@ -46,6 +46,21 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 	protected $suggestionLimit;
 
 	/**
+	 * Similarity threshold
+	 */
+	protected $similarityThreshold;
+
+	/**
+	 * Spellchecker limit
+	 */
+	protected $spellcheckerLimit;
+
+	/**
+	 * Spellchecker threshold
+	 */
+	protected $spellcheckerThreshold;
+
+	/**
 	 * Maximum amount of contextual recommendations
 	 */
 	protected $resultLimit;
@@ -110,6 +125,9 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 		$this->filter = $filter;
 		$this->queryText = $queryText;
 		$this->suggestionLimit = $suggestionLimit;
+		$this->similarityThreshold = 0.2;
+		$this->spellcheckerLimit = 1;
+		$this->spellcheckerThreshold = 0.8;
 		$this->resultLimit = $resultLimit;
 		$this->parserProperties = $parserProperties;
 		$this->includedProperties = $includedProperties;
@@ -147,6 +165,9 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 		$query["filter"] = $this->filter;
 		$query["queryText"] = $this->queryText;
 		$query["suggestionLimit"] = $this->suggestionLimit;
+		$query["similarityThreshold"] = $this->similarityThreshold;
+		$query["spellcheckerLimit"] = $this->spellcheckerLimit;
+		$query["spellcheckerThreshold"] = $this->spellcheckerThreshold;
 		$query["resultPopulation"] = $this->resultLimit * 2;
 		$query["resultLimit"] = $this->resultLimit;
 		$query["termPopulation"] = 100;
