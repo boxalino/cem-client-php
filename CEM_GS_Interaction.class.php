@@ -363,7 +363,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 */
 	public function activeShowingResultsFor() {
 		$model = $this->getContextJson('model');
-		if (isset($model->queryText)) {
+		if (isset($model->queryText) && Utils::requestExists('query')) {
 			if (strcmp($model->queryText, Utils::requestString('query')) != 0) {
 				return $model->queryText;
 			}
@@ -624,7 +624,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		return (isset($model->pageSize) ? $model->pageSize : 0);
 	}
 
-	/** 
+	/**
 	 * Get current ranking
 	 *
 	 * @return ranking
@@ -634,7 +634,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		return (isset($model->ranking) ? $model->ranking : '@score desc');
 	}
 
-	/** 
+	/**
 	 * Get current scenario
 	 *
 	 * @return current scenario
@@ -837,7 +837,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	}
 
 	/**
-	 * Get current scenarios
+	 * Get scenarios
 	 *
 	 * @param $groupId group identifier
 	 * @return scenarios
@@ -938,6 +938,18 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			}
 		}
 		return $this->_scenarios[$groupId];
+	}
+
+	/**
+	 * Get scenario
+	 *
+	 * @param $scenario scenario identifier
+	 * @param $groupId group identifier
+	 * @return scenario or NULL if none
+	 */
+	public function getScenario($scenario, $groupId = 'search') {
+		$scenarios = $this->getScenarios($groupId);
+		return (isset($scenarios[$scenario]) ? $scenarios[$scenario] : NULL);
 	}
 
 	/**
@@ -1242,6 +1254,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					'name' => $value->value,
 					'population' => $value->population,
 					'filtering' => $value->population < $this->getResultsTotal(),
+					'favorite' => FALSE,
 					'refineAction' => array(
 						'url' => $this->formatter->formatUrl('', $urlParameters),
 						'parameters' => $this->formatter->getUrlParameters($urlParameters)
@@ -1647,7 +1660,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					$depth + 1,
 					$parents
 				);
-				if ($alternative && sizeof($alternative['parents']) > sizeof($parents)) {
+				if ($alternative) { // && sizeof($alternative['parents']) > sizeof($parents)) {
 					return $alternative;
 				}
 				array_pop($parents);

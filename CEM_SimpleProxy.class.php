@@ -103,7 +103,7 @@ class CEM_SimpleProxy {
 			if (isset($_SERVER['REQUEST_METHOD'])) {
 				switch ($_SERVER['REQUEST_METHOD']) {
 				case 'GET':
-					$this->client->get($url, array(), FALSE, $requestHeaders);
+					$this->client->get($url, $_GET, FALSE, $requestHeaders);
 					break;
 
 				case 'POST':
@@ -143,7 +143,7 @@ class CEM_SimpleProxy {
 	public function getCode() {
 		$code = $this->client->getCode();
 		return ($code > 0 ? $code : 500);
-			
+
 	}
 
 	/**
@@ -211,7 +211,7 @@ class CEM_SimpleProxy {
 				$header .= '; expires='.$cookie['expires'];
 			}
 			$header .= '; path='.$cookiePath;
-			$header[] = array(
+			$headers[] = array(
 				'key' => 'set-cookie',
 				'name' => 'Set-Cookie',
 				'value' => $header
