@@ -199,8 +199,8 @@ abstract class CEM_AbstractWebHandler {
 		if (isset($_REQUEST[$this->requestKey($key)])) {
 			$value = $_REQUEST[$this->requestKey($key)];
 			if (is_array($value)) {
-				foreach ($value as $item) {
-					$array[] = $this->filterRawString($item);
+				foreach ($value as $key => $item) {
+					$array[$this->filterRawString($key)] = $this->filterRawString($item);
 				}
 			} else {
 				$array[] = $this->filterRawString($value);
