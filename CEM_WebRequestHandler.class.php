@@ -398,8 +398,8 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 		}
 
 		// scenario
-		if ($this->requestExists('cemScenario')) {
-			$variables['scenario'] = $this->requestString('cemScenario');
+		if ($this->requestExists('scenario')) {
+			$variables['scenario'] = $this->requestString('scenario');
 		} else if (isset($this->model->scenario)) {
 			$variables['scenario'] = $this->model->scenario;
 		}
