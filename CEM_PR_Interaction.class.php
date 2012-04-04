@@ -44,12 +44,12 @@ class CEM_PR_Interaction extends CEM_AbstractWebHandler {
 	/**
 	 * Constructor
 	 *
-	 * @param &$crypto encryption facility
-	 * @param &$request client request reference
-	 * @param &$response client response reference
-	 * @param &$formatter value formatter
+	 * @param $crypto encryption facility
+	 * @param $request client request reference
+	 * @param $response client response reference
+	 * @param $formatter value formatter
 	 */
-	public function __construct(&$crypto, &$request, &$response, &$options, &$formatter) {
+	public function __construct($crypto, $request, $response, $options, $formatter) {
 		parent::__construct($crypto);
 		$this->request = $request;
 		$this->response = $response;

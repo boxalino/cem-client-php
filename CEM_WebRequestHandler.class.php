@@ -49,10 +49,10 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 	/**
 	 * Constructor
 	 *
-	 * @param &$crypto encryption facility
+	 * @param $crypto encryption facility
 	 * @param $keys request parameter mapping
 	 */
-	public function __construct(&$crypto, $keys = array()) {
+	public function __construct($crypto, $keys = array()) {
 		parent::__construct($crypto, $keys);
 		$this->parseSequentialContexts();
 	}
@@ -165,11 +165,11 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 	/**
 	 * Called when client state needs to be initialized
 	 *
-	 * @param &$state client state reference
-	 * @param &$request client request reference
+	 * @param $state client state reference
+	 * @param $request client request reference
 	 * @return TRUE on success or FALSE on error
 	 */
-	public function onInit(&$state, &$request) {
+	public function onInit($state, $request) {
 		$request->appendInitRequest();
 		return TRUE;
 	}
@@ -177,11 +177,11 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 	/**
 	 * Called when client state needs to be freed
 	 *
-	 * @param &$state client state reference
-	 * @param &$request client request reference
+	 * @param $state client state reference
+	 * @param $request client request reference
 	 * @return TRUE on success or FALSE on error
 	 */
-	public function onFree(&$state, &$request) {
+	public function onFree($state, $request) {
 		$request->appendFreeRequest();
 		return TRUE;
 	}
@@ -189,12 +189,12 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 	/**
 	 * Called each client interaction to build request
 	 *
-	 * @param &$state client state reference
-	 * @param &$request client request reference
-	 * @param &$options options passed for interaction
+	 * @param $state client state reference
+	 * @param $request client request reference
+	 * @param $options options passed for interaction
 	 * @return TRUE on success or FALSE on error
 	 */
-	public function onInteraction(&$state, &$request, &$options) {
+	public function onInteraction($state, $request, $options) {
 		// merge contexts
 		$contexts = $state->get('context', array());
 		foreach ($this->sequentialContexts as $name => $value) {
@@ -352,10 +352,10 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 	/**
 	 * Build interaction variables
 	 *
-	 * @param &$options options passed for interaction
+	 * @param $options options passed for interaction
 	 * @return contextual request variables
 	 */
-	protected function buildInteractionVariables(&$options) {
+	protected function buildInteractionVariables($options) {
 		// context variables
 		$variables = array();
 		foreach ($this->context as $key => $value) {
@@ -417,12 +417,12 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 	/**
 	 * Called each client recommendation to build request
 	 *
-	 * @param &$state client state reference
-	 * @param &$request client request reference
-	 * @param &$options options passed for recommendation
+	 * @param $state client state reference
+	 * @param $request client request reference
+	 * @param $options options passed for recommendation
 	 * @return TRUE on success or FALSE on error
 	 */
-	public function onRecommendation(&$state, &$request, $options) {
+	public function onRecommendation($state, $request, $options) {
 		return TRUE;
 	}
 }

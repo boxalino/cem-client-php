@@ -34,10 +34,10 @@ abstract class CEM_AbstractWebHandler {
 	/**
 	 * Constructor
 	 *
-	 * @param &$crypto encryption facility
+	 * @param $crypto encryption facility
 	 * @param $keys request parameter mapping
 	 */
-	public function __construct(&$crypto, $keys = array()) {
+	public function __construct($crypto, $keys = array()) {
 		$this->crypto = $crypto;
 		$this->keys = $keys;
 	}

@@ -90,11 +90,11 @@ class CEM_PR_GatewayResponse extends CEM_GatewayResponse {
 	/**
 	 * Called to read the response
 	 *
-	 * @param &$state client state reference
-	 * @param &$data response raw body
+	 * @param $state client state reference
+	 * @param $data response raw body
 	 * @return TRUE on success, FALSE otherwise
 	 */
-	public function read(&$state, &$data) {
+	public function read($state, $data) {
 		$this->responseSize = strlen($data);
 		$doc = new DOMDocument("1.0", 'UTF-8');
 		if (!@$doc->loadXML($data)) {
@@ -107,10 +107,10 @@ class CEM_PR_GatewayResponse extends CEM_GatewayResponse {
 	/**
 	 * Visit xml response
 	 *
-	 * @param &$node root element
+	 * @param $node root element
 	 * @return TRUE on success, FALSE otherwise
 	 */
-	protected function visitResponse(&$node) {
+	protected function visitResponse($node) {
 		// check root element
 		if ($node->tagName != 'cem') {
 			return FALSE;
@@ -159,10 +159,10 @@ class CEM_PR_GatewayResponse extends CEM_GatewayResponse {
 	/**
 	 * Visit xml text nodes
 	 *
-	 * @param &$node xml element
+	 * @param $node xml element
 	 * @return text content
 	 */
-	protected function visitTexts(&$node) {
+	protected function visitTexts($node) {
 		$text = '';
 		for ($i = 0; $i < $node->childNodes->length; $i++) {
 			$child = $node->childNodes->item($i);

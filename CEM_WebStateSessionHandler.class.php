@@ -29,10 +29,10 @@ class CEM_WebStateSessionHandler extends CEM_WebStateHandler {
 	/**
 	 * Constructor
 	 *
-	 * @param &$crypto encryption facility
+	 * @param $crypto encryption facility
 	 * @param $name variable name (defaults to 'cem')
 	 */
-	public function __construct(&$crypto, $name = 'cem') {
+	public function __construct($crypto, $name = 'cem') {
 		parent::__construct($crypto);
 		$this->name = $name;
 
@@ -49,9 +49,9 @@ class CEM_WebStateSessionHandler extends CEM_WebStateHandler {
 	/**
 	 * Write client state to storage
 	 *
-	 * @param &$state client state
+	 * @param $state client state
 	 */
-	public function write(&$state) {
+	public function write($state) {
 		$_SESSION[$this->name] = $state;
 
 		parent::write($state);
@@ -60,9 +60,9 @@ class CEM_WebStateSessionHandler extends CEM_WebStateHandler {
 	/**
 	 * Remove client state from storage
 	 *
-	 * @param &$state client state
+	 * @param $state client state
 	 */
-	public function remove(&$state) {
+	public function remove($state) {
 		if (isset($_SESSION[$this->name])) {
 			unset($_SESSION[$this->name]);
 		}

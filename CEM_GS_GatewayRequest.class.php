@@ -203,10 +203,10 @@ class CEM_GS_GatewayRequest extends CEM_GatewayRequest {
 	/**
 	 * Called to write the request
 	 *
-	 * @param &$state client state reference
+	 * @param $state client state reference
 	 * @return request raw body
 	 */
-	public function write(&$state) {
+	public function write($state) {
 		$doc = new DOMDocument("1.0", 'UTF-8');
 
 		$root = $doc->createElement('cem');

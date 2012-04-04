@@ -35,12 +35,12 @@ class CEM_GatewayClient extends CEM_HttpClient {
 	 * Process gateway request/response interaction
 	 *
 	 * @param $url gateway url
-	 * @param &$state client state reference
-	 * @param &$request gateway request reference
-	 * @param &$response gateway response reference
+	 * @param $state client state reference
+	 * @param $request gateway request reference
+	 * @param $response gateway response reference
 	 * @return TRUE on success or FALSE otherwise
 	 */
-	public function exec($url, &$state, &$request, &$response) {
+	public function exec($url, $state, $request, $response) {
 		// forward cookies
 		foreach ($state->getCookies() as $cookie) {
 			$this->setCookie($cookie['name'], $cookie['value']);

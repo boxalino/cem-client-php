@@ -24,7 +24,7 @@ class CEM_API_PageRequest extends CEM_GatewayRequest {
 	 * Page parameters
 	 */
 	protected $parameters;
-	
+
 
 	/**
 	 * Constructor
@@ -72,10 +72,10 @@ class CEM_API_PageRequest extends CEM_GatewayRequest {
 	/**
 	 * Called to write the request
 	 *
-	 * @param &$state client state reference
+	 * @param $state client state reference
 	 * @return request raw body (POST fields)
 	 */
-	public function write(&$state) {
+	public function write($state) {
 		return $this->parameters;
 	}
 }

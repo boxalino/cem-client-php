@@ -34,9 +34,9 @@ class CEM_WebStateHandler extends CEM_AbstractWebHandler {
 	/**
 	 * Constructor
 	 *
-	 * @param &$crypto encryption facility
+	 * @param $crypto encryption facility
 	 */
-	public function __construct(&$crypto) {
+	public function __construct($crypto) {
 		parent::__construct($crypto);
 	}
 
@@ -62,18 +62,18 @@ class CEM_WebStateHandler extends CEM_AbstractWebHandler {
 	/**
 	 * Write client state to storage
 	 *
-	 * @param &$state client state
+	 * @param $state client state
 	 */
-	public function write(&$state) {
+	public function write($state) {
 		$this->state = $state;
 	}
 
 	/**
 	 * Remove client state from storage
 	 *
-	 * @param &$state client state
+	 * @param $state client state
 	 */
-	public function remove(&$state) {
+	public function remove($state) {
 		$this->state = NULL;
 	}
 

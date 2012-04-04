@@ -155,10 +155,10 @@ class CEM_PR_CompletionQuery extends CEM_PR_AbstractQuery {
 	/**
 	 * Called to build the query
 	 *
-	 * @param &$state client state reference
+	 * @param $state client state reference
 	 * @return query
 	 */
-	public function build(&$state) {
+	public function build($state) {
 		$query = parent::build($state);
 		$query["index"] = $this->index;
 		$query["language"] = $this->language;

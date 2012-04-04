@@ -99,15 +99,15 @@ class CEM_WebController {
 	 * Last interaction
 	 */
 	protected $lastInteraction = NULL;
-	
+
 
 	/**
 	 * Constructor
 	 *
-	 * @param &$crypto encryption facility
+	 * @param $crypto encryption facility
 	 * @param $options options map
 	 */
-	public function __construct(&$crypto, $options = array()) {
+	public function __construct($crypto, $options = array()) {
 		$this->crypto = $crypto;
 		$this->formatter = new CEM_WebFormatter(Locale::getDefault(), NULL, NULL);
 		$this->client = new CEM_GatewayClient($this->connectionTimeout, $this->readTimeout);
@@ -127,7 +127,7 @@ class CEM_WebController {
 	public function getCustomer() {
 		return $this->customer;
 	}
-	
+
 	/**
 	 * Get index identifier
 	 *
@@ -136,7 +136,7 @@ class CEM_WebController {
 	public function getIndex() {
 		return $this->index;
 	}
-	
+
 	/**
 	 * Get language identifier
 	 *
@@ -145,7 +145,7 @@ class CEM_WebController {
 	public function getLanguage() {
 		return $this->language;
 	}
-	
+
 	/**
 	 * Set language identifier
 	 *
@@ -154,7 +154,7 @@ class CEM_WebController {
 	public function setLanguage($language) {
 		$this->language = $language;
 	}
-	
+
 	/**
 	 * Get dialog identifier
 	 *
@@ -163,7 +163,7 @@ class CEM_WebController {
 	public function getDialog() {
 		return $this->dialog;
 	}
-	
+
 	/**
 	 * Get state handler
 	 *
@@ -172,7 +172,7 @@ class CEM_WebController {
 	public function getStateHandler() {
 		return $this->stateHandler;
 	}
-	
+
 	/**
 	 * Get request handler
 	 *
@@ -181,7 +181,7 @@ class CEM_WebController {
 	public function getRequestHandler() {
 		return $this->requestHandler;
 	}
-	
+
 	/**
 	 * Get response handler
 	 *
@@ -216,7 +216,7 @@ class CEM_WebController {
 		if ($created) {
 			return;
 		}
-		
+
 		// process interaction
 		$request = new CEM_GS_GatewayRequest($this->customer, $this->dialog, $this->language);
 		$request->appendFreeRequest();
@@ -427,12 +427,12 @@ class CEM_WebController {
 	/**
 	 * Do GS request (low-level)
 	 *
-	 * @param &$request guided-search request
-	 * @param &$response guided-search response
+	 * @param $request guided-search request
+	 * @param $response guided-search response
 	 * @param $options interaction options passed to handlers
 	 * @param $saveState save state
 	 */
-	public function gs(&$request, &$response, $options = array(), $saveState = TRUE) {
+	public function gs($request, $response, $options = array(), $saveState = TRUE) {
 		// get cem state
 		list($state, $created) = $this->getState();
 
@@ -459,11 +459,11 @@ class CEM_WebController {
 	/**
 	 * Do PR request (low-level)
 	 *
-	 * @param &$request recommendation request
-	 * @param &$response recommendation response
+	 * @param $request recommendation request
+	 * @param $response recommendation response
 	 * @param $options recommendation options
 	 */
-	public function pr(&$request, &$response, $options = array()) {
+	public function pr($request, $response, $options = array()) {
 		// build cem state
 		list($state, $created) = $this->getState();
 

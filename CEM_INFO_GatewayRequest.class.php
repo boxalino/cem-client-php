@@ -41,10 +41,10 @@ class CEM_INFO_GatewayRequest extends CEM_GatewayRequest {
 	/**
 	 * Called to write the request
 	 *
-	 * @param &$state client state reference
+	 * @param $state client state reference
 	 * @return request raw body
 	 */
-	public function write(&$state) {
+	public function write($state) {
 		return NULL;
 	}
 }

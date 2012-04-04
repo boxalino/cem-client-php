@@ -144,11 +144,11 @@ abstract class CEM_GatewayResponse {
 	/**
 	 * Called to read the response
 	 *
-	 * @param &$state client state reference
-	 * @param &$data response raw body
+	 * @param $state client state reference
+	 * @param $data response raw body
 	 * @return TRUE on success, FALSE otherwise
 	 */
-	public abstract function read(&$state, &$data);
+	public abstract function read($state, $data);
 }
 
 /**

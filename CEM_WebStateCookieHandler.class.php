@@ -49,12 +49,12 @@ class CEM_WebStateCookieHandler extends CEM_WebStateHandler {
 	 * Chunk length
 	 */
 	protected $chunkLength;
-	
+
 
 	/**
 	 * Constructor
 	 *
-	 * @param &$crypto encryption facility
+	 * @param $crypto encryption facility
 	 * @param $prefix cookie prefix (defaults to 'cem')
 	 * @param $path path (defaults to '/')
 	 * @param $domain domain (defaults to any)
@@ -62,7 +62,7 @@ class CEM_WebStateCookieHandler extends CEM_WebStateHandler {
 	 * @param $expiry visitor expiry time in seconds (defaults to 30 days)
 	 * @param $chunkLength cookie chunk size (defaults to 4095 bytes)
 	 */
-	public function __construct(&$crypto, $prefix = 'cem', $path = '/', $domain = FALSE, $secure = FALSE, $expiry = 2592000, $chunkLength = 4095) {
+	public function __construct($crypto, $prefix = 'cem', $path = '/', $domain = FALSE, $secure = FALSE, $expiry = 2592000, $chunkLength = 4095) {
 		parent::__construct($crypto);
 		$this->prefix = $prefix;
 		$this->path = $path;
@@ -154,9 +154,9 @@ class CEM_WebStateCookieHandler extends CEM_WebStateHandler {
 	/**
 	 * Write client state to storage
 	 *
-	 * @param &$state client state
+	 * @param $state client state
 	 */
-	public function write(&$state) {
+	public function write($state) {
 		// write cem cookies
 		$this->writeCookies($this->prefix.'a', $state->getCookieHeader(), FALSE);
 
@@ -213,9 +213,9 @@ class CEM_WebStateCookieHandler extends CEM_WebStateHandler {
 	/**
 	 * Remove client state from storage
 	 *
-	 * @param &$state client state
+	 * @param $state client state
 	 */
-	public function remove(&$state) {
+	public function remove($state) {
 		// clear cem, levels, state data cookies
 		$this->writeCookies($this->prefix.'a');
 		$this->writeCookies($this->prefix.'b');

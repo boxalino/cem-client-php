@@ -94,13 +94,13 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	/**
 	 * Constructor
 	 *
-	 * @param &$crypto encryption facility
-	 * @param &$request client request reference
-	 * @param &$response client response reference
-	 * @param &$options user-defined options
-	 * @param &$formatter value formatter
+	 * @param $crypto encryption facility
+	 * @param $request client request reference
+	 * @param $response client response reference
+	 * @param $options user-defined options
+	 * @param $formatter value formatter
 	 */
-	public function __construct(&$crypto, &$request, &$response, &$options, &$formatter) {
+	public function __construct($crypto, $request, $response, $options, $formatter) {
 		parent::__construct($crypto);
 		$this->request = $request;
 		$this->response = $response;
@@ -363,8 +363,8 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 */
 	public function activeShowingResultsFor() {
 		$model = $this->getContextJson('model');
-		if (isset($model->queryText) && Utils::requestExists('query')) {
-			if (strcmp($model->queryText, Utils::requestString('query')) != 0) {
+		if (isset($model->queryText) && $this->requestExists('query')) {
+			if (strcmp($model->queryText, $this->requestString('query')) != 0) {
 				return $model->queryText;
 			}
 		}

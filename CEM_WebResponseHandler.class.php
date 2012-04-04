@@ -23,9 +23,9 @@ class CEM_WebResponseHandler extends CEM_AbstractWebHandler {
 	/**
 	 * Constructor
 	 *
-	 * @param &$crypto encryption facility
+	 * @param $crypto encryption facility
 	 */
-	public function __construct(&$crypto) {
+	public function __construct($crypto) {
 		parent::__construct($crypto);
 	}
 
@@ -33,33 +33,33 @@ class CEM_WebResponseHandler extends CEM_AbstractWebHandler {
 	/**
 	 * Called each client interaction to wrap the response
 	 *
-	 * @param &$state client state reference
-	 * @param &$request client request reference
-	 * @param &$response client response reference
-	 * @param &$options options passed for interaction
+	 * @param $state client state reference
+	 * @param $request client request reference
+	 * @param $response client response reference
+	 * @param $options options passed for interaction
 	 */
-	public function onInteraction(&$state, &$request, &$response, &$options) {
+	public function onInteraction($state, $request, $response, $options) {
 	}
 
 	/**
 	 * Called each client recommendation to wrap the response
 	 *
-	 * @param &$state client state reference
-	 * @param &$request client request reference
-	 * @param &$response client response reference
-	 * @param &$options options passed for recommendation
+	 * @param $state client state reference
+	 * @param $request client request reference
+	 * @param $response client response reference
+	 * @param $options options passed for recommendation
 	 */
-	public function onRecommendation(&$state, &$request, &$response, &$options) {
+	public function onRecommendation($state, $request, $response, $options) {
 	}
 
 	/**
 	 * Called if client interaction triggers an error
 	 *
-	 * @param &$state client state reference
-	 * @param &$request client request reference
-	 * @param &$options options passed for recommendation
+	 * @param $state client state reference
+	 * @param $request client request reference
+	 * @param $options options passed for recommendation
 	 */
-	public function onError(&$state, &$request, &$options) {
+	public function onError($state, $request, $options) {
 	}
 }
 

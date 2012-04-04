@@ -38,11 +38,11 @@ class CEM_INFO_GatewayResponse extends CEM_GatewayResponse {
 	/**
 	 * Called to read the response
 	 *
-	 * @param &$state client state reference
-	 * @param &$data response raw body
+	 * @param $state client state reference
+	 * @param $data response raw body
 	 * @return TRUE on success, FALSE otherwise
 	 */
-	public function read(&$state, &$data) {
+	public function read($state, $data) {
 		$this->text = $data;
 		return TRUE;
 	}

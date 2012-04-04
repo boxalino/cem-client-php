@@ -57,10 +57,10 @@ class CEM_PR_Admin_SearchDetail extends CEM_PR_AbstractAdminQuery {
 	/**
 	 * Called to build the query
 	 *
-	 * @param &$state client state reference
+	 * @param $state client state reference
 	 * @return query
 	 * /
-	public function build(&$state) {
+	public function build($state) {
 		$query = parent::build($state);
 		$query["index"] = $this->index;
 		$query["configuration"] = array('properties' => $this->properties);

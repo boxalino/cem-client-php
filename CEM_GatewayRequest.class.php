@@ -24,7 +24,7 @@ abstract class CEM_GatewayRequest {
 	 * Http referer
 	 */
 	protected $referer = NULL;
-	
+
 
 	/**
 	 * Constructor
@@ -73,10 +73,10 @@ abstract class CEM_GatewayRequest {
 	/**
 	 * Called to write the request
 	 *
-	 * @param &$state client state reference
+	 * @param $state client state reference
 	 * @return request raw body
 	 */
-	public abstract function write(&$state);
+	public abstract function write($state);
 }
 
 /**

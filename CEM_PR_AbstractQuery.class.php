@@ -34,7 +34,7 @@ abstract class CEM_PR_AbstractQuery {
 	 * Personalized flag
 	 */
 	protected $personalized;
-	
+
 
 	/**
 	 * Constructor
@@ -67,7 +67,7 @@ abstract class CEM_PR_AbstractQuery {
 	public function getStrategy() {
 		return $this->strategy;
 	}
- 
+
 	/**
 	 * Get operation identifier
 	 *
@@ -81,10 +81,10 @@ abstract class CEM_PR_AbstractQuery {
 	/**
 	 * Called to build the query
 	 *
-	 * @param &$state client state reference
+	 * @param $state client state reference
 	 * @return query
 	 */
-	public function build(&$state) {
+	public function build($state) {
 		if ($this->personalized) {
 			$indexPreferences = array();
 			$context = $state->get('context');
