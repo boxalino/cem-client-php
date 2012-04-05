@@ -1330,6 +1330,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		}
 
 		// find valid values
+		$nonFiltering = array();
 		$totalSelected = 0;
 		$totalFiltering = 0;
 		$previews = array();
@@ -1439,6 +1440,8 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			}
 			if ($value->population < $this->getResultsTotal()) {
 				$totalFiltering++;
+			} else {
+				$nonFiltering[] = $value;
 			}
 			$name = $this->formatter->formatAttributeValue($attribute, $index, $value);
 			$list[] = array(
@@ -1466,6 +1469,25 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				'value' => $value
 			);
 		}
+
+		// skip node if one node has all results
+		if (in_array('hierarchical', $attribute->propertyFlags) && sizeof($nonFiltering) == 1 && isset($nonFiltering[0]->children)) {
+			array_push($parents, $nonFiltering[0]);
+			$refinement = $this->findAttributeRefinementValues(
+				$attribute,
+				$nonFiltering[0]->children,
+				$filters,
+				$excludedPreviews,
+				$preferences,
+				$depth + 1,
+				$parents
+			);
+			if ($refinement) {
+				return $refinement;
+			}
+			array_pop($parents);
+		}
+
 		if (sizeof($list) > 0) {
 			$parentValues = array();
 			foreach ($parents as $parentDepth => $parent) {
@@ -1550,7 +1572,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				'valuesSelected' => $totalSelected,
 				'valuesFiltering' => $totalFiltering,
 				'valuesWithPreview' => sizeof($previews),
-				'attribute' => $attribute
+				'attribute' => $this->buildAttributeView($attribute, $parentValues, $list)
 			);
 		}
 		return NULL;
@@ -1610,6 +1632,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		}
 
 		// find valid values
+		$nonFiltering = array();
 		$totalSelected = 0;
 		$totalFiltering = 0;
 		$previews = array();
@@ -1722,8 +1745,11 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			// append value
 			if ($selected) {
 				$totalSelected++;
-			} else {
+			}
+			if ($value->population < $this->getResultsTotal()) {
 				$totalFiltering++;
+			} else {
+				$nonFiltering[] = $value;
 			}
 			$name  = $this->formatter->formatAttributeValue($attribute, $index, $value);
 			$list[] = array(
@@ -1751,6 +1777,25 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				'value' => $value
 			);
 		}
+
+		// skip node if one node has all results
+		if (in_array('hierarchical', $attribute->propertyFlags) && sizeof($nonFiltering) == 1 && isset($nonFiltering[0]->children)) {
+			array_push($parents, $nonFiltering[0]);
+			$alternative = $this->findAttributeAlternativeValues(
+				$attribute,
+				$nonFiltering[0]->children,
+				$filters,
+				$excludedPreviews,
+				$preferences,
+				$depth + 1,
+				$parents
+			);
+			if ($alternative) {
+				return $alternative;
+			}
+			array_pop($parents);
+		}
+
 		if (sizeof($list) > 0) {
 			$parentValues = array();
 			foreach ($parents as $parentDepth => $parent) {
@@ -1834,12 +1879,57 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				'valuesSelected' => $totalSelected,
 				'valuesFiltering' => $totalFiltering,
 				'valuesWithPreview' => sizeof($previews),
-				'attribute' => $attribute
+				'attribute' => $this->buildAttributeView($attribute, $parentValues, $list)
 			);
 		}
 		return NULL;
 	}
 
+
+	/**
+	 * Build an attribute subset
+	 *
+	 * @param $attribute complete attribute
+	 * @param $parents attribute parent path
+	 * @param $values attribute values
+	 * @return attribute subset
+	 */
+	private function buildAttributeView($attribute, $parents, $values) {
+		$out = array();
+		foreach (array('type', 'property', 'hierarchical', 'defined', 'undefined', 'cardinality', 'coverage', 'entropy', 'relevance', 'weight', 'name', 'data', 'statistics', 'propertyFlags') as $key) {
+			if (isset($attribute->$key)) {
+				$out[$key] = $attribute->$key;
+			}
+		}
+		$out['values'] = array();
+		$list =& $out['values'];
+		foreach ($parents as $parent) {
+			$value = $this->buildAttributeValueView($parent['value']);
+			$value['children'] = array();
+			$list[] = $value;
+			$list =& $list[sizeof($list) - 1]['children'];
+		}
+		foreach ($values as $value) {
+			$list[] = $this->buildAttributeValueView($value['value']);
+		}
+		return json_decode(json_encode($out));
+	}
+
+	/**
+	 * Build an attribute value view
+	 *
+	 * @param $value attribute value
+	 * @return attribute value view
+	 */
+	private function buildAttributeValueView($value) {
+		$out = array();
+		foreach (array('population', 'weight', 'data', 'previews') as $key) {
+			if (isset($value->$key)) {
+				$out[$key] = $value->$key;
+			}
+		}
+		return $out;
+	}
 
 	/**
 	 * Collect hierarchical values.
