@@ -45,24 +45,27 @@ class CEM_Analytics extends CEM_HttpClient {
 	 * This method is called to track an event "client request" with Boxalino Analytics.
 	 *
 	 * @param $trackIdle optional track-idle flag
-	 * @param $meta optional meta-data
 	 */
-	public function trackClientRequest($trackIdle = FALSE, $meta = '') {
+	public function trackClientRequest($trackIdle = FALSE) {
 		return $this->trackEvent(
 			'request',
-			sprintf('idle:%s meta:%s', $trackIdle ? '1' : '0', urlencode($meta))
+			array(
+				'idle' => $trackIdle ? '1' : '0'
+			)
 		);
 	}
 
 	/**
 	 * This method is called to track an event "client idle" with Boxalino Analytics.
 	 *
-	 * @param $meta optional meta-data
+	 * @param $time idle time in seconds
 	 */
-	public function trackClientIdle($meta = '') {
+	public function trackClientIdle($time) {
 		return $this->trackEvent(
 			'idle',
-			sprintf('meta:%s', urlencode($meta))
+			array(
+				'time' => intval($time)
+			)
 		);
 	}
 
@@ -72,12 +75,16 @@ class CEM_Analytics extends CEM_HttpClient {
 	 *
 	 * @param $query query text
 	 * @param $source optional source identifier
-	 * @param $meta optional meta-data
+	 * @param $widget optional widget identifier
 	 */
-	public function trackQuery($query, $source = '', $meta = '') {
+	public function trackQuery($query, $source = '', $widget = '') {
 		return $this->trackEvent(
 			'query',
-			sprintf('query:%s source:%s meta:%s', urlencode($query), urlencode($source), urlencode($meta))
+			array(
+				'query' => $query,
+				'source' => $source,
+				'widget' => $widget
+			)
 		);
 	}
 
@@ -87,12 +94,17 @@ class CEM_Analytics extends CEM_HttpClient {
 	 * @param $term term text
 	 * @param $property selected property
 	 * @param $value selected value
-	 * @param $meta optional meta-data
+	 * @param $widget optional widget identifier
 	 */
-	public function trackRefineQuery($term, $property, $value, $meta = '') {
+	public function trackRefineQuery($term, $property, $value, $widget = '') {
 		return $this->trackEvent(
 			'refineQuery',
-			sprintf('term:%s property:%s value:%s meta:%s', urlencode($term), urlencode($property), urlencode($value), urlencode($meta))
+			array(
+				'term' => $term,
+				'property' => $property,
+				'value' => $value,
+				'widget' => $widget
+			)
 		);
 	}
 
@@ -101,12 +113,16 @@ class CEM_Analytics extends CEM_HttpClient {
 	 *
 	 * @param $property changed property
 	 * @param $value changed value
-	 * @param $meta optional meta-data
+	 * @param $widget optional widget identifier
 	 */
-	public function trackSetGuidance($property, $value, $meta = '') {
+	public function trackSetGuidance($property, $value, $widget = '') {
 		return $this->trackEvent(
 			'setGuidance',
-			sprintf('property:%s value:%s meta:%s', urlencode($property), urlencode($value), urlencode($meta))
+			array(
+				'property' => $property,
+				'value' => $value,
+				'widget' => $widget
+			)
 		);
 	}
 
@@ -114,12 +130,15 @@ class CEM_Analytics extends CEM_HttpClient {
 	 * This method is called to track an event "removeGuidance" with Boxalino Analytics.
 	 *
 	 * @param $property removed property
-	 * @param $meta optional meta-data
+	 * @param $widget optional widget identifier
 	 */
-	public function trackRemoveGuidance($property, $meta = '') {
+	public function trackRemoveGuidance($property, $widget = '') {
 		return $this->trackEvent(
 			'removeGuidance',
-			sprintf('property:%s meta:%s', urlencode($property), urlencode($meta))
+			array(
+				'property' => $property,
+				'widget' => $widget
+			)
 		);
 	}
 
@@ -127,12 +146,15 @@ class CEM_Analytics extends CEM_HttpClient {
 	 * This method is called to track an event "page" with Boxalino Analytics.
 	 *
 	 * @param $page page index
-	 * @param $meta optional meta-data
+	 * @param $widget optional widget identifier
 	 */
-	public function trackPage($page, $meta = '') {
+	public function trackPage($page, $widget = '') {
 		return $this->trackEvent(
 			'page',
-			sprintf('page:%d meta:%s', intval($page), urlencode($meta))
+			array(
+				'page' => intval($page),
+				'widget' => $widget
+			)
 		);
 	}
 
@@ -140,16 +162,19 @@ class CEM_Analytics extends CEM_HttpClient {
 	 * This method is called to track an event "recommendationView" with Boxalino Analytics.
 	 *
 	 * @param $products product identifiers (productId => strategy)
-	 * @param $meta optional meta-data
+	 * @param $widget optional widget identifier
 	 */
-	public function trackRecommendationView($products) {
+	public function trackRecommendationView($products, $widget = '') {
 		$payload = array();
 		foreach ($products as $productId => $strategy) {
 			$payload[] = urlencode($productId).'='.urlencode($strategy);
 		}
 		return $this->trackEvent(
 			'recommendationView',
-			sprintf('products:%s meta:%s', implode(',', $payload), urlencode($meta))
+			array(
+				'products' => implode(',', $payload),
+				'widget' => $widget
+			)
 		);
 	}
 
@@ -159,12 +184,17 @@ class CEM_Analytics extends CEM_HttpClient {
 	 * @param $product product identifier
 	 * @param $position product position
 	 * @param $strategy recommendation strategy
-	 * @param $meta optional meta-data
+	 * @param $widget optional widget identifier
 	 */
-	public function trackRecommendationClick($product, $position, $strategy) {
+	public function trackRecommendationClick($product, $position, $strategy, $widget = '') {
 		return $this->trackEvent(
 			'recommendationClick',
-			sprintf('product:%s position:%s strategy:%s', urlencode($product), urlencode($position), urlencode($strategy), urlencode($meta))
+			array(
+				'product' => $product,
+				'position' => $position,
+				'strategy' => $strategy,
+				'widget' => $widget
+			)
 		);
 	}
 
@@ -173,12 +203,16 @@ class CEM_Analytics extends CEM_HttpClient {
 	 *
 	 * @param $id category identifier
 	 * @param $name optional category name
-	 * @param $meta optional meta-data
+	 * @param $widget optional widget identifier
 	 */
-	public function trackCategoryView($id, $name = '', $meta = '') {
+	public function trackCategoryView($id, $name = '', $widget = '') {
 		return $this->trackEvent(
 			'categoryView',
-			sprintf('id:%s name:%s meta:%s', urlencode($id), urlencode($name), urlencode($meta))
+			array(
+				'id' => $id,
+				'name' => $name,
+				'widget' => $widget
+			)
 		);
 	}
 
@@ -187,12 +221,16 @@ class CEM_Analytics extends CEM_HttpClient {
 	 *
 	 * @param $id product identifier
 	 * @param $name optional product name
-	 * @param $meta optional meta-data
+	 * @param $widget optional widget identifier
 	 */
-	public function trackProductView($id, $name = '', $meta = '') {
+	public function trackProductView($id, $name = '', $widget = '') {
 		return $this->trackEvent(
 			'productView',
-			sprintf('id:%s name:%s meta:%s', urlencode($id), urlencode($name), urlencode($meta))
+			array(
+				'id' => $id,
+				'name' => $name,
+				'widget' => $widget
+			)
 		);
 	}
 
@@ -201,12 +239,16 @@ class CEM_Analytics extends CEM_HttpClient {
 	 *
 	 * @param $id product identifier
 	 * @param $name optional product name
-	 * @param $meta optional meta-data
+	 * @param $widget optional widget identifier
 	 */
-	public function trackAddToBasket($id, $name = '', $meta = '') {
+	public function trackAddToBasket($id, $name = '', $widget = '') {
 		return $this->trackEvent(
 			'addToBasket',
-			sprintf('id:%s name:%s meta:%s', urlencode($id), urlencode($name), urlencode($meta))
+			array(
+				'id' => $id,
+				'name' => $name,
+				'widget' => $widget
+			)
 		);
 	}
 
@@ -215,12 +257,14 @@ class CEM_Analytics extends CEM_HttpClient {
 	 *
 	 * @param $amount total transaction amount
 	 * @param $products product identifiers in the transaction
-	 * @param $meta optional meta-data
 	 */
-	public function trackPurchaseTry($amount, $products = array(), $meta = '') {
+	public function trackPurchaseTry($amount, $products = array()) {
 		return $this->trackEvent(
 			'purchaseTry',
-			sprintf('amount:%f products:%s meta:%s', floatval($amount), urlencode(implode(',', $products)), urlencode($meta))
+			array(
+				'amount' => floatval($amount),
+				'products' => implode(',', $products)
+			)
 		);
 	}
 
@@ -230,12 +274,15 @@ class CEM_Analytics extends CEM_HttpClient {
 	 * @param $status transaction status (TRUE = confirmed, FALSE = started)
 	 * @param $amount total transaction amount
 	 * @param $products product identifiers in the transaction
-	 * @param $meta optional meta-data
 	 */
-	public function trackPurchase($status, $amount, $products = array(), $meta = '') {
+	public function trackPurchase($status, $amount, $products = array()) {
 		return $this->trackEvent(
 			'purchaseDone',
-			sprintf('status:%s amount:%f products:%s meta:%s', $status ? '1' : '0', floatval($amount), urlencode(implode(',', $products)), urlencode($meta))
+			array(
+				'status' => $status ? '1' : '0',
+				'amount' => floatval($amount),
+				'products' => implode(',', $products)
+			)
 		);
 	}
 
@@ -244,9 +291,19 @@ class CEM_Analytics extends CEM_HttpClient {
 	 * Track an event with Boxalino Analytics.
 	 *
 	 * @param $name event name
-	 * @param $description event description (optional)
+	 * @param $description event parameters or description (optional)
 	 */
-	public function trackEvent($name, $description = '') {
+	public function trackEvent($name, $description = array()) {
+		if (is_array($description)) {
+			$parameters = array();
+			foreach ($description as $k => $v) {
+				if (strlen($v) > 0) {
+					$parameters[] = urlencode($k).':'.urlencode($v);
+				}
+			}
+			$description = implode(' ', $parameters);
+		}
+
 		// extract analytics parameters
 		$parameters = array(
 			'connection' => 'http',

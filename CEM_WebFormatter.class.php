@@ -218,6 +218,50 @@ class CEM_WebFormatter {
 
 
 	/**
+	 * Get default url parameters
+	 *
+	 * @param $key default parameter key
+	 * @return default parameter value or NULL if none
+	 */
+	public function getDefaultUrlParameter($key) {
+		return (isset($this->defaultUrlParameters[$key]) ? $this->defaultUrlParameters[$key] : NULL);
+	}
+
+	/**
+	 * Get default url parameters
+	 *
+	 * @return default parameters
+	 */
+	public function getDefaultUrlParameters() {
+		$list = array();
+		foreach ($this->defaultUrlParameters as $k => $v) {
+			if ($v !== NULL) {
+				$list[$k] = $v;
+			}
+		}
+		return $list;
+	}
+
+	/**
+	 * Set default url parameters
+	 *
+	 * @param $key default parameter key
+	 * @param $value default parameter value or NULL to remove
+	 */
+	public function setDefaultUrlParameter($key, $value) {
+		$this->defaultUrlParameters[$key] = $value;
+	}
+
+	/**
+	 * Set default url parameters
+	 *
+	 * @param $parameters default parameters
+	 */
+	public function setDefaultUrlParameters($parameters) {
+		$this->defaultUrlParameters = $parameters;
+	}
+
+	/**
 	 * Get complete url parameters
 	 *
 	 * @param $parameters query parameters
@@ -226,10 +270,14 @@ class CEM_WebFormatter {
 	public function getUrlParameters($parameters) {
 		$list = array();
 		foreach ($this->defaultUrlParameters as $k => $v) {
-			$list[$k] = $v;
+			if ($v !== NULL) {
+				$list[$k] = $v;
+			}
 		}
 		foreach ($parameters as $k => $v) {
-			$list[$k] = $v;
+			if ($v !== NULL) {
+				$list[$k] = $v;
+			}
 		}
 		return $list;
 	}
