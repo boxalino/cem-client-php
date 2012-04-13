@@ -120,6 +120,24 @@ class CEM_WebController {
 
 
 	/**
+	 * Get service url
+	 *
+	 * @return service url
+	 */
+	public function getUrl() {
+		return $this->url;
+	}
+
+	/**
+	 * Set service url
+	 *
+	 * @param $url service url
+	 */
+	public function setUrl($url) {
+		$this->url = $url;
+	}
+
+	/**
 	 * Get customer account identifier
 	 *
 	 * @return customer account identifier
@@ -129,12 +147,30 @@ class CEM_WebController {
 	}
 
 	/**
+	 * Set customer identifier
+	 *
+	 * @param $customer customer identifier
+	 */
+	public function setCustomer($customer) {
+		$this->customer = $customer;
+	}
+
+	/**
 	 * Get index identifier
 	 *
 	 * @return index identifier
 	 */
 	public function getIndex() {
 		return $this->index;
+	}
+
+	/**
+	 * Set index identifier
+	 *
+	 * @param $index index identifier
+	 */
+	public function setIndex($index) {
+		$this->index = $index;
 	}
 
 	/**
@@ -162,6 +198,15 @@ class CEM_WebController {
 	 */
 	public function getDialog() {
 		return $this->dialog;
+	}
+
+	/**
+	 * Set dialog identifier
+	 *
+	 * @param $dialog dialog identifier
+	 */
+	public function setDialog($dialog) {
+		$this->dialog = $dialog;
 	}
 
 	/**
