@@ -237,16 +237,14 @@ class CEM_Analytics extends CEM_HttpClient {
 	/**
 	 * This method is called to track an event "addToBasket" with Boxalino Analytics.
 	 *
-	 * @param $id product identifier
-	 * @param $name optional product name
+	 * @param $item product info {id:..., name:..., quantity:..., price:...}
 	 * @param $widget optional widget identifier
 	 */
-	public function trackAddToBasket($id, $name = '', $widget = '') {
+	public function trackAddToBasket($item, $widget = '') {
 		return $this->trackEvent(
 			'addToBasket',
 			array(
-				'id' => $id,
-				'name' => $name,
+				'item' => @json_encode($item),
 				'widget' => $widget
 			)
 		);
@@ -256,14 +254,14 @@ class CEM_Analytics extends CEM_HttpClient {
 	 * This method is called to track an event "purchaseTry" with Boxalino Analytics.
 	 *
 	 * @param $amount total transaction amount
-	 * @param $products product identifiers in the transaction
+	 * @param $items products in the transaction ([ {id:..., name:..., quantity:..., price:..., widget:...} ])
 	 */
-	public function trackPurchaseTry($amount, $products = array()) {
+	public function trackPurchaseTry($amount, $items = array()) {
 		return $this->trackEvent(
 			'purchaseTry',
 			array(
 				'amount' => floatval($amount),
-				'products' => implode(',', $products)
+				'items' => @json_encode($items)
 			)
 		);
 	}
@@ -273,15 +271,15 @@ class CEM_Analytics extends CEM_HttpClient {
 	 *
 	 * @param $status transaction status (TRUE = confirmed, FALSE = started)
 	 * @param $amount total transaction amount
-	 * @param $products product identifiers in the transaction
+	 * @param $items products in the transaction ([ {id:..., name:..., quantity:..., price:..., widget:...} ])
 	 */
-	public function trackPurchase($status, $amount, $products = array()) {
+	public function trackPurchase($status, $amount, $items = array()) {
 		return $this->trackEvent(
 			'purchaseDone',
 			array(
 				'status' => $status ? '1' : '0',
 				'amount' => floatval($amount),
-				'products' => implode(',', $products)
+				'items' => @json_encode($items)
 			)
 		);
 	}
@@ -304,6 +302,27 @@ class CEM_Analytics extends CEM_HttpClient {
 			$description = implode(' ', $parameters);
 		}
 
+		// forward cookie(s)
+		foreach ($_COOKIE as $key => $value) {
+			if (strpos($key, 'cem') === 0) {
+				$this->setCookie($key, $value);
+			}
+		}
+
+		// send request
+		$parameters = $this->getParameters();
+		$parameters['eventName'] = $name;
+		$parameters['eventDescription'] = $description;
+		return ($this->postFields($this->url, $parameters) == 200);
+	}
+
+
+	/**
+	 * Detect and return client infos and context
+	 *
+	 * @return analytics parameters
+	 */
+	public static function getParameters() {
 		// extract analytics parameters
 		$parameters = array(
 			'connection' => 'http',
@@ -311,9 +330,7 @@ class CEM_Analytics extends CEM_HttpClient {
 			'clientAgent' => '',
 			'clientReferer' => '',
 			'serverAddress' => '',
-			'serverHost' => '',
-			'eventName' => $name,
-			'eventDescription' => $description
+			'serverHost' => ''
 		);
 		if (isset($_SERVER['HTTPS'])) {
 			$parameters['connection'] = ($_SERVER['HTTPS'] == 'on' ? 'https' : 'http');
@@ -333,16 +350,7 @@ class CEM_Analytics extends CEM_HttpClient {
 		if (isset($_SERVER['HTTP_HOST'])) {
 			$parameters['serverHost'] = $_SERVER['HTTP_HOST'];
 		}
-
-		// forward cookie(s)
-		foreach ($_COOKIE as $key => $value) {
-			if (strpos($key, 'cem') === 0) {
-				$this->setCookie($key, $value);
-			}
-		}
-
-		// send request
-		return ($this->postFields($this->url, $parameters) == 200);
+		return $parameters;
 	}
 }
 
