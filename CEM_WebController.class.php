@@ -36,9 +36,14 @@ class CEM_WebController {
 	protected $client;
 
 	/**
-	 * CEM server url
+	 * CEM server url (gs)
 	 */
-	protected $url = 'http://root:@localhost:9000';
+	protected $gsUrl = NULL;
+
+	/**
+	 * CEM server url (pr)
+	 */
+	protected $prUrl = NULL;
 
 	/**
 	 * Customer account (defaults to 'default')
@@ -116,25 +121,50 @@ class CEM_WebController {
 				$this->$key = $value;
 			}
 		}
+		if (isset($options['routerUrl']) && strlen($options['routerUrl']) > 0) {
+			$this->gsUrl = $options['routerUrl'].'/cem/client/'.$this->customer.'/gs';
+			$this->prUrl = $options['routerUrl'].'/cem/client/'.$this->customer.'/pr';
+		} else if (isset($options['url']) && strlen($options['url']) > 0) {
+			$this->gsUrl = $options['url'].'/gs/gateway/client-1.4';
+			$this->prUrl = $options['url'].'/pr/gateway/client-1.4';
+		}
 	}
 
 
 	/**
-	 * Get service url
+	 * Get service url (gs)
 	 *
 	 * @return service url
 	 */
-	public function getUrl() {
-		return $this->url;
+	public function getGsUrl() {
+		return $this->gsUrl;
 	}
 
 	/**
-	 * Set service url
+	 * Set service url (gs)
 	 *
 	 * @param $url service url
 	 */
-	public function setUrl($url) {
-		$this->url = $url;
+	public function setGsUrl($url) {
+		$this->gsUrl = $url;
+	}
+
+	/**
+	 * Get service url (pr)
+	 *
+	 * @return service url
+	 */
+	public function getPrUrl() {
+		return $this->prUrl;
+	}
+
+	/**
+	 * Set service url (pr)
+	 *
+	 * @param $url service url
+	 */
+	public function setPrUrl($url) {
+		$this->prUrl = $url;
 	}
 
 	/**
@@ -485,7 +515,7 @@ class CEM_WebController {
 		if ($this->requestHandler && !$this->requestHandler->onInteraction($state, $request, $options)) {
 			return;
 		}
-		if (strlen($this->url) > 0 && $this->client->exec($this->url . '/gs/gateway/client-1.4', $state, $request, $response)) {
+		if (strlen($this->gsUrl) > 0 && $this->client->exec($this->gsUrl, $state, $request, $response)) {
 			if ($this->responseHandler) {
 				$this->responseHandler->onInteraction($state, $request, $response, $options);
 			}
@@ -516,7 +546,7 @@ class CEM_WebController {
 		if ($this->requestHandler && !$this->requestHandler->onRecommendation($state, $request, $options)) {
 			return;
 		}
-		if (strlen($this->url) > 0 && $this->client->exec($this->url . '/pr/gateway/client-1.4', $state, $request, $response)) {
+		if (strlen($this->prUrl) > 0 && $this->client->exec($this->prUrl, $state, $request, $response)) {
 			if ($this->responseHandler) {
 				$this->responseHandler->onRecommendation($state, $request, $response, $options);
 			}
