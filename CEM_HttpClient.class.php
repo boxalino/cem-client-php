@@ -382,8 +382,8 @@ class CEM_HttpClient {
 	public function postFields($url, $parameters, $charset = 'UTF-8', $referer = FALSE, $headers = array()) {
 		return $this->post(
 			$url,
-			'application/x-www-form-urlencoded; charset='.$charset,
-			self::buildKVList(self::convertParametersEncoding($parameters, $charset)),
+			'multipart/form-data; charset='.$charset,
+			self::convertParametersEncoding($parameters, $charset),
 			$referer,
 			$headers
 		);
