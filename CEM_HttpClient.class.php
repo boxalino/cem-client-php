@@ -199,6 +199,11 @@ class CEM_HttpClient {
 	private $responseBody = NULL;
 
 	/**
+	 * @internal Last response file
+	 */
+	private $responseFile = NULL;
+
+	/**
 	 * @internal Session cookies
 	 */
 	private $cookies = array();
@@ -290,6 +295,26 @@ class CEM_HttpClient {
 		return $this->responseBody;
 	}
 
+	/**
+	 * Get last http response file
+	 *
+	 * @return last http response file
+	 */
+	public function getFile() {
+		return $this->responseFile;
+	}
+
+	/**
+	 * Remove last http response file if any
+	 *
+	 */
+	public function removeFile() {
+		if ($this->responseFile && file_exists($this->responseFile)) {
+			unlink($this->responseFile);
+		}
+		$this->responseFile = NULL;
+	}
+
 
 	/**
 	 * Get cookie
@@ -337,6 +362,19 @@ class CEM_HttpClient {
 	 */
 	public function get($url, $parameters = array(), $referer = FALSE, $headers = array()) {
 		return $this->process('GET', CEM_HttpClient::buildUrl($url, $parameters), $referer, $headers);
+	}
+
+	/**
+	 * Process GET request (and save response in file)
+	 *
+	 * @param $url http url
+	 * @param $parameters request parameters map (optional)
+	 * @param $referer http referer url (optional)
+	 * @param $headers http headers pairs (optional)
+	 * @return http code
+	 */
+	public function getAndSave($url, $parameters = array(), $referer = FALSE, $headers = array()) {
+		return $this->processAndSave('GET', CEM_HttpClient::buildUrl($url, $parameters), $referer, $headers);
 	}
 
 	/**
@@ -389,8 +427,9 @@ class CEM_HttpClient {
 		);
 	}
 
+
 	/**
-	 * Process any type of request
+	 * Process http request
 	 *
 	 * @param $method http method
 	 * @param $url http url
@@ -402,6 +441,93 @@ class CEM_HttpClient {
 	public function process($method, $url, $referer = FALSE, $headers = array(), $postData = FALSE) {
 		$beginTime = microtime(TRUE);
 
+		// init curl
+		$curl = $this->preprocess($method, $url, $referer, $headers, $postData);
+
+		// execute curl request
+		$this->responseStatus = NULL;
+		$this->responseHeaders = array();
+		$this->responseBody = curl_exec($curl);
+		$this->curlInfo = curl_getinfo($curl);
+		$this->curlError = curl_error($curl);
+
+		$redirectUrl = $this->postprocess($method, $url, $referer, $headers, $postData);
+
+		// close curl
+		curl_close($curl);
+
+		// fetch time
+		$this->time += microtime(TRUE) - $beginTime;
+
+		// follow redirect
+		if ($redirectUrl) {
+			return $this->process('GET', $redirectUrl, $referer, $headers, array());
+		}
+		return $this->curlInfo['http_code'];
+	}
+
+
+	/**
+	 * Process http request (and save response in file)
+	 *
+	 * @param $path target path
+	 * @param $method http method
+	 * @param $url http url
+	 * @param $referer http referer url (optional)
+	 * @param $headers http headers pairs (optional)
+	 * @param $postData http post data (optional)
+	 * @return http code
+	 */
+	public function processAndSave($method, $url, $referer = FALSE, $headers = array(), $postData = FALSE) {
+		$beginTime = microtime(TRUE);
+
+		// init curl
+		$curl = $this->preprocess($method, $url, $referer, $headers, $postData);
+
+		// set file options
+		$this->responseFile = tempnam('/tmp', 'CEM_HttpClient');
+		$f = fopen($this->responseFile, 'w');
+		if (!$f) {
+			curl_close($curl);
+			throw new Exception("Cannot open temporary file");
+		}
+		if (!curl_setopt($curl, CURLOPT_FILE, $f)) {
+			fclose($f);
+			curl_close($curl);
+			throw new Exception("Cannot configure cURL (file)");
+		}
+
+		// execute curl request
+		$this->responseStatus = NULL;
+		$this->responseHeaders = array();
+		curl_exec($curl);
+		$this->curlInfo = curl_getinfo($curl);
+		$this->curlError = curl_error($curl);
+		fclose($f);
+
+		$redirectUrl = $this->postprocess($method, $url, $referer, $headers, $postData);
+
+		// close curl
+		curl_close($curl);
+
+		// fetch time
+		$this->time += microtime(TRUE) - $beginTime;
+
+		return $this->curlInfo['http_code'];
+	}
+
+
+	/**
+	 * Called to prepare request (before request)
+	 *
+	 * @param $method http method
+	 * @param $url http url
+	 * @param $referer http referer url
+	 * @param $headers http headers pairs
+	 * @param $postData http post data
+	 * @return initialized cURL handle
+	 */
+	protected function preprocess($method, $url, $referer, $headers, $postData) {
 		// open curl
 		$curl = curl_init();
 		if (!$curl) {
@@ -412,10 +538,11 @@ class CEM_HttpClient {
 		if (!curl_setopt_array(
 			$curl,
 			array(
-				CURLOPT_SSL_VERIFYPEER => FALSE,
+				CURLOPT_FILE => fopen('php://stdout', 'w'),
 				CURLOPT_RETURNTRANSFER => TRUE,
 				CURLOPT_ENCODING => 'identity',
 				CURLOPT_HEADER => FALSE,
+				CURLOPT_SSL_VERIFYPEER => FALSE,
 				CURLOPT_HEADERFUNCTION => array($this, 'parseHeader')
 			)
 		)) {
@@ -431,7 +558,7 @@ class CEM_HttpClient {
 					CURLOPT_TIMEOUT_MS => $this->readTimeout
 				)
 			)) {
-				throw new Exception("Cannot configure cURL (base)");
+				throw new Exception("Cannot configure cURL (timeout)");
 			}
 		}
 
@@ -486,17 +613,15 @@ class CEM_HttpClient {
 		if (strlen($referer) > 0 && !curl_setopt($curl, CURLOPT_REFERER, $referer)) {
 			throw new Exception("Cannot configure cURL (referer)");
 		}
+		return $curl;
+	}
 
-		// execute curl request
-		$this->responseStatus = NULL;
-		$this->responseHeaders = array();
-		$this->responseBody = curl_exec($curl);
-		$this->curlInfo = curl_getinfo($curl);
-		$this->curlError = curl_error($curl);
-
-		// close curl
-		curl_close($curl);
-
+	/**
+	 * Called to parse response (after request)
+	 *
+	 * @return optional redirect url
+	 */
+	protected function postprocess($method, $url, $referer, $headers, $postData) {
 		// parse response headers
 		$redirectUrl = NULL;
 		foreach ($this->responseHeaders as $header) {
@@ -542,15 +667,7 @@ class CEM_HttpClient {
 				break;
 			}
 		}
-
-		// fetch time
-		$this->time += microtime(TRUE) - $beginTime;
-
-		// follow redirect
-		if ($redirectUrl) {
-			return $this->process('GET', $redirectUrl, $referer, $headers, array());
-		}
-		return $this->curlInfo['http_code'];
+		return $redirectUrl;
 	}
 
 

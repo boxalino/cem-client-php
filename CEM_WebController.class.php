@@ -121,12 +121,12 @@ class CEM_WebController {
 				$this->$key = $value;
 			}
 		}
-		if (isset($options['routerUrl']) && strlen($options['routerUrl']) > 0) {
-			$this->gsUrl = $options['routerUrl'].'/cem/client/'.$this->customer.'/gs';
-			$this->prUrl = $options['routerUrl'].'/cem/client/'.$this->customer.'/pr';
-		} else if (isset($options['url']) && strlen($options['url']) > 0) {
+		if (isset($options['url']) && strlen($options['url']) > 0) {
 			$this->gsUrl = $options['url'].'/gs/gateway/client-1.4';
 			$this->prUrl = $options['url'].'/pr/gateway/client-1.4';
+		} else if (isset($options['routerUrl']) && strlen($options['routerUrl']) > 0) {
+			$this->gsUrl = $options['routerUrl'].'/cem/client/gs';
+			$this->prUrl = $options['routerUrl'].'/cem/client/pr';
 		}
 	}
 
