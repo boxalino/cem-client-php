@@ -65,6 +65,32 @@ class CEM_HttpClient {
 	}
 
 	/**
+	 * Expand key-value list (encode arrays)
+	 *
+	 * @param $parameters parameters
+	 * @param $bracket enclose keys in bracket
+	 * @return encoded key-value
+	 */
+	public static function expandKVList($parameters, $bracket = FALSE) {
+		$list = array();
+		foreach ($parameters as $k => $v) {
+			if ($bracket) {
+				$k = '['.$k.']';
+			}
+			if (strpos($k, '__') === 0 && is_array($v) && sizeof($v) == 2) {
+				$list[$v[0]] = $v[1];
+			} else if (is_array($v)) {
+				foreach (self::expandKVList($v, TRUE) as $sk => $sv) {
+					$list[$k.$sk] = $sv;
+				}
+			} else {
+				$list[$k] = $v;
+			}
+		}
+		return $list;
+	}
+
+	/**
 	 * Build url-encoded key/value list
 	 *
 	 * @param $parameters parameters
@@ -72,19 +98,8 @@ class CEM_HttpClient {
 	 */
 	public static function buildKVList($parameters) {
 		$list = array();
-		foreach ($parameters as $k => $v) {
-			if (strpos($k, '__') === 0 && is_array($v) && sizeof($v) == 2) {
-				$list[] = urlencode($v[0]).'='.urlencode($v[1]);
-			} else {
-				$k = urlencode($k);
-				if (is_array($v)) {
-					foreach ($v as $i => $vi) {
-						$list[] = $k.'['.urlencode($i).']='.urlencode($vi);
-					}
-				} else {
-					$list[] = $k.'='.urlencode($v);
-				}
-			}
+		foreach (self::expandKVList($parameters) as $k => $v) {
+			$list[] = urlencode($k).'='.urlencode($v);
 		}
 		return implode('&', $list);
 	}
@@ -421,7 +436,7 @@ class CEM_HttpClient {
 		return $this->post(
 			$url,
 			'multipart/form-data; charset='.$charset,
-			self::convertParametersEncoding($parameters, $charset),
+			self::convertParametersEncoding(self::expandKVList($parameters), $charset),
 			$referer,
 			$headers
 		);
