@@ -330,7 +330,8 @@ class CEM_Analytics extends CEM_HttpClient {
 			'clientAgent' => '',
 			'clientReferer' => '',
 			'serverAddress' => '',
-			'serverHost' => ''
+			'serverHost' => '',
+			'serverUri' => ''
 		);
 		if (isset($_SERVER['HTTPS'])) {
 			$parameters['connection'] = ($_SERVER['HTTPS'] == 'on' ? 'https' : 'http');
@@ -349,6 +350,9 @@ class CEM_Analytics extends CEM_HttpClient {
 		}
 		if (isset($_SERVER['HTTP_HOST'])) {
 			$parameters['serverHost'] = $_SERVER['HTTP_HOST'];
+		}
+		if (isset($_SERVER['REQUEST_URI'])) {
+			$parameters['serverUri'] = $_SERVER['REQUEST_URI'];
 		}
 		return $parameters;
 	}
