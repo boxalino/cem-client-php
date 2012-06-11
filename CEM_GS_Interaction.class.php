@@ -706,7 +706,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			foreach ($group->properties as $property) {
 				$label = $property->id;
 				foreach ($property->names as $name) {
-					if ($name->language == $this->getResponse->getLanguage()) {
+					if ($name->language == $this->getResponse()->getLanguage()) {
 						$label = $name->value;
 						break;
 					}

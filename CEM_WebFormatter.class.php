@@ -36,7 +36,7 @@ class CEM_WebFormatter {
 	private $localeCurrencyPattern;
 
 	/**
-	 * Default url parameters
+	 * Default url parameters (stack)
 	 */
 	private $defaultUrlParameters = array();
 
@@ -73,7 +73,7 @@ class CEM_WebFormatter {
 		$this->locale = $locale;
 		$this->localeCurrency = $localeCurrency;
 		$this->localeCurrencyPattern = $localeCurrencyPattern;
-		$this->defaultUrlParameters = $defaultUrlParameters;
+		$this->setDefaultUrlParameters($defaultUrlParameters);
 	}
 
 
@@ -224,7 +224,10 @@ class CEM_WebFormatter {
 	 * @return default parameter value or NULL if none
 	 */
 	public function getDefaultUrlParameter($key) {
-		return (isset($this->defaultUrlParameters[$key]) ? $this->defaultUrlParameters[$key] : NULL);
+		if (!isset($this->defaultUrlParameters[$key]) || sizeof($this->defaultUrlParameters[$key]) == 0) {
+			return NULL;
+		}
+		return end($this->defaultUrlParameters[$key]);
 	}
 
 	/**
@@ -235,8 +238,11 @@ class CEM_WebFormatter {
 	public function getDefaultUrlParameters() {
 		$list = array();
 		foreach ($this->defaultUrlParameters as $k => $v) {
-			if ($v !== NULL) {
-				$list[$k] = $v;
+			if (sizeof($v) == 0) {
+				continue;
+			}
+			if (end($v) !== NULL) {
+				$list[$k] = end($v);
 			}
 		}
 		return $list;
@@ -249,7 +255,7 @@ class CEM_WebFormatter {
 	 * @param $value default parameter value or NULL to remove
 	 */
 	public function setDefaultUrlParameter($key, $value) {
-		$this->defaultUrlParameters[$key] = $value;
+		$this->defaultUrlParameters[$key] = array($value);
 	}
 
 	/**
@@ -258,7 +264,36 @@ class CEM_WebFormatter {
 	 * @param $parameters default parameters
 	 */
 	public function setDefaultUrlParameters($parameters) {
-		$this->defaultUrlParameters = $parameters;
+		$this->defaultUrlParameters = array();
+		foreach ($parameters as $k => $v) {
+			$this->defaultUrlParameters[$k] = array($v);
+		}
+	}
+
+	/**
+	 * Push default url parameters
+	 *
+	 * @param $key default parameter key
+	 * @param $value default parameter value or NULL to remove
+	 */
+	public function pushDefaultUrlParameter($key, $value) {
+		if (!isset($this->defaultUrlParameters[$key])) {
+			$this->defaultUrlParameters[$key] = array();
+		}
+		array_push($this->defaultUrlParameters[$key], $value);
+	}
+
+	/**
+	 * Pop default url parameters
+	 *
+	 * @param $key default parameter key
+	 * @return removed default parameter value or NULL if none
+	 */
+	public function popDefaultUrlParameter($key) {
+		if (!isset($this->defaultUrlParameters[$key])) {
+			return NULL;
+		}
+		return array_pop($this->defaultUrlParameters[$key]);
 	}
 
 	/**
@@ -270,8 +305,11 @@ class CEM_WebFormatter {
 	public function getUrlParameters($parameters) {
 		$list = array();
 		foreach ($this->defaultUrlParameters as $k => $v) {
-			if ($v !== NULL) {
-				$list[$k] = $v;
+			if (sizeof($v) == 0) {
+				continue;
+			}
+			if (end($v) !== NULL) {
+				$list[$k] = end($v);
 			}
 		}
 		foreach ($parameters as $k => $v) {
