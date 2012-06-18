@@ -442,6 +442,27 @@ class CEM_HttpClient {
 		);
 	}
 
+	/**
+	 * Process POST request (fields and save response in file)
+	 *
+	 * @param $url http url
+	 * @param $parameters request parameters map
+	 * @param $charset request charset (optional)
+	 * @param $referer http referer url (optional)
+	 * @param $headers http headers pairs (optional)
+	 * @return http code
+	 */
+	public function postFieldsAndSave($url, $parameters, $charset = 'UTF-8', $referer = FALSE, $headers = array()) {
+		$headers[] = array('Content-Type', 'multipart/form-data; charset='.$charset);
+		return $this->processAndSave(
+			'POST',
+			$url,
+			$referer,
+			$headers,
+			self::convertParametersEncoding(self::expandKVList($parameters), $charset)
+		);
+	}
+
 
 	/**
 	 * Process http request
