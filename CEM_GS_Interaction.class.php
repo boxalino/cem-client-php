@@ -606,9 +606,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				$this->_filters[$groupId][$propertyId][$index]['name'] = $property['name'];
 				$this->_filters[$groupId][$propertyId][$index]['value'] = $this->formatter->formatFilterValue($property, $filter['guidance']);
 
-				if ($propertyId == 'categories') {
-					$this->_filters[$groupId][$propertyId][$index]['removeAction'] = $this->buildGuidanceRemoveAction($propertyId);
-				} else if ($filter['mode'] == 'term' && $filter['index'] >= 0) {
+				if ($filter['mode'] == 'term' && $filter['index'] >= 0) {
 					$this->_filters[$groupId][$propertyId][$index]['removeAction'] = $this->buildRefineAction($filter['index']);
 				} else if (sizeof($filters) > 1 && $filter['mode'] == 'guidance' && $filter['index'] >= 0) {
 					$this->_filters[$groupId][$propertyId][$index]['removeAction'] = $this->buildGuidanceRemoveAction($filter['index']);
