@@ -41,6 +41,11 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	protected $formatter;
 
 	/**
+	 * SEO property mapping
+	 */
+	protected $seoPropertyMapping;
+
+	/**
 	 * Json decoded contexts (cache)
 	 */
 	private $_jsonContexts = array();
@@ -49,6 +54,16 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 * Sequential context (cache)
 	 */
 	private $_sequentialContexts = NULL;
+
+	/**
+	 * Guidance path items (cache)
+	 */
+	private $_uriGuidances = array();
+
+	/**
+	 * Guidance path uri (cache)
+	 */
+	private $_uriGuidancesCache = NULL;
 
 	/**
 	 * Current ambiguities (cache)
@@ -99,13 +114,57 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 * @param $response client response reference
 	 * @param $options user-defined options
 	 * @param $formatter value formatter
+	 * @param $seoPropertyMapping seo property mapping
 	 */
-	public function __construct($crypto, $request, $response, $options, $formatter) {
+	public function __construct($crypto, $request, $response, $options, $formatter, $seoPropertyMapping = array()) {
 		parent::__construct($crypto);
 		$this->request = $request;
 		$this->response = $response;
 		$this->options = $options;
 		$this->formatter = $formatter;
+		$this->seoPropertyMapping = $seoPropertyMapping;
+
+		$contexts = $this->response->getContext();
+		if (isset($contexts['model'])) {
+			$model = @json_decode($contexts['model']['data'], TRUE);
+			if (isset($model['guidances'])) {
+				$guidances = array();
+				foreach ($model['guidances'] as $guidance) {
+					$property = $guidance['property'];
+					if ($guidance['type'] != 'text' || !isset($this->seoPropertyMapping[$property]) || isset($this->_uriGuidances[$property])) {
+						$guidances[] = $guidance;
+					} else {
+						$this->_uriGuidances[$property] = $guidance['data'];
+					}
+				}
+				if (sizeof($guidances) > 0) {
+					$model['guidances'] = $guidances;
+				} else {
+					unset($model['guidances']);
+				}
+			}
+			if (sizeof($model) > 0) {
+				$contexts['model']['data'] = json_encode($model);
+			} else {
+				unset($contexts['model']);
+			}
+		}
+		$data = '';
+		foreach ($contexts as $name => $scope) {
+			if ($scope['mode'] == 'sequential') {
+				switch ($scope['level']) {
+				case 'visitor':
+				case 'session':
+				case 'search':
+					if (strlen($data) > 0) {
+						$data .= ';';
+					}
+					$data .= $this->escapeValue($name) . '=' . $this->escapeValue($scope['level']) . '=' . $this->escapeValue($scope['data']);
+					break;
+				}
+			}
+		}
+		$this->_sequentialContexts = $this->encrypt($data);
 	}
 
 
@@ -232,32 +291,26 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	/**
 	 * Encode sequential contexts
 	 *
-	 * @param $contexts optional custom contexts
 	 * @return encoded sequential contexts
 	 */
-	public function encodeSequentialContexts($contexts = NULL) {
-		if ($this->_sequentialContexts == NULL) {
-			$data = '';
-			if ($contexts == NULL) {
-				$contexts = $this->response->getContext();
-			}
-			foreach ($contexts as $name => $scope) {
-				if ($scope['mode'] == 'sequential') {
-					switch ($scope['level']) {
-					case 'visitor':
-					case 'session':
-					case 'search':
-						if (strlen($data) > 0) {
-							$data .= ';';
-						}
-						$data .= $this->escapeValue($name) . '=' . $this->escapeValue($scope['level']) . '=' . $this->escapeValue($scope['data']);
-						break;
-					}
-				}
-			}
-			$this->_sequentialContexts = $this->encrypt($data);
-		}
+	public function encodeSequentialContexts() {
 		return $this->_sequentialContexts;
+	}
+
+	/**
+	 * Encode state into url parameters
+	 *
+	 * @param $parameters additional query parameters
+	 * @return query parameters with state
+	 */
+	public function encodeQueryContext($parameters = array(), $appendContext = FALSE) {
+		if ($appendContext) {
+			$context = $this->encodeSequentialContexts();
+			if ($context) {
+				$parameters['context'] = $context;
+			}
+		}
+		return $parameters;
 	}
 
 	/**
@@ -266,48 +319,24 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 * @param $parameters additional query parameters
 	 * @return encoded url query
 	 */
-	public function encodeQuery($parameters = array()) {
-		$context = $this->encodeSequentialContexts();
-		if ($context) {
-			$parameters['context'] = $context;
-		}
-		return $this->formatter->formatUrl('', $parameters);
-	}
-
-
-	/**
-	 * Get a pseudo-unique host identifier
-	 *
-	 * @return pseudo-unique host identifier
-	 */
-	public function getHostIdentifier() {
-		return sprintf('%u', crc32($_SERVER['REMOTE_ADDR']));
+	public function encodeQuery($parameters = array(), $appendContext = FALSE) {
+		return $this->formatter->formatUrl($this->buildUriGuidance(), $this->encodeQueryContext($parameters, $appendContext));
 	}
 
 	/**
-	 * Get a pseudo-unique visitor identifier
+	 * Encode action into url
 	 *
-	 * @return pseudo-unique visitor identifier
+	 * @param $action action
+	 * @return encoded url query
 	 */
-	public function getVisitorIdentifier() {
-		$profile = $this->getContextJson('profile');
-		if (isset($profile->id)) {
-			return $profile->id;
+	public function encodeAction($uri, $action, $appendContext = FALSE) {
+		$parameters = $action['parameters'];
+		if (isset($action['uriParameters'])) {
+			foreach ($action['uriParameters'] as $parameter) {
+				unset($parameters[$parameter]);
+			}
 		}
-		return '-';
-	}
-
-	/**
-	 * Get visitor age
-	 *
-	 * @return visitor age
-	 */
-	public function getVisitorAge() {
-		$profile = $this->getContextJson('profile');
-		if (isset($profile->age)) {
-			return $profile->age;
-		}
-		return 0;
+		return $this->formatter->formatUrl($uri.$action['uri'], $this->encodeQueryContext($parameters, $appendContext));
 	}
 
 
@@ -425,22 +454,15 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					if (!isset($list[$value])) {
 						if ($distance > 0) {
 							if ($distance < strlen($queryTerm->value) / 5.0) {
-								$urlParameters = array(
-									'query' => $value
-								);
 								$list[$value] = array(
 									'label' => $label,
 									'query' => $value,
-									'queryAction' => array(
-										'url' => $this->formatter->formatUrl('', $urlParameters),
-										'parameters' => $urlParameters
-									),
+									'queryAction' => $this->buildQueryAction($value),
 									'distance' => $distance
 								);
 							}
 						} else {
 							$urlParameters = array(
-								'context' => $this->encodeSequentialContexts(),
 								'refine' => $index,
 								'property' => $refinement->property,
 								'value' => $rawValue
@@ -448,10 +470,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 							$list[$value] = array(
 								'label' => $label,
 								'query' => $value,
-								'queryAction' => array(
-									'url' => $this->formatter->formatUrl('', $urlParameters),
-									'parameters' => $urlParameters
-								),
+								'queryAction' => $this->buildQueryAction($value),
 								'distance' => $distance
 							);
 						}
@@ -587,22 +606,15 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				$this->_filters[$groupId][$propertyId][$index]['name'] = $property['name'];
 				$this->_filters[$groupId][$propertyId][$index]['value'] = $this->formatter->formatFilterValue($property, $filter['guidance']);
 
-				$urlParameters = array(
-					'context' => $this->encodeSequentialContexts()
-				);
 				if ($propertyId == 'categories') {
-					$urlParameters['guidance'] = '-'.$propertyId;
+					$this->_filters[$groupId][$propertyId][$index]['removeAction'] = $this->buildGuidanceRemoveAction($propertyId);
 				} else if ($filter['mode'] == 'term' && $filter['index'] >= 0) {
-					$urlParameters['refine'] = $filter['index'];
-				} else if ($filter['mode'] == 'guidance' && $filter['index'] >= 0) {
-					$urlParameters['guidance'] = $filter['index'];
+					$this->_filters[$groupId][$propertyId][$index]['removeAction'] = $this->buildRefineAction($filter['index']);
+				} else if (sizeof($filters) > 1 && $filter['mode'] == 'guidance' && $filter['index'] >= 0) {
+					$this->_filters[$groupId][$propertyId][$index]['removeAction'] = $this->buildGuidanceRemoveAction($filter['index']);
 				} else {
-					$urlParameters['guidance'] = '-'.$propertyId;
+					$this->_filters[$groupId][$propertyId][$index]['removeAction'] = $this->buildGuidanceRemoveAction($propertyId);
 				}
-				$this->_filters[$groupId][$propertyId][$index]['removeAction'] = array(
-					'url' => $this->formatter->formatUrl('', $urlParameters),
-					'parameters' => $urlParameters
-				);
 			}
 		}
 		foreach ($this->_filters[$groupId] as $propertyId => $filters) {
@@ -620,8 +632,8 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 * @return page size
 	 */
 	public function activePageSize() {
-		$model = $this->getContextJson('model');
-		return (isset($model->pageSize) ? $model->pageSize : 0);
+		$state = $this->getContextJson('userState');
+		return (isset($state->pageSize) ? $state->pageSize : 10);
 	}
 
 	/**
@@ -630,8 +642,8 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 * @return ranking
 	 */
 	public function activeRanking() {
-		$model = $this->getContextJson('model');
-		return (isset($model->ranking) ? $model->ranking : '@score desc');
+		$state = $this->getContextJson('userState');
+		return (isset($state->ranking) ? $state->ranking : '@score desc,@random asc');
 	}
 
 	/**
@@ -878,9 +890,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 						}
 						if (sizeof($skip) > 0) {
 							$value['addAction']['parameters']['skip'] = $skip;
-							$value['addAction']['url'] = $this->formatter->formatUrl('', $value['addAction']['parameters']);
 							$value['setAction']['parameters']['skip'] = $skip;
-							$value['setAction']['url'] = $this->formatter->formatUrl('', $value['setAction']['parameters']);
 						}
 						$values[] = $value;
 						if ($total !== NULL && isset($attribute->minimumValuePopulation) && $value['population'] < ($attribute->minimumValuePopulation * $total)) {
@@ -920,16 +930,12 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					$recommendations[] = $resource;
 				}
 				$urlParameters = array(
-					'context' => $this->encodeSequentialContexts(),
 					'scenario' => $scenario->id
 				);
 				$this->_scenarios[$groupId][$scenario->id] = array(
 					'id' => $scenario->id,
 					'name' => $scenario->name,
-					'setAction' => array(
-						'url' => $this->formatter->formatUrl('', $urlParameters),
-						'parameters' => $urlParameters
-					),
+					'setAction' => $this->buildScenarioAction($scenario->id),
 					'attributeOrder' => $attributeOrder,
 					'refinements' => $refinements,
 					'recommendations' => $recommendations,
@@ -1244,21 +1250,12 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 						}
 					}
 				}
-				$urlParameters = array(
-					'context' => $this->encodeSequentialContexts(),
-					'refine' => $index,
-					'property' => $refinement->property,
-					'value' => $value->value
-				);
 				$entries[$refinement->property]['values'][] = array(
 					'name' => $value->value,
 					'population' => $value->population,
 					'filtering' => $value->population < $this->getResultsTotal(),
 					'favorite' => FALSE,
-					'refineAction' => array(
-						'url' => $this->formatter->formatUrl('', $urlParameters),
-						'parameters' => $urlParameters
-					),
+					'refineAction' => $this->buildRefineAction($index, $refinement->property, $value->value),
 					'preview' => $preview,
 					'resources' => $resources
 				);
@@ -1381,42 +1378,6 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				array_pop($parents);
 			}
 
-			// build url
-			$urlAddParameters = array(
-				'context' => $this->encodeSequentialContexts(),
-				'guidance' => '+'.$attribute->type,
-				'property' => $attribute->property
-			);
-			$urlSetParameters = array(
-				'context' => $this->encodeSequentialContexts(),
-				'guidance' => $attribute->type,
-				'property' => $attribute->property
-			);
-			$urlRemoveParameters = array(
-				'context' => $this->encodeSequentialContexts(),
-				'guidance' => '-'.$attribute->property
-			);
-			if (in_array('hierarchical', $attribute->propertyFlags)) {
-				$urlAddParameters['hierarchical'] = $depth + 1;
-				$urlSetParameters['hierarchical'] = $depth + 1;
-				for ($i = 0; $i < $depth; $i++) {
-					$urlAddParameters['value'.$i] = $parents[$i]->data;
-					$urlSetParameters['value'.$i] = $parents[$i]->data;
-				}
-				$urlAddParameters['value'.$depth] = $value->data;
-				$urlSetParameters['value'.$depth] = $value->data;
-			} else {
-				if ($attribute->type == 'dateRange' || $attribute->type == 'numberRange') {
-					$urlAddParameters['mode'] = 'range';
-					$urlSetParameters['mode'] = 'range';
-				}
-				$urlAddParameters['value'] = $value->data;
-				$urlSetParameters['value'] = $value->data;
-			}
-			if ($selectedFilter) {
-				$urlRemoveParameters = $selectedFilter['removeAction']['parameters'];
-			}
-
 			// select preview
 			$preview = NULL;
 			$resources = array();
@@ -1450,18 +1411,9 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				'population' => $value->population,
 				'selected' => $selected,
 				'filtering' => $value->population < $this->getResultsTotal(),
-				'addAction' => array(
-					'url' => $this->formatter->formatUrl('', $urlAddParameters),
-					'parameters' => $urlAddParameters
-				),
-				'setAction' => array(
-					'url' => $this->formatter->formatUrl('', $urlSetParameters),
-					'parameters' => $urlSetParameters
-				),
-				'removeAction' => array(
-					'url' => $this->formatter->formatUrl('', $urlRemoveParameters),
-					'parameters' => $urlRemoveParameters
-				),
+				'addAction' => $this->buildAttributeAddAction($attribute, array_slice($parents, 0, $depth), $value),
+				'setAction' => $this->buildAttributeSetAction($attribute, array_slice($parents, 0, $depth), $value),
+				'removeAction' => $selectedFilter ? $selectedFilter['removeAction'] : $this->buildAttributeRemoveAction($attribute),
 				'preference' => isset($preferences[$name]) && $preferences[$name]['weight'] > 0.1 ? $preferences[$name]['offset'] : 0,
 				'favorite' => FALSE,
 				'preview' => $preview,
@@ -1491,39 +1443,6 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		if (sizeof($list) > 0) {
 			$parentValues = array();
 			foreach ($parents as $parentDepth => $parent) {
-				// build url
-				$urlAddParameters = array(
-					'context' => $this->encodeSequentialContexts(),
-					'guidance' => '+'.$attribute->type,
-					'property' => $attribute->property
-				);
-				$urlSetParameters = array(
-					'context' => $this->encodeSequentialContexts(),
-					'guidance' => $attribute->type,
-					'property' => $attribute->property
-				);
-				$urlRemoveParameters = array(
-					'context' => $this->encodeSequentialContexts(),
-					'guidance' => '-'.$attribute->property
-				);
-				if (in_array('hierarchical', $attribute->propertyFlags)) {
-					$urlAddParameters['hierarchical'] = $parentDepth + 1;
-					$urlSetParameters['hierarchical'] = $parentDepth + 1;
-					for ($i = 0; $i < $parentDepth; $i++) {
-						$urlAddParameters['value'.$i] = $parents[$i]->data;
-						$urlSetParameters['value'.$i] = $parents[$i]->data;
-					}
-					$urlAddParameters['value'.$parentDepth] = $parent->data;
-					$urlSetParameters['value'.$parentDepth] = $parent->data;
-				} else {
-					if ($attribute->type == 'dateRange' || $attribute->type == 'numberRange') {
-						$urlAddParameters['mode'] = 'range';
-						$urlSetParameters['mode'] = 'range';
-					}
-					$urlAddParameters['value'] = $parent->data;
-					$urlSetParameters['value'] = $parent->data;
-				}
-
 				$name = $this->formatter->formatAttributeValue($attribute, 0, $parent);
 				$parentValues[] = array(
 					'depth' => $parentDepth,
@@ -1531,19 +1450,10 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					'population' => $parent->population,
 					'selected' => TRUE,
 					'filtering' => FALSE,
-					'addAction' => array(
-						'url' => $this->formatter->formatUrl('', $urlAddParameters),
-						'parameters' => $urlAddParameters
-					),
-					'setAction' => array(
-						'url' => $this->formatter->formatUrl('', $urlSetParameters),
-						'parameters' => $urlSetParameters
-					),
-					'removeAction' => array(
-						'url' => $this->formatter->formatUrl('', $urlRemoveParameters),
-						'parameters' => $urlRemoveParameters
-					),
-					'preference' => 0,
+					'addAction' => $this->buildAttributeAddAction($attribute, array_slice($parents, 0, $parentDepth), $parent),
+					'setAction' => $this->buildAttributeSetAction($attribute, array_slice($parents, 0, $parentDepth), $parent),
+					'removeAction' => $this->buildAttributeRemoveAction($attribute),
+					'preference' => isset($preferences[$name]) && $preferences[$name]['weight'] > 0.1 ? $preferences[$name]['offset'] : 0,
 					'favorite' => FALSE,
 					'value' => $parent
 				);
@@ -1689,42 +1599,6 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				array_pop($parents);
 			}
 
-			// build actions
-			$urlAddParameters = array(
-				'context' => $this->encodeSequentialContexts(),
-				'guidance' => '+'.$attribute->type,
-				'property' => $attribute->property
-			);
-			$urlSetParameters = array(
-				'context' => $this->encodeSequentialContexts(),
-				'guidance' => $attribute->type,
-				'property' => $attribute->property
-			);
-			$urlRemoveParameters = array(
-				'context' => $this->encodeSequentialContexts(),
-				'guidance' => '-'.$attribute->property
-			);
-			if (in_array('hierarchical', $attribute->propertyFlags)) {
-				$urlAddParameters['hierarchical'] = $depth + 1;
-				$urlSetParameters['hierarchical'] = $depth + 1;
-				for ($i = 0; $i < $depth; $i++) {
-					$urlAddParameters['value'.$i] = $parents[$i]->data;
-					$urlSetParameters['value'.$i] = $parents[$i]->data;
-				}
-				$urlAddParameters['value'.$depth] = $value->data;
-				$urlSetParameters['value'.$depth] = $value->data;
-			} else {
-				if ($attribute->type == 'dateRange' || $attribute->type == 'numberRange') {
-					$urlAddParameters['mode'] = 'range';
-					$urlSetParameters['mode'] = 'range';
-				}
-				$urlAddParameters['value'] = $value->data;
-				$urlSetParameters['value'] = $value->data;
-			}
-			if ($selectedFilter) {
-				$urlRemoveParameters = $selectedFilter['removeAction']['parameters'];
-			}
-
 			// select preview
 			$preview = NULL;
 			$resources = array();
@@ -1758,18 +1632,9 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				'population' => $value->population,
 				'selected' => $selected,
 				'filtering' => !$selected,
-				'addAction' => array(
-					'url' => $this->formatter->formatUrl('', $urlAddParameters),
-					'parameters' => $urlAddParameters
-				),
-				'setAction' => array(
-					'url' => $this->formatter->formatUrl('', $urlSetParameters),
-					'parameters' => $urlSetParameters
-				),
-				'removeAction' => array(
-					'url' => $this->formatter->formatUrl('', $urlRemoveParameters),
-					'parameters' => $urlRemoveParameters
-				),
+				'addAction' => $this->buildAttributeAddAction($attribute, array_slice($parents, 0, $depth), $value),
+				'setAction' => $this->buildAttributeSetAction($attribute, array_slice($parents, 0, $depth), $value),
+				'removeAction' => $selectedFilter ? $selectedFilter['removeAction'] : $this->buildAttributeRemoveAction($attribute),
 				'preference' => isset($preferences[$name]) && $preferences[$name]['weight'] > 0.1 && $preferences[$name]['offset'] < 3,
 				'favorite' => FALSE,
 				'preview' => $preview,
@@ -1799,39 +1664,6 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		if (sizeof($list) > 0) {
 			$parentValues = array();
 			foreach ($parents as $parentDepth => $parent) {
-				// build url
-				$urlAddParameters = array(
-					'context' => $this->encodeSequentialContexts(),
-					'guidance' => '+'.$attribute->type,
-					'property' => $attribute->property
-				);
-				$urlSetParameters = array(
-					'context' => $this->encodeSequentialContexts(),
-					'guidance' => $attribute->type,
-					'property' => $attribute->property
-				);
-				$urlRemoveParameters = array(
-					'context' => $this->encodeSequentialContexts(),
-					'guidance' => '-'.$attribute->property
-				);
-				if (in_array('hierarchical', $attribute->propertyFlags)) {
-					$urlAddParameters['hierarchical'] = $parentDepth + 1;
-					$urlSetParameters['hierarchical'] = $parentDepth + 1;
-					for ($i = 0; $i < $parentDepth; $i++) {
-						$urlAddParameters['value'.$i] = $parents[$i]->data;
-						$urlSetParameters['value'.$i] = $parents[$i]->data;
-					}
-					$urlAddParameters['value'.$parentDepth] = $parent->data;
-					$urlSetParameters['value'.$parentDepth] = $parent->data;
-				} else {
-					if ($attribute->type == 'dateRange' || $attribute->type == 'numberRange') {
-						$urlAddParameters['mode'] = 'range';
-						$urlSetParameters['mode'] = 'range';
-					}
-					$urlAddParameters['value'] = $parent->data;
-					$urlSetParameters['value'] = $parent->data;
-				}
-
 				$name = $this->formatter->formatAttributeValue($attribute, 0, $parent);
 				$parentValues[] = array(
 					'depth' => $parentDepth,
@@ -1840,18 +1672,11 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					'selected' => TRUE,
 					'filtering' => FALSE,
 					'last' => sizeof($parentValues) == sizeof($parents) - 1,
-					'addAction' => array(
-						'url' => $this->formatter->formatUrl('', $urlAddParameters),
-						'parameters' => $urlAddParameters
-					),
-					'setAction' => array(
-						'url' => $this->formatter->formatUrl('', $urlSetParameters),
-						'parameters' => $urlSetParameters
-					),
-					'removeAction' => array(
-						'url' => $this->formatter->formatUrl('', $urlRemoveParameters),
-						'parameters' => $urlRemoveParameters
-					),
+					'addAction' => $this->buildAttributeAddAction($attribute, array_slice($parents, 0, $parentDepth), $parent),
+					'setAction' => $this->buildAttributeSetAction($attribute, array_slice($parents, 0, $parentDepth), $parent),
+					'removeAction' => $this->buildAttributeRemoveAction($attribute),
+					'preference' => isset($preferences[$name]) && $preferences[$name]['weight'] > 0.1 && $preferences[$name]['offset'] < 3,
+					'favorite' => FALSE,
 					'value' => $parent
 				);
 			}
@@ -1883,6 +1708,215 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			);
 		}
 		return NULL;
+	}
+
+
+	private function buildQueryAction($query) {
+		return array(
+			'uri' => $this->buildUriGuidance(),
+			'parameters' => array(
+				'catq' => $query
+			)
+		);
+	}
+
+	private function buildRefineAction($index, $property = NULL, $value = NULL) {
+		if ($property && $value) {
+			return array(
+				'uri' => $this->buildUriGuidance(),
+				'parameters' => array(
+					'refine' => $index,
+					'property' => $property,
+					'value' => $value
+				)
+			);
+		}
+		return array(
+			'uri' => $this->buildUriGuidance(),
+			'parameters' => array(
+				'refine' => $index
+			)
+		);
+	}
+
+	private function buildGuidanceRemoveAction($property) {
+		if (is_numeric($property)) {
+			return array(
+				'uri' => $this->buildUriGuidance(),
+				'parameters' => array(
+					'filterdel' => $property
+				)
+			);
+		}
+		if (isset($this->seoPropertyMapping[$property])) {
+			return array(
+				'uri' => $this->buildUriGuidance(array(), array($property)),
+				'uriParameters' => array('attrdel'),
+				'parameters' => array(
+					'attrdel' => $property
+				)
+			);
+		}
+		return array(
+			'uri' => $this->buildUriGuidance(),
+			'parameters' => array(
+				'attrdel' => $property
+			)
+		);
+	}
+
+	private function buildScenarioAction($scenario) {
+		return array(
+			'uri' => $this->buildUriGuidance(),
+			'parameters' => array(
+				'scenario' => $scenario
+			)
+		);
+	}
+
+	private function buildAttributeAddAction($attribute, $parents, $value) {
+		if ($attribute->type == 'text') {
+			if (in_array('hierarchical', $attribute->propertyFlags)) {
+				$data = array();
+				foreach ($parents as $parent) {
+					$data[] = $parent->data[0];
+				}
+				$data[] = $value->data[0];
+				return array(
+					'uri' => $this->buildUriGuidance(),
+					'parameters' => array(
+						'thattradd' => array($attribute->property => $this->optimizeArray($data))
+					)
+				);
+			}
+			return array(
+				'uri' => $this->buildUriGuidance(),
+				'parameters' => array(
+					'tattradd' => array($attribute->property => $this->optimizeArray($value->data))
+				)
+			);
+		}
+		if ($attribute->type == 'dateRange') {
+			return array(
+				'uri' => $this->buildUriGuidance(),
+				'parameters' => array(
+					'dattradd' => array($attribute->property => implode('|', $value->data))
+				)
+			);
+		}
+		if ($attribute->type == 'numberRange') {
+			return array(
+				'uri' => $this->buildUriGuidance(),
+				'parameters' => array(
+					'nattradd' => array($attribute->property => implode('|', $value->data))
+				)
+			);
+		}
+		throw new Exception();
+	}
+
+	private function buildAttributeSetAction($attribute, $parents, $value) {
+		if ($attribute->type == 'text') {
+			if (in_array('hierarchical', $attribute->propertyFlags)) {
+				$data = array();
+				foreach ($parents as $parent) {
+					$data[] = $parent->data[0];
+				}
+				$data[] = $value->data[0];
+				return array(
+					'uri' => $this->buildUriGuidance(),
+					'parameters' => array(
+						'thattr' => array($attribute->property => $this->optimizeArray($data))
+					)
+				);
+			}
+			if (isset($this->seoPropertyMapping[$attribute->property])) {
+				return array(
+					'uri' => $this->buildUriGuidance(array($attribute->property => $value->data)),
+					'uriParameters' => array('tattr'),
+					'parameters' => array(
+						'tattr' => array($attribute->property => $this->optimizeArray($value->data))
+					)
+				);
+			}
+			return array(
+				'uri' => $this->buildUriGuidance(),
+				'parameters' => array(
+					'tattr' => array($attribute->property => $this->optimizeArray($value->data))
+				)
+			);
+		}
+		if ($attribute->type == 'dateRange') {
+			return array(
+				'uri' => $this->buildUriGuidance(),
+				'parameters' => array(
+					'dattr' => array($attribute->property => implode('|', $value->data))
+				)
+			);
+		}
+		if ($attribute->type == 'numberRange') {
+			return array(
+				'uri' => $this->buildUriGuidance(),
+				'parameters' => array(
+					'nattr' => array($attribute->property => implode('|', $value->data))
+				)
+			);
+		}
+		throw new Exception();
+	}
+
+	private function buildAttributeRemoveAction($attribute) {
+		if (isset($this->seoPropertyMapping[$attribute->property])) {
+			return array(
+				'uri' => $this->buildUriGuidance(array(), array($attribute->property)),
+				'uriParameters' => array('attrdel'),
+				'parameters' => array(
+					'attrdel' => $attribute->property
+				)
+			);
+		}
+		return array(
+			'uri' => $this->buildUriGuidance(),
+			'parameters' => array(
+				'attrdel' => $attribute->property
+			)
+		);
+	}
+
+	private function buildUriGuidance($included = array(), $excluded = array()) {
+		if (sizeof($included) == 0 && sizeof($excluded) == 0 && $this->_uriGuidancesCache) {
+			return $this->_uriGuidancesCache;
+		}
+
+		$guidances = array();
+		foreach ($this->_uriGuidances as $property => $value) {
+			if (in_array($property, $excluded)) {
+				continue;
+			}
+			$guidances[$property] = $value;
+		}
+		foreach ($included as $property => $value) {
+			if (in_array($property, $excluded)) {
+				continue;
+			}
+			$guidances[$property] = $value;
+		}
+		uksort($guidances, array($this, 'sortSEOGuidance'));
+
+		$uri = array();
+		foreach ($guidances as $property => $value) {
+			$uri[] = urlencode($this->seoPropertyMapping[$property]);
+			$uri[] = urlencode(implode('|', $value));
+		}
+		if (sizeof($uri) > 0) {
+			$uri = '/'.implode('/', $uri);
+		} else {
+			$uri = '';
+		}
+		if (sizeof($included) == 0 && sizeof($excluded) == 0) {
+			$this->_uriGuidancesCache = $uri;
+		}
+		return $uri;
 	}
 
 
@@ -1946,6 +1980,19 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		return $list;
 	}
 
+	/**
+	 * Optimize array encoding
+	 *
+	 * @param $list input list
+	 * @return optimized list
+	 */
+	private function optimizeArray($list) {
+		if (sizeof($list) == 1) {
+			return $list[0];
+		}
+		return $list;
+	}
+
 
 	/**
 	 * Called to sort object by weight
@@ -1969,6 +2016,22 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			return -1;
 		} else if ($a['distance'] > $b['distance']) {
 			return 1;
+		}
+		return 0;
+	}
+
+	/**
+	 * Called to sort SEO properties
+	 *
+	 */
+	private function sortSEOGuidance($a, $b) {
+		foreach ($this->seoPropertyMapping as $src => $dst) {
+			if ($a == $src) {
+				return -1;
+			}
+			if ($b == $src) {
+				return 1;
+			}
 		}
 		return 0;
 	}

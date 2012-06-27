@@ -143,8 +143,45 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 						'data' => $data
 					);
 				}
+			} else {
+//				throw new Exception('Cannot decode context');
 			}
 		}
+	}
+
+	/**
+	 * Merge given guidance path into model context
+	 *
+	 * @param $mapping property mapping
+	 * @param $uri guidance path
+	 */
+	public function parseSEO($mapping, $uri) {
+		if (!isset($this->sequentialContexts['model'])) {
+			$this->sequentialContexts['model'] = array(
+				'level' => '',
+				'mode' => 'sequential',
+				'data' => json_encode(array('guidances' => array()))
+			);
+		}
+		$model = @json_decode($this->sequentialContexts['model']['data'], TRUE);
+		$path = explode('/', $uri);
+		for ($i = 0; $i + 1 < sizeof($path); $i += 2) {
+			$property = urldecode($path[$i]);
+			$data = explode('|', urldecode($path[$i + 1]));
+
+			if (isset($mapping[$property])) {
+				if (!isset($model['guidances'])) {
+					$model['guidances'] = array();
+				}
+				$model['guidances'][] = array(
+					'type' => 'text',
+					'mode' => 'guidance',
+					'property' => $mapping[$property],
+					'data' => $data
+				);
+			}
+		}
+		$this->sequentialContexts['model']['data'] = json_encode($model);
 	}
 
 
@@ -247,8 +284,6 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 
 		// add default request
 		$extraSearch = FALSE;
-		$action = 'search';
-		$variables = $this->buildInteractionVariables($options);
 		if (isset($options['batch'])) {
 			foreach ($options['batch'] as $item) {
 				$action = 'search';
@@ -265,82 +300,204 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 			}
 		} else if (isset($options['action'])) {
 			$action = strval($options['action']);
-			switch ($options['action']) {
-			case 'query':
-			case 'refine':
-			case 'clearQuery':
-			case 'addGuidance':
-			case 'setGuidance':
-			case 'delGuidance':
-				$extraSearch = TRUE;
-				break;
-			}
-		} else if ($this->requestExists('detail')) {
-			$action = 'detail';
-			if ($this->requestExists('detailTarget')) {
-				$variables['scenarioTarget'] = $this->requestString('detailTarget');
-			}
-			$variables['sourceFilter'] = '@type:instance&@id:"'.addcslashes($this->requestString('detail'), '"').'"';
-		} else if ($this->requestExists('query')) {
-			$action = 'query';
-			$variables['queryText'] = $this->requestString('query');
-			if ($this->requestExists('ac')) {
-				$variables['ac'] = $this->requestNumber('ac');
-			}
+			$variables = $this->buildInteractionVariables($options);
+			$request->appendRequest($action, $variables);
+		} else {
 			$extraSearch = TRUE;
-		} else if ($this->requestExists('refine')) {
-			if ($this->requestExists('clear')) {
-				$action = 'clearQuery';
-				$variables['keepTerms'] = TRUE;
-			} else {
-				$action = 'refine';
-				$variables['refine'] = $this->requestNumber('refine');
-				$variables['property'] = $this->requestString('property');
-				$variables['value'] = $this->requestString('value');
+			if ($this->requestExists('catq')) {
+				$variables = $this->buildInteractionVariables($options);
+				$variables['queryText'] = $this->requestString('catq');
+				$request->appendRequest('query', $variables);
 			}
-			$extraSearch = TRUE;
-		} else if ($this->requestExists('guidance')) {
-			$guidance = $this->requestString('guidance');
-			if (is_numeric($guidance)) {
-				$action = 'delGuidance';
-				$variables['guidance'] = $this->requestNumber('guidance');
-				$variables['property'] = '';
-			} else if (strpos($guidance, '-') === 0) {
-				$action = 'delGuidance';
-				$variables['guidance'] = -1;
-				$variables['property'] = substr($guidance, 1);
-			} else {
-				if (strpos($guidance, '+') === 0 || strpos($guidance, ' ') === 0) {
-					$action = 'addGuidance';
-					$variables['type'] = substr($guidance, 1);
-				} else {
-					$action = 'setGuidance';
-					$variables['type'] = $guidance;
+			if ($this->requestExists('query')) {
+				$variables = $this->buildInteractionVariables($options);
+				$variables['queryText'] = $this->requestString('query');
+				if ($this->requestExists('ac')) {
+					$variables['ac'] = $this->requestNumber('ac');
 				}
-				if ($this->requestNumber('hierarchical') > 0) {
-					$variables['mode'] = 'hierarchical';
-				} else if ($this->requestExists('mode')) {
-					$variables['mode'] = $this->requestString('mode');
+				$request->appendRequest('query', $variables);
+			}
+			if ($this->requestExists('refine')) {
+				if ($this->requestNumber('refine') < 0) {
+					$variables = $this->buildInteractionVariables($options);
+					$variables['keepTerms'] = TRUE;
+					$request->appendRequest('clearQuery', $variables);
 				} else {
+					$variables = $this->buildInteractionVariables($options);
+					$variables['refine'] = $this->requestNumber('refine');
+					$variables['property'] = $this->requestString('property');
+					$variables['value'] = $this->requestString('value');
+					$request->appendRequest('refine', $variables);
+				}
+			}
+
+			if ($this->requestExists('dattradd')) {
+				foreach ($this->requestStringArray('dattradd') as $property => $value) {
+					$variables = $this->buildInteractionVariables($options);
+					$variables['property'] = $property;
+					$variables['type'] = 'dateRange';
+					$variables['mode'] = 'range';
+					$variables['value'] = explode('|', $value);
+					$request->appendRequest('addGuidance', $variables);
+				}
+			}
+			if ($this->requestExists('dattr')) {
+				foreach ($this->requestStringArray('dattr') as $property => $value) {
+					$variables = $this->buildInteractionVariables($options);
+					$variables['property'] = $property;
+					$variables['type'] = 'dateRange';
+					$variables['mode'] = 'range';
+					$variables['value'] = explode('|', $value);
+					$request->appendRequest('setGuidance', $variables);
+				}
+			}
+			if ($this->requestExists('nattradd')) {
+				foreach ($this->requestStringArray('nattradd') as $property => $value) {
+					$variables = $this->buildInteractionVariables($options);
+					$variables['property'] = $property;
+					$variables['type'] = 'numberRange';
+					$variables['mode'] = 'range';
+					$variables['value'] = explode('|', $value);
+					$request->appendRequest('addGuidance', $variables);
+				}
+			}
+			if ($this->requestExists('nattr')) {
+				foreach ($this->requestStringArray('nattr') as $property => $value) {
+					$variables = $this->buildInteractionVariables($options);
+					$variables['property'] = $property;
+					$variables['type'] = 'numberRange';
+					$variables['mode'] = 'range';
+					$variables['value'] = explode('|', $value);
+					$request->appendRequest('setGuidance', $variables);
+				}
+			}
+			if ($this->requestExists('tattradd')) {
+				foreach ($this->requestStringArray('tattradd') as $property => $value) {
+					$variables = $this->buildInteractionVariables($options);
+					$variables['property'] = $property;
+					$variables['type'] = 'text';
 					$variables['mode'] = 'guidance';
-				}
-				$variables['property'] = $this->requestString('property');
-				if ($variables['mode'] == 'hierarchical') {
-					$variables['value'] = array();
-					for ($i = 0; $i < $this->requestNumber('hierarchical'); $i++) {
-						$value = $this->requestStringArray('value'.$i);
-						$variables['value'][] = $value[0];
-					}
-				} else {
-					$variables['value'] = $this->requestStringArray('value');
+					$variables['value'] = is_array($value) ? $value : array($value);
+					$request->appendRequest('addGuidance', $variables);
 				}
 			}
-			$extraSearch = TRUE;
-		} else if ($this->requestExists('feedback')) {
-			$action = 'feedback';
-			$variables['weight'] = $this->requestNumber('feedback');
+			if ($this->requestExists('tattr')) {
+				foreach ($this->requestStringArray('tattr') as $property => $value) {
+					$variables = $this->buildInteractionVariables($options);
+					$variables['property'] = $property;
+					$variables['type'] = 'text';
+					$variables['mode'] = 'guidance';
+					$variables['value'] = is_array($value) ? $value : array($value);
+					$request->appendRequest('setGuidance', $variables);
+				}
+			}
+			if ($this->requestExists('thattradd')) {
+				foreach ($this->requestStringArray('thattradd') as $property => $value) {
+					$variables = $this->buildInteractionVariables($options);
+					$variables['property'] = $property;
+					$variables['type'] = 'text';
+					$variables['mode'] = 'hierarchical';
+					$variables['value'] = is_array($value) ? $value : array($value);
+					$request->appendRequest('addGuidance', $variables);
+				}
+			}
+			if ($this->requestExists('thattr')) {
+				foreach ($this->requestStringArray('thattr') as $property => $value) {
+					$variables = $this->buildInteractionVariables($options);
+					$variables['property'] = $property;
+					$variables['type'] = 'text';
+					$variables['mode'] = 'hierarchical';
+					$variables['value'] = is_array($value) ? $value : array($value);
+					$request->appendRequest('setGuidance', $variables);
+				}
+			}
+			if ($this->requestExists('attrdel')) {
+				foreach ($this->requestStringArray('attrdel') as $property) {
+					$variables = $this->buildInteractionVariables($options);
+					if (is_numeric($property)) {
+						$variables['guidance'] = intval($property);
+						$variables['property'] = '';
+					} else {
+						$variables['guidance'] = -1;
+						$variables['property'] = $property;
+					}
+					$request->appendRequest('delGuidance', $variables);
+				}
+			}
+			if ($this->requestExists('filterdel')) {
+				foreach ($this->requestStringArray('filterdel') as $index) {
+					$variables = $this->buildInteractionVariables($options);
+					$variables['guidance'] = intval($index);
+					$variables['property'] = '';
+					$request->appendRequest('delGuidance', $variables);
+				}
+			}
+
+			// obsolete
+			if ($this->requestExists('detail')) {
+/*				$variables = $this->buildInteractionVariables($options);
+				if ($this->requestExists('detailTarget')) {
+					$variables['scenarioTarget'] = $this->requestString('detailTarget');
+				}
+				$variables['sourceFilter'] = '@type:instance&@id:"'.addcslashes($this->requestString('detail'), '"').'"';
+				$request->appendRequest('detail', $variables);
+				$extraSearch = FALSE;*/
+
+				throw new Exception('action detail is obsolete');
+			}
+			if ($this->requestExists('feedback')) {
+/*				$action = 'feedback';
+				$variables = $this->buildInteractionVariables($options);
+				$variables['weight'] = $this->requestNumber('feedback');
+				$request->appendRequest($action, $variables);
+				$extraSearch = FALSE;*/
+
+				throw new Exception('action feedback is obsolete');
+			}
+			if ($this->requestExists('guidance')) {
+/*				$guidance = $this->requestString('guidance');
+				if (is_numeric($guidance)) {
+					$variables = $this->buildInteractionVariables($options);
+					$variables['guidance'] = $this->requestNumber('guidance');
+					$variables['property'] = '';
+					$request->appendRequest('delGuidance', $variables);
+/*				} else if (strpos($guidance, '-') === 0) {
+					$variables = $this->buildInteractionVariables($options);
+					$variables['guidance'] = -1;
+					$variables['property'] = substr($guidance, 1);
+					$request->appendRequest('delGuidance', $variables);
+				} else {
+					$variables = $this->buildInteractionVariables($options);
+					if (strpos($guidance, '+') === 0 || strpos($guidance, ' ') === 0) {
+						$action = 'addGuidance';
+						$variables['type'] = substr($guidance, 1);
+					} else {
+						$action = 'setGuidance';
+						$variables['type'] = $guidance;
+					}
+					if ($this->requestNumber('hierarchical') > 0) {
+						$variables['mode'] = 'hierarchical';
+					} else if ($this->requestExists('mode')) {
+						$variables['mode'] = $this->requestString('mode');
+					} else {
+						$variables['mode'] = 'guidance';
+					}
+					$variables['property'] = $this->requestString('property');
+					if ($variables['mode'] == 'hierarchical') {
+						$variables['value'] = array();
+						for ($i = 0; $i < $this->requestNumber('hierarchical'); $i++) {
+							$value = $this->requestStringArray('value'.$i);
+							$variables['value'][] = $value[0];
+						}
+					} else {
+						$variables['value'] = $this->requestStringArray('value');
+					}
+					$request->appendRequest($action, $variables);*/
+//				} else {
+					throw new Exception('action guidance is obsolete');
+//				}
+			}
 		}
-		$request->appendRequest($action, $variables);
 
 		// add extra search request?
 		if ($extraSearch) {
@@ -368,8 +525,8 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 		}
 		if ($this->requestExists('pageSize')) {
 			$variables['pageSize'] = $this->requestNumber('pageSize');
-		} else if (isset($this->model->pageSize)) {
-			$variables['pageSize'] = $this->model->pageSize;
+		} else if (isset($options['pageSize'])) {
+			$query['pageSize'] = $options['pageSize'];
 		} else if (isset($this->userState->pageSize)) {
 			$variables['pageSize'] = $this->userState->pageSize;
 		}
@@ -381,17 +538,25 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 		}
 		if ($this->requestExists('filter')) {
 			$query['filter'] = $this->requestString('filter');
+		} else if (isset($options['filter'])) {
+			$query['filter'] = $options['filter'];
 		}
 		if ($this->requestExists('scorer')) {
 			$query['scorer'] = $this->requestString('scorer');
+		} else if (isset($options['scorer'])) {
+			$query['scorer'] = $options['scorer'];
 		}
 		if ($this->requestExists('snippet')) {
 			$query['snippet'] = $this->requestString('snippet');
+		} else if (isset($options['snippet'])) {
+			$query['snippet'] = $options['snippet'];
 		}
 		if ($this->requestExists('ranking')) {
 			$query['ranking'] = $this->requestString('ranking');
-		} else if (isset($this->model->ranking)) {
-			$query['ranking'] = $this->model->ranking;
+		} else if (isset($options['ranking'])) {
+			$query['ranking'] = $options['ranking'];
+		} else if (isset($this->userState->ranking)) {
+			$query['ranking'] = $this->userState->ranking;
 		}
 		if (sizeof($query) > 0) {
 			$variables['query'] = $query;
@@ -400,8 +565,8 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 		// scenario
 		if ($this->requestExists('scenario')) {
 			$variables['scenario'] = $this->requestString('scenario');
-		} else if (isset($this->model->scenario)) {
-			$variables['scenario'] = $this->model->scenario;
+		} else if (isset($this->userState->scenario)) {
+			$variables['scenario'] = $this->userState->scenario;
 		}
 
 		// custom overrides

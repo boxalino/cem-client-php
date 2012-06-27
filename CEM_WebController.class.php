@@ -66,6 +66,16 @@ class CEM_WebController {
 	protected $dialog = 'standard';
 
 	/**
+	 * SEO enabled
+	 */
+	protected $seoEnabled = FALSE;
+
+	/**
+	 * SEO property mapping
+	 */
+	protected $seoPropertyMapping = array();
+
+	/**
 	 * State handler
 	 */
 	protected $stateHandler = NULL;
@@ -280,6 +290,20 @@ class CEM_WebController {
 	}
 
 
+
+	/**
+	 * Enable SEO-friendly urls
+	 *
+	 * @param $uri guidance path
+	 */
+	public function enableSeo($uri = '') {
+		if ($this->requestHandler) {
+			$this->requestHandler->parseSEO(array_flip($this->seoPropertyMapping), $uri);
+		}
+		$this->seoEnabled = TRUE;
+	}
+
+
 	/**
 	 * Destroy client state gracefully if any
 	 *
@@ -337,11 +361,36 @@ class CEM_WebController {
 		// process interaction
 		$this->gs($request, $response, $options, $useCache);
 
-		$interaction = new $this->gsInteractionClass($this->crypto, $request, $response, $options, $this->formatter);
+		$interaction = new $this->gsInteractionClass($this->crypto, $request, $response, $options, $this->formatter, $this->seoEnabled ? $this->seoPropertyMapping : array());
 		if ($useCache) {
 			$this->lastInteraction = $interaction;
 		}
 		return $interaction;
+	}
+
+	/**
+	 * Process client interaction (detail)
+	 *
+	 * @param $sourceIds source identifiers
+	 * @param $options interaction options passed to handlers
+	 * @param $useCache optional parameter to use cache (defaults to TRUE)
+	 * @return wrapped cem response
+	 */
+	public function interactDetail($sourceIds = array(), $options = array(), $useCache = TRUE) {
+		$ids = array();
+		foreach ($sourceIds as $sourceId) {
+			$ids[] = '"'.addcslashes($sourceId, '"').'"';
+		}
+
+		$batch = isset($options['batch']) ? $options['batch'] : array();
+		$batch[] = array(
+			'action' => 'detail',
+			'variables' => array(
+				'sourceFilter' => '@type:instance&@id:('.implode(',', $ids).')'
+			)
+		);
+		$options['batch'] = $batch;
+		return $this->interact($options, $useCache);
 	}
 
 	/**

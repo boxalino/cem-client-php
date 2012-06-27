@@ -195,22 +195,40 @@ abstract class CEM_AbstractWebHandler {
 	 * @return parameter value or default value if doesn't exist
 	 */
 	protected function requestStringArray($key, $default = array()) {
-		$array = array();
 		if (isset($_REQUEST[$this->requestKey($key)])) {
 			$value = $_REQUEST[$this->requestKey($key)];
 			if (is_array($value)) {
+				$array = array();
 				foreach ($value as $key => $item) {
-					$array[$this->filterRawString($key)] = $this->filterRawString($item);
+					$array[$this->filterRawString($key)] = $this->filterArray($item);
 				}
-			} else {
-				$array[] = $this->filterRawString($value);
+				return $array;
 			}
-		} else {
-			foreach ($default as $value) {
-				$array[] = strval($value);
-			}
+			return array($this->filterRawString($value));
+		}
+
+		$array = array();
+		foreach ($default as $value) {
+			$array[] = strval($value);
 		}
 		return $array;
+	}
+
+	/**
+	 * Convert array
+	 *
+	 * @param $value raw array
+	 * @return formatted array
+	 */
+	protected function filterArray($value) {
+		if (is_array($value)) {
+			$array = array();
+			foreach ($value as $key => $item) {
+				$array[$this->filterRawString($key)] = $this->filterArray($item);
+			}
+			return $array;
+		}
+		return $this->filterRawString($value);
 	}
 
 	/**

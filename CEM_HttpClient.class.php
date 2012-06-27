@@ -73,9 +73,21 @@ class CEM_HttpClient {
 	 */
 	public static function expandKVList($parameters, $bracket = FALSE) {
 		$list = array();
+		$i = 0;
+		$num = TRUE;
+		foreach ($parameters as $k => $v) {
+			if ($k !== $i) {
+				$num = FALSE;
+				break;
+			}
+		}
 		foreach ($parameters as $k => $v) {
 			if ($bracket) {
-				$k = '['.$k.']';
+				if ($num) {
+					$k = '[]';
+				} else {
+					$k = '['.$k.']';
+				}
 			}
 			if (strpos($k, '__') === 0 && is_array($v) && sizeof($v) == 2) {
 				$list[$v[0]] = $v[1];
@@ -137,14 +149,21 @@ class CEM_HttpClient {
 				$url[] = $urlInfo['path'];
 			}
 			if (isset($urlInfo['query']) && strlen($urlInfo['query']) > 0) {
-				$url[] = '?'.$urlInfo['query'];
-				if (sizeof($parameters) > 0) {
-					$url[] = '&';
+				foreach (explode('&', $urlInfo['query']) as $item) {
+					$kv = explode('=', $item);
+					if (sizeof($kv) != 2) {
+						continue;
+					}
+					$k = urldecode($kv[0]);
+					if (!isset($parameters[$k])) {
+						$parameters[$k] = urldecode($kv[1]);
+					}
 				}
-			} else if (sizeof($parameters) > 0) {
-				$url[] = '?';
 			}
-			$url[] = self::buildKVList(self::convertParametersEncoding($parameters));
+			if (sizeof($parameters) > 0) {
+				$url[] = '?';
+				$url[] = self::buildKVList(self::convertParametersEncoding($parameters));
+			}
 			if (strlen($fragment) > 0) {
 				$url[] = '#'.urlencode($fragment);
 			} else if (isset($urlInfo['fragment'])) {
