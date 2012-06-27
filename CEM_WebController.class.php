@@ -298,7 +298,7 @@ class CEM_WebController {
 	 */
 	public function enableSeo($uri = '') {
 		if ($this->requestHandler) {
-			$this->requestHandler->parseSEO(array_flip($this->seoPropertyMapping), $uri);
+			$this->requestHandler->parseSEO($this->seoPropertyMapping, $uri);
 		}
 		$this->seoEnabled = TRUE;
 	}

@@ -156,6 +156,10 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 	 * @param $uri guidance path
 	 */
 	public function parseSEO($mapping, $uri) {
+		$path = explode('/', $uri);
+		if (sizeof($path) < 2) {
+			return;
+		}
 		if (!isset($this->sequentialContexts['model'])) {
 			$this->sequentialContexts['model'] = array(
 				'level' => '',
@@ -164,21 +168,44 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 			);
 		}
 		$model = @json_decode($this->sequentialContexts['model']['data'], TRUE);
-		$path = explode('/', $uri);
-		for ($i = 0; $i + 1 < sizeof($path); $i += 2) {
+		$reverseMapping = array();
+		foreach ($mapping as $src => $dst) {
+			$reverseMapping[$dst['map']] = array('type' => $dst['type'], 'map' => $src);
+		}
+		for ($i = 0; $i < sizeof($path); $i++) {
 			$property = urldecode($path[$i]);
-			$data = explode('|', urldecode($path[$i + 1]));
-
-			if (isset($mapping[$property])) {
-				if (!isset($model['guidances'])) {
-					$model['guidances'] = array();
+			if (!isset($reverseMapping[$property])) {
+				continue;
+			}
+			$data = array();
+			while ($i + 1 < sizeof($path)) {
+				$item = urldecode($path[$i + 1]);
+				if (isset($reverseMapping[$item])) {
+					break;
 				}
+				$data[] = $item;
+				$i++;
+			}
+			if (!isset($model['guidances'])) {
+				$model['guidances'] = array();
+			}
+			switch ($reverseMapping[$property]['type']) {
+			case 'tattr':
 				$model['guidances'][] = array(
 					'type' => 'text',
 					'mode' => 'guidance',
-					'property' => $mapping[$property],
+					'property' => $reverseMapping[$property]['map'],
 					'data' => $data
 				);
+				break;
+			case 'thattr':
+				$model['guidances'][] = array(
+					'type' => 'text',
+					'mode' => 'hierarchical',
+					'property' => $reverseMapping[$property]['map'],
+					'data' => $data
+				);
+				break;
 			}
 		}
 		$this->sequentialContexts['model']['data'] = json_encode($model);

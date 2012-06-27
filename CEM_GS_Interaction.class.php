@@ -1816,31 +1816,29 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	private function buildAttributeSetAction($attribute, $parents, $value) {
 		if ($attribute->type == 'text') {
 			if (in_array('hierarchical', $attribute->propertyFlags)) {
+				$mode = 'thattr';
 				$data = array();
 				foreach ($parents as $parent) {
 					$data[] = $parent->data[0];
 				}
 				$data[] = $value->data[0];
-				return array(
-					'uri' => $this->buildUriGuidance(),
-					'parameters' => array(
-						'thattr' => array($attribute->property => $this->optimizeArray($data))
-					)
-				);
+			} else {
+				$mode = 'tattr';
+				$data = $value->data;
 			}
 			if (isset($this->seoPropertyMapping[$attribute->property])) {
 				return array(
-					'uri' => $this->buildUriGuidance(array($attribute->property => $value->data)),
-					'uriParameters' => array('tattr'),
+					'uri' => $this->buildUriGuidance(array($attribute->property => $data)),
+					'uriParameters' => array($mode),
 					'parameters' => array(
-						'tattr' => array($attribute->property => $this->optimizeArray($value->data))
+						$mode => array($attribute->property => $this->optimizeArray($value->data))
 					)
 				);
 			}
 			return array(
 				'uri' => $this->buildUriGuidance(),
 				'parameters' => array(
-					'tattr' => array($attribute->property => $this->optimizeArray($value->data))
+					$mode => array($attribute->property => $this->optimizeArray($data))
 				)
 			);
 		}
@@ -1903,8 +1901,10 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 
 		$uri = array();
 		foreach ($guidances as $property => $value) {
-			$uri[] = urlencode($this->seoPropertyMapping[$property]);
-			$uri[] = urlencode(implode('|', $value));
+			$uri[] = urlencode($this->seoPropertyMapping[$property]['map']);
+			foreach ($value as $item) {
+				$uri[] = urlencode($item);
+			}
 		}
 		if (sizeof($uri) > 0) {
 			$uri = '/'.implode('/', $uri);
