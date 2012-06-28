@@ -715,10 +715,12 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		if (isset($group->properties)) {
 			foreach ($group->properties as $property) {
 				$label = $property->id;
-				foreach ($property->names as $name) {
-					if ($name->language == $this->getResponse()->getLanguage()) {
-						$label = $name->value;
-						break;
+				if (isset($property->names)) {
+					foreach ($property->names as $name) {
+						if ($name->language == $this->getResponse()->getLanguage()) {
+							$label = $name->value;
+							break;
+						}
 					}
 				}
 				$this->_properties[$groupId][$property->id] = array(
@@ -732,10 +734,12 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		} else if (isset($group->search->properties)) {
 			foreach ($group->search->properties as $property) {
 				$label = $property->id;
-				foreach ($property->names as $name) {
-					if ($name->language == $this->getResponse()->getLanguage()) {
-						$label = $name->value;
-						break;
+				if (isset($property->names)) {
+					foreach ($property->names as $name) {
+						if ($name->language == $this->getResponse()->getLanguage()) {
+							$label = $name->value;
+							break;
+						}
 					}
 				}
 				$this->_properties[$groupId][$property->id] = array(
