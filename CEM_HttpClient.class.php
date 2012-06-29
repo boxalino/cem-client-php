@@ -73,21 +73,22 @@ class CEM_HttpClient {
 	 */
 	public static function expandKVList($parameters, $bracket = FALSE) {
 		$list = array();
-		$i = 0;
+/*		$i = 0;
 		$num = TRUE;
 		foreach ($parameters as $k => $v) {
 			if ($k !== $i) {
 				$num = FALSE;
 				break;
 			}
-		}
+			$i++;
+		}*/
 		foreach ($parameters as $k => $v) {
 			if ($bracket) {
-				if ($num) {
-					$k = '[]';
-				} else {
+//				if ($num) {
+//					$k = '[]';
+//				} else {
 					$k = '['.$k.']';
-				}
+//				}
 			}
 			if (strpos($k, '__') === 0 && is_array($v) && sizeof($v) == 2) {
 				$list[$v[0]] = $v[1];

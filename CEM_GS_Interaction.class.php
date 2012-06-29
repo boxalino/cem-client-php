@@ -336,7 +336,13 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				unset($parameters[$parameter]);
 			}
 		}
-		return $this->formatter->formatUrl($uri.$action['uri'], $this->encodeQueryContext($parameters, $appendContext));
+		if (strlen($action['uri']) > 0) {
+			if (strlen($uri) == 0 || strrpos($uri, '/') != strlen($uri) - 1) {
+				$uri .= '/';
+			}
+			$uri .= $action['uri'];
+		}
+		return $this->formatter->formatUrl($uri, $this->encodeQueryContext($parameters, $appendContext));
 	}
 
 
@@ -1911,7 +1917,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			}
 		}
 		if (sizeof($uri) > 0) {
-			$uri = '/'.implode('/', $uri);
+			$uri = implode('/', $uri).'/';
 		} else {
 			$uri = '';
 		}

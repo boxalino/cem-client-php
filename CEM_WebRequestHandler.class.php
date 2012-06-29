@@ -183,7 +183,9 @@ class CEM_WebRequestHandler extends CEM_AbstractWebHandler {
 				if (isset($reverseMapping[$item])) {
 					break;
 				}
-				$data[] = $item;
+				if (strlen($item) > 0) {
+					$data[] = $item;
+				}
 				$i++;
 			}
 			if (!isset($model['guidances'])) {

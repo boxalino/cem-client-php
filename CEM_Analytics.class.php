@@ -336,7 +336,11 @@ class CEM_Analytics extends CEM_HttpClient {
 		if (isset($_SERVER['HTTPS'])) {
 			$parameters['connection'] = ($_SERVER['HTTPS'] == 'on' ? 'https' : 'http');
 		}
-		if (isset($_SERVER['REMOTE_ADDR'])) {
+		if (isset($_REQUEST['clientAddress'])) {
+			$parameters['clientAddress'] = $_REQUEST['clientAddress'];
+		} else if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+			$parameters['clientAddress'] = $_SERVER['HTTP_X_FORWARDED_FOR'];
+		} else if (isset($_SERVER['REMOTE_ADDR'])) {
 			$parameters['clientAddress'] = $_SERVER['REMOTE_ADDR'];
 		}
 		if (isset($_SERVER['HTTP_USER_AGENT'])) {
