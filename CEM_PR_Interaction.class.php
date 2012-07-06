@@ -19,7 +19,17 @@
  *
  * @author nitro@boxalino.com
  */
-class CEM_PR_Interaction extends CEM_AbstractWebHandler {
+class CEM_PR_Interaction {
+	/**
+	 * Action encoder
+	 */
+	protected $encoder;
+
+	/**
+	 * Value formatter
+	 */
+	protected $formatter;
+
 	/**
 	 * Current request
 	 */
@@ -35,28 +45,42 @@ class CEM_PR_Interaction extends CEM_AbstractWebHandler {
 	 */
 	protected $options;
 
-	/**
-	 * Value formatter
-	 */
-	protected $formatter;
-
 
 	/**
 	 * Constructor
 	 *
-	 * @param $crypto encryption facility
+	 * @param $encoder action encoder
+	 * @param $formatter value formatter
 	 * @param $request client request reference
 	 * @param $response client response reference
 	 * @param $formatter value formatter
 	 */
-	public function __construct($crypto, $request, $response, $options, $formatter) {
-		parent::__construct($crypto);
+	public function __construct($encoder, $formatter, $request, $response, $options) {
+		$this->encoder = $encoder;
+		$this->formatter = $formatter;
 		$this->request = $request;
 		$this->response = $response;
 		$this->options = $options;
-		$this->formatter = $formatter;
 	}
 
+
+	/**
+	 * Get action encoder
+	 *
+	 * @return action encoder
+	 */
+	public function getEncoder() {
+		return $this->encoder;
+	}
+
+	/**
+	 * Get value formatter
+	 *
+	 * @return value formatter
+	 */
+	public function getFormatter() {
+		return $this->formatter;
+	}
 
 	/**
 	 * Get underlying request
@@ -83,15 +107,6 @@ class CEM_PR_Interaction extends CEM_AbstractWebHandler {
 	 */
 	public function getOptions() {
 		return $this->options;
-	}
-
-	/**
-	 * Get value formatter
-	 *
-	 * @return value formatter
-	 */
-	public function getFormatter() {
-		return $this->formatter;
 	}
 
 

@@ -19,16 +19,16 @@
  *
  * @author nitro@boxalino.com
  */
-class CEM_WebStateHandler extends CEM_AbstractWebHandler {
+class CEM_WebStateHandler {
+	/**
+	 * Encryption facility
+	 */
+	protected $crypto;
+
 	/**
 	 * Cached state
 	 */
 	protected $state = NULL;
-
-	/**
-	 * Json decoded contexts (cache)
-	 */
-	private $_jsonContexts = array();
 
 
 	/**
@@ -37,7 +37,7 @@ class CEM_WebStateHandler extends CEM_AbstractWebHandler {
 	 * @param $crypto encryption facility
 	 */
 	public function __construct($crypto) {
-		parent::__construct($crypto);
+		$this->crypto = $crypto;
 	}
 
 
@@ -75,47 +75,6 @@ class CEM_WebStateHandler extends CEM_AbstractWebHandler {
 	 */
 	public function remove($state) {
 		$this->state = NULL;
-	}
-
-
-	/**
-	 * Get context scopes
-	 *
-	 * @return context scopes
-	 */
-	public function getContext() {
-		$state = $this->read();
-		if (!$state) {
-			$state = $this->create();
-		}
-		return ($state ? $state->get('context', array()) : array());
-	}
-
-	/**
-	 * Get context data
-	 *
-	 * @param $name context name
-	 * @return context data
-	 */
-	public function getContextData($name) {
-		$scopes = $this->getContext();
-		if (isset($scopes[$name])) {
-			return $scopes[$name]['data'];
-		}
-		return '';
-	}
-
-	/**
-	 * Get context data from json
-	 *
-	 * @param $name context name
-	 * @return context data (decoded)
-	 */
-	public function getContextJson($name) {
-		if (!isset($this->_jsonContexts[$name])) {
-			$this->_jsonContexts[$name] = @json_decode($this->getContextData($name));
-		}
-		return $this->_jsonContexts[$name];
 	}
 }
 

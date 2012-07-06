@@ -98,10 +98,10 @@ class CEM_WebStateCookieHandler extends CEM_WebStateHandler {
 					list($name, $value) = explode('=', $item);
 
 					if (strlen($name) > 0) {
-						$context[$this->unescapeValue($name)] = array(
+						$context[$this->crypto->unescapeValue($name)] = array(
 							'level' => 'visitor',
 							'mode' => 'aggregate',
-							'data' => $this->unescapeValue($value)
+							'data' => $this->crypto->unescapeValue($value)
 						);
 					}
 				}
@@ -111,10 +111,10 @@ class CEM_WebStateCookieHandler extends CEM_WebStateHandler {
 					list($name, $value) = explode('=', $item);
 
 					if (strlen($name) > 0) {
-						$context[$this->unescapeValue($name)] = array(
+						$context[$this->crypto->unescapeValue($name)] = array(
 							'level' => 'session',
 							'mode' => 'aggregate',
-							'data' => $this->unescapeValue($value)
+							'data' => $this->crypto->unescapeValue($value)
 						);
 					}
 				}
@@ -124,10 +124,10 @@ class CEM_WebStateCookieHandler extends CEM_WebStateHandler {
 					list($name, $value) = explode('=', $item);
 
 					if (strlen($name) > 0) {
-						$context[$this->unescapeValue($name)] = array(
+						$context[$this->crypto->unescapeValue($name)] = array(
 							'level' => 'search',
 							'mode' => 'aggregate',
-							'data' => $this->unescapeValue($value)
+							'data' => $this->crypto->unescapeValue($value)
 						);
 					}
 				}
@@ -141,8 +141,8 @@ class CEM_WebStateCookieHandler extends CEM_WebStateHandler {
 
 					if (strlen($name) > 0) {
 						$this->state->set(
-							$this->unescapeValue($name),
-							json_decode($this->unescapeValue($value))
+							$this->crypto->unescapeValue($name),
+							json_decode($this->crypto->unescapeValue($value))
 						);
 					}
 				}
@@ -172,21 +172,21 @@ class CEM_WebStateCookieHandler extends CEM_WebStateHandler {
 					if (strlen($visitor) > 0) {
 						$visitor .= ';';
 					}
-					$visitor .= $this->escapeValue($key) . '=' . $this->escapeValue($item['data']);
+					$visitor .= $this->crypto->escapeValue($key) . '=' . $this->crypto->escapeValue($item['data']);
 					break;
 
 				case 'session':
 					if (strlen($session) > 0) {
 						$session .= ';';
 					}
-					$session .= $this->escapeValue($key) . '=' . $this->escapeValue($item['data']);
+					$session .= $this->crypto->escapeValue($key) . '=' . $this->crypto->escapeValue($item['data']);
 					break;
 
 				case 'search':
 					if (strlen($search) > 0) {
 						$search .= ';';
 					}
-					$search .= $this->escapeValue($key) . '=' . $this->escapeValue($item['data']);
+					$search .= $this->crypto->escapeValue($key) . '=' . $this->crypto->escapeValue($item['data']);
 					break;
 				}
 			}
@@ -202,7 +202,7 @@ class CEM_WebStateCookieHandler extends CEM_WebStateHandler {
 				if (strlen($data) > 0) {
 					$data .= ';';
 				}
-				$data .= $this->escapeValue($key) . '=' . $this->escapeValue(json_encode($value));
+				$data .= $this->crypto->escapeValue($key) . '=' . $this->crypto->escapeValue(json_encode($value));
 			}
 		}
 		$this->writeCookies($this->prefix.'e', $data, FALSE);
@@ -240,7 +240,7 @@ class CEM_WebStateCookieHandler extends CEM_WebStateHandler {
 			$data .= $_COOKIE[$prefix.$i];
 			$i++;
 		}
-		return $this->decrypt($data);
+		return $this->crypto->decrypt64($data);
 	}
 
 	/**
@@ -252,7 +252,7 @@ class CEM_WebStateCookieHandler extends CEM_WebStateHandler {
 	 */
 	protected function writeCookies($prefix, $data = '', $visitor = FALSE) {
 		$i = 0;
-		$data = $this->encrypt($data);
+		$data = $this->crypto->encrypt64($data);
 		if ($data) {
 			$offset = 0;
 			while ($offset < strlen($data)) {

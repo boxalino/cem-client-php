@@ -19,7 +19,17 @@
  *
  * @author nitro@boxalino.com
  */
-class CEM_GS_Interaction extends CEM_AbstractWebHandler {
+class CEM_GS_Interaction {
+	/**
+	 * Action encoder
+	 */
+	protected $encoder;
+
+	/**
+	 * Value formatter
+	 */
+	protected $formatter;
+
 	/**
 	 * Current request
 	 */
@@ -36,34 +46,14 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	protected $options;
 
 	/**
-	 * Value formatter
-	 */
-	protected $formatter;
-
-	/**
-	 * SEO property mapping
-	 */
-	protected $seoPropertyMapping;
-
-	/**
 	 * Json decoded contexts (cache)
 	 */
 	private $_jsonContexts = array();
 
 	/**
-	 * Sequential context (cache)
+	 * Encoded sequential contexts
 	 */
 	private $_sequentialContexts = NULL;
-
-	/**
-	 * Guidance path items (cache)
-	 */
-	private $_uriGuidances = array();
-
-	/**
-	 * Guidance path uri (cache)
-	 */
-	private $_uriGuidancesCache = NULL;
 
 	/**
 	 * Current ambiguities (cache)
@@ -109,64 +99,38 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	/**
 	 * Constructor
 	 *
-	 * @param $crypto encryption facility
+	 * @param $encoder action encoder
+	 * @param $formatter value formatter
 	 * @param $request client request reference
 	 * @param $response client response reference
 	 * @param $options user-defined options
-	 * @param $formatter value formatter
-	 * @param $seoPropertyMapping seo property mapping
 	 */
-	public function __construct($crypto, $request, $response, $options, $formatter, $seoPropertyMapping = array()) {
-		parent::__construct($crypto);
+	public function __construct($encoder, $formatter, $request, $response, $options) {
+		$this->encoder = $encoder;
+		$this->formatter = $formatter;
 		$this->request = $request;
 		$this->response = $response;
 		$this->options = $options;
-		$this->formatter = $formatter;
-		$this->seoPropertyMapping = $seoPropertyMapping;
-
-		$contexts = $this->response->getContext();
-		if (isset($contexts['model'])) {
-			$model = @json_decode($contexts['model']['data'], TRUE);
-			if (isset($model['guidances'])) {
-				$guidances = array();
-				foreach ($model['guidances'] as $guidance) {
-					$property = $guidance['property'];
-					if ($guidance['type'] != 'text' || !isset($this->seoPropertyMapping[$property]) || isset($this->_uriGuidances[$property])) {
-						$guidances[] = $guidance;
-					} else {
-						$this->_uriGuidances[$property] = $guidance['data'];
-					}
-				}
-				if (sizeof($guidances) > 0) {
-					$model['guidances'] = $guidances;
-				} else {
-					unset($model['guidances']);
-				}
-			}
-			if (sizeof($model) > 0) {
-				$contexts['model']['data'] = json_encode($model);
-			} else {
-				unset($contexts['model']);
-			}
-		}
-		$data = '';
-		foreach ($contexts as $name => $scope) {
-			if ($scope['mode'] == 'sequential') {
-				switch ($scope['level']) {
-				case 'visitor':
-				case 'session':
-				case 'search':
-					if (strlen($data) > 0) {
-						$data .= ';';
-					}
-					$data .= $this->escapeValue($name) . '=' . $this->escapeValue($scope['level']) . '=' . $this->escapeValue($scope['data']);
-					break;
-				}
-			}
-		}
-		$this->_sequentialContexts = $this->encrypt($data);
 	}
 
+
+	/**
+	 * Get action encoder
+	 *
+	 * @return action encoder
+	 */
+	public function getEncoder() {
+		return $this->encoder;
+	}
+
+	/**
+	 * Get value formatter
+	 *
+	 * @return value formatter
+	 */
+	public function getFormatter() {
+		return $this->formatter;
+	}
 
 	/**
 	 * Get underlying request
@@ -193,15 +157,6 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 */
 	public function getOptions() {
 		return $this->options;
-	}
-
-	/**
-	 * Get value formatter
-	 *
-	 * @return value formatter
-	 */
-	public function getFormatter() {
-		return $this->formatter;
 	}
 
 
@@ -256,7 +211,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 *
 	 * @return context scopes
 	 */
-	public function getContext() {
+	public function getContexts() {
 		return $this->response->getContext();
 	}
 
@@ -267,7 +222,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 * @return context data
 	 */
 	public function getContextData($name) {
-		$scopes = $this->getContext();
+		$scopes = $this->response->getContext();
 		if (isset($scopes[$name])) {
 			return $scopes[$name]['data'];
 		}
@@ -282,45 +237,33 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 */
 	public function getContextJson($name) {
 		if (!isset($this->_jsonContexts[$name])) {
-			$this->_jsonContexts[$name] = @json_decode($this->getContextData($name));
+			$this->_jsonContexts[$name] = json_decode($this->getContextData($name));
 		}
 		return $this->_jsonContexts[$name];
 	}
 
 
 	/**
-	 * Encode sequential contexts
+	 * Encode sequential context
 	 *
-	 * @return encoded sequential contexts
+	 * @return encoded sequential contexts or FALSE if none
 	 */
 	public function encodeSequentialContexts() {
-		return $this->_sequentialContexts;
-	}
-
-	/**
-	 * Encode state into url parameters
-	 *
-	 * @param $parameters additional query parameters
-	 * @return query parameters with state
-	 */
-	public function encodeQueryContext($parameters = array(), $appendContext = FALSE) {
-		if ($appendContext) {
-			$context = $this->encodeSequentialContexts();
-			if ($context) {
-				$parameters['context'] = $context;
-			}
+		if ($this->_sequentialContexts === NULL) {
+			$this->_sequentialContexts = $this->encoder->encodeSequentialContexts($this->getContexts());
 		}
-		return $parameters;
+		return $this->_sequentialContexts;
 	}
 
 	/**
 	 * Encode parameters and state into url
 	 *
 	 * @param $parameters additional query parameters
+	 * @param $appendContext append context parameter
 	 * @return encoded url query
 	 */
 	public function encodeQuery($parameters = array(), $appendContext = FALSE) {
-		return $this->formatter->formatUrl($this->buildUriGuidance(), $this->encodeQueryContext($parameters, $appendContext));
+		return $this->encoder->encodeQuery($parameters, $appendContext ? $this->encodeSequentialContexts() : FALSE);
 	}
 
 	/**
@@ -330,19 +273,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 * @return encoded url query
 	 */
 	public function encodeAction($uri, $action, $appendContext = FALSE) {
-		$parameters = $action['parameters'];
-		if (isset($action['uriParameters'])) {
-			foreach ($action['uriParameters'] as $parameter) {
-				unset($parameters[$parameter]);
-			}
-		}
-		if (strlen($action['uri']) > 0) {
-			if (strlen($uri) == 0 || strrpos($uri, '/') != strlen($uri) - 1) {
-				$uri .= '/';
-			}
-			$uri .= $action['uri'];
-		}
-		return $this->formatter->formatUrl($uri, $this->encodeQueryContext($parameters, $appendContext));
+		return $this->encoder->encodeAction($uri, $action, $appendContext ? $this->encodeSequentialContexts() : FALSE);
 	}
 
 
@@ -392,45 +323,6 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	}
 
 	/**
-	 * Get current "showing results for"
-	 *
-	 * @return "showing results for" query or FALSE if none
-	 */
-	public function activeShowingResultsFor() {
-		$model = $this->getContextJson('model');
-		if (isset($model->queryText) && $this->requestExists('query')) {
-			if (strcmp($model->queryText, $this->requestString('query')) != 0) {
-				return $model->queryText;
-			}
-		}
-		if (isset($model->queryTerms)) {
-			$has = FALSE;
-			$terms = array();
-			foreach ($model->queryTerms as $index => $queryTerm) {
-				if ($queryTerm->type == 'unfiltered' || $queryTerm->type == 'unmatched') {
-					$has = TRUE;
-					continue;
-				}
-				if ($queryTerm->type == 'matched' && isset($queryTerm->guidances)) {
-					if (sizeof($queryTerm->guidances) == 1) {
-						$guidance = $queryTerm->guidances[0];
-						if (levenshtein(strtolower($guidance->data[0]), strtolower($queryTerm->value)) > 0) {
-							$terms[] = strtolower($guidance->data[0]);
-							$has = TRUE;
-							continue;
-						}
-					}
-				}
-				$terms[] = $queryTerm->value;
-			}
-			if ($has) {
-				return implode(' ', $terms);
-			}
-		}
-		return FALSE;
-	}
-
-	/**
 	 * Get current "did you mean"
 	 *
 	 * @return "did you mean" queries
@@ -463,7 +355,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 								$list[$value] = array(
 									'label' => $label,
 									'query' => $value,
-									'queryAction' => $this->buildQueryAction($value),
+									'queryAction' => $this->encoder->buildQueryAction($value),
 									'distance' => $distance
 								);
 							}
@@ -476,7 +368,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 							$list[$value] = array(
 								'label' => $label,
 								'query' => $value,
-								'queryAction' => $this->buildQueryAction($value),
+								'queryAction' => $this->encoder->buildQueryAction($value),
 								'distance' => $distance
 							);
 						}
@@ -613,11 +505,11 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				$this->_filters[$groupId][$propertyId][$index]['value'] = $this->formatter->formatFilterValue($property, $filter['guidance']);
 
 				if ($filter['mode'] == 'term' && $filter['index'] >= 0) {
-					$this->_filters[$groupId][$propertyId][$index]['removeAction'] = $this->buildRefineAction($filter['index']);
+					$this->_filters[$groupId][$propertyId][$index]['removeAction'] = $this->encoder->buildRefineAction($filter['index']);
 				} else if (sizeof($filters) > 1 && $filter['mode'] == 'guidance' && $filter['index'] >= 0) {
-					$this->_filters[$groupId][$propertyId][$index]['removeAction'] = $this->buildGuidanceRemoveAction($filter['index']);
+					$this->_filters[$groupId][$propertyId][$index]['removeAction'] = $this->encoder->buildGuidanceRemoveAction($filter['index']);
 				} else {
-					$this->_filters[$groupId][$propertyId][$index]['removeAction'] = $this->buildGuidanceRemoveAction($propertyId);
+					$this->_filters[$groupId][$propertyId][$index]['removeAction'] = $this->encoder->buildGuidanceRemoveAction($propertyId);
 				}
 			}
 		}
@@ -667,11 +559,8 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 * @return TRUE if query filters results
 	 */
 	public function isQueryFiltering() {
-		if (!$this->requestExists('query')) {
-			return TRUE;
-		}
 		$model = $this->getContextJson('model');
-		if (!isset($model->queryTerms) || sizeof($model->queryTerms) == 0) {
+		if (!isset($model->queryText) || !isset($model->queryTerms) || strlen($model->queryText) == 0 || sizeof($model->queryTerms) == 0) {
 			return TRUE;
 		}
 		foreach ($model->queryTerms as $term) {
@@ -859,10 +748,11 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	/**
 	 * Get scenarios
 	 *
+	 * @param $skip skipped attributes
 	 * @param $groupId group identifier
 	 * @return scenarios
 	 */
-	public function getScenarios($groupId = 'search') {
+	public function getScenarios($skip = array(), $groupId = 'search') {
 		if (isset($this->_scenarios[$groupId])) {
 			return $this->_scenarios[$groupId];
 		}
@@ -877,7 +767,10 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			foreach ($group->scenarios as $scenario) {
 				$refinements = array();
 				$attributeOrder = array();
-				$skip = $this->requestStringArray('skip');
+				$localSkip = array();
+				foreach ($skip as $item) {
+					$localSkip[] = $item;
+				}
 				foreach ($scenario->attributes as $attribute) {
 					$attributeOrder[] = $attribute->property;
 					if (!$attribute->valid || in_array($attribute->property, $skip)) {
@@ -896,9 +789,9 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 								continue;
 							}
 						}
-						if (sizeof($skip) > 0) {
-							$value['addAction']['parameters']['skip'] = $skip;
-							$value['setAction']['parameters']['skip'] = $skip;
+						if (sizeof($localSkip) > 0) {
+							$value['addAction']['parameters']['skip'] = $localSkip;
+							$value['setAction']['parameters']['skip'] = $localSkip;
 						}
 						$values[] = $value;
 						if ($total !== NULL && isset($attribute->minimumValuePopulation) && $value['population'] < ($attribute->minimumValuePopulation * $total)) {
@@ -928,7 +821,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 							'valuesWithPreview' => $refinement['valuesWithPreview'],
 							'attribute' => $refinement['attribute']
 						);
-						$skip[] = $attribute->property;
+						$localSkip[] = $attribute->property;
 					}
 				}
 				$recommendations = array();
@@ -943,7 +836,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				$this->_scenarios[$groupId][$scenario->id] = array(
 					'id' => $scenario->id,
 					'name' => $scenario->name,
-					'setAction' => $this->buildScenarioAction($scenario->id),
+					'setAction' => $this->encoder->buildScenarioAction($scenario->id),
 					'attributeOrder' => $attributeOrder,
 					'refinements' => $refinements,
 					'recommendations' => $recommendations,
@@ -962,7 +855,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 	 * @return scenario or NULL if none
 	 */
 	public function getScenario($scenario, $groupId = 'search') {
-		$scenarios = $this->getScenarios($groupId);
+		$scenarios = $this->getScenarios(array(), $groupId);
 		return (isset($scenarios[$scenario]) ? $scenarios[$scenario] : NULL);
 	}
 
@@ -1035,7 +928,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		}
 
 		$this->_recommendations[$groupId] = array();
-		foreach ($this->getScenarios($groupId) as $scenario) {
+		foreach ($this->getScenarios(array(), $groupId) as $scenario) {
 			foreach ($scenario['recommendations'] as $recommendation) {
 				$this->_recommendations[$groupId][] = $recommendation;
 			}
@@ -1263,7 +1156,7 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					'population' => $value->population,
 					'filtering' => $value->population < $this->getResultsTotal(),
 					'favorite' => FALSE,
-					'refineAction' => $this->buildRefineAction($index, $refinement->property, $value->value),
+					'refineAction' => $this->encoder->buildRefineAction($index, $refinement->property, $value->value),
 					'preview' => $preview,
 					'resources' => $resources
 				);
@@ -1419,9 +1312,9 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				'population' => $value->population,
 				'selected' => $selected,
 				'filtering' => $value->population < $this->getResultsTotal(),
-				'addAction' => $this->buildAttributeAddAction($attribute, array_slice($parents, 0, $depth), $value),
-				'setAction' => $this->buildAttributeSetAction($attribute, array_slice($parents, 0, $depth), $value),
-				'removeAction' => $selectedFilter ? $selectedFilter['removeAction'] : $this->buildAttributeRemoveAction($attribute),
+				'addAction' => $this->encoder->buildAttributeAddAction($attribute, array_slice($parents, 0, $depth), $value),
+				'setAction' => $this->encoder->buildAttributeSetAction($attribute, array_slice($parents, 0, $depth), $value),
+				'removeAction' => $selectedFilter ? $selectedFilter['removeAction'] : $this->encoder->buildAttributeRemoveAction($attribute),
 				'preference' => isset($preferences[$name]) && $preferences[$name]['weight'] > 0.1 ? $preferences[$name]['offset'] : 0,
 				'favorite' => FALSE,
 				'preview' => $preview,
@@ -1458,9 +1351,9 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					'population' => $parent->population,
 					'selected' => TRUE,
 					'filtering' => FALSE,
-					'addAction' => $this->buildAttributeAddAction($attribute, array_slice($parents, 0, $parentDepth), $parent),
-					'setAction' => $this->buildAttributeSetAction($attribute, array_slice($parents, 0, $parentDepth), $parent),
-					'removeAction' => $this->buildAttributeRemoveAction($attribute),
+					'addAction' => $this->encoder->buildAttributeAddAction($attribute, array_slice($parents, 0, $parentDepth), $parent),
+					'setAction' => $this->encoder->buildAttributeSetAction($attribute, array_slice($parents, 0, $parentDepth), $parent),
+					'removeAction' => $this->encoder->buildAttributeRemoveAction($attribute),
 					'preference' => isset($preferences[$name]) && $preferences[$name]['weight'] > 0.1 ? $preferences[$name]['offset'] : 0,
 					'favorite' => FALSE,
 					'value' => $parent
@@ -1640,9 +1533,9 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 				'population' => $value->population,
 				'selected' => $selected,
 				'filtering' => !$selected,
-				'addAction' => $this->buildAttributeAddAction($attribute, array_slice($parents, 0, $depth), $value),
-				'setAction' => $this->buildAttributeSetAction($attribute, array_slice($parents, 0, $depth), $value),
-				'removeAction' => $selectedFilter ? $selectedFilter['removeAction'] : $this->buildAttributeRemoveAction($attribute),
+				'addAction' => $this->encoder->buildAttributeAddAction($attribute, array_slice($parents, 0, $depth), $value),
+				'setAction' => $this->encoder->buildAttributeSetAction($attribute, array_slice($parents, 0, $depth), $value),
+				'removeAction' => $selectedFilter ? $selectedFilter['removeAction'] : $this->encoder->buildAttributeRemoveAction($attribute),
 				'preference' => isset($preferences[$name]) && $preferences[$name]['weight'] > 0.1 && $preferences[$name]['offset'] < 3,
 				'favorite' => FALSE,
 				'preview' => $preview,
@@ -1680,9 +1573,9 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 					'selected' => TRUE,
 					'filtering' => FALSE,
 					'last' => sizeof($parentValues) == sizeof($parents) - 1,
-					'addAction' => $this->buildAttributeAddAction($attribute, array_slice($parents, 0, $parentDepth), $parent),
-					'setAction' => $this->buildAttributeSetAction($attribute, array_slice($parents, 0, $parentDepth), $parent),
-					'removeAction' => $this->buildAttributeRemoveAction($attribute),
+					'addAction' => $this->encoder->buildAttributeAddAction($attribute, array_slice($parents, 0, $parentDepth), $parent),
+					'setAction' => $this->encoder->buildAttributeSetAction($attribute, array_slice($parents, 0, $parentDepth), $parent),
+					'removeAction' => $this->encoder->buildAttributeRemoveAction($attribute),
 					'preference' => isset($preferences[$name]) && $preferences[$name]['weight'] > 0.1 && $preferences[$name]['offset'] < 3,
 					'favorite' => FALSE,
 					'value' => $parent
@@ -1716,215 +1609,6 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			);
 		}
 		return NULL;
-	}
-
-
-	private function buildQueryAction($query) {
-		return array(
-			'uri' => $this->buildUriGuidance(),
-			'parameters' => array(
-				'catq' => $query
-			)
-		);
-	}
-
-	private function buildRefineAction($index, $property = NULL, $value = NULL) {
-		if ($property && $value) {
-			return array(
-				'uri' => $this->buildUriGuidance(),
-				'parameters' => array(
-					'refine' => $index,
-					'property' => $property,
-					'value' => $value
-				)
-			);
-		}
-		return array(
-			'uri' => $this->buildUriGuidance(),
-			'parameters' => array(
-				'refine' => $index
-			)
-		);
-	}
-
-	private function buildGuidanceRemoveAction($property) {
-		if (is_numeric($property)) {
-			return array(
-				'uri' => $this->buildUriGuidance(),
-				'parameters' => array(
-					'filterdel' => $property
-				)
-			);
-		}
-		if (isset($this->seoPropertyMapping[$property])) {
-			return array(
-				'uri' => $this->buildUriGuidance(array(), array($property)),
-				'uriParameters' => array('attrdel'),
-				'parameters' => array(
-					'attrdel' => $property
-				)
-			);
-		}
-		return array(
-			'uri' => $this->buildUriGuidance(),
-			'parameters' => array(
-				'attrdel' => $property
-			)
-		);
-	}
-
-	private function buildScenarioAction($scenario) {
-		return array(
-			'uri' => $this->buildUriGuidance(),
-			'parameters' => array(
-				'scenario' => $scenario
-			)
-		);
-	}
-
-	private function buildAttributeAddAction($attribute, $parents, $value) {
-		if ($attribute->type == 'text') {
-			if (in_array('hierarchical', $attribute->propertyFlags)) {
-				$data = array();
-				foreach ($parents as $parent) {
-					$data[] = $parent->data[0];
-				}
-				$data[] = $value->data[0];
-				return array(
-					'uri' => $this->buildUriGuidance(),
-					'parameters' => array(
-						'thattradd' => array($attribute->property => $this->optimizeArray($data))
-					)
-				);
-			}
-			return array(
-				'uri' => $this->buildUriGuidance(),
-				'parameters' => array(
-					'tattradd' => array($attribute->property => $this->optimizeArray($value->data))
-				)
-			);
-		}
-		if ($attribute->type == 'dateRange') {
-			return array(
-				'uri' => $this->buildUriGuidance(),
-				'parameters' => array(
-					'dattradd' => array($attribute->property => implode('|', $value->data))
-				)
-			);
-		}
-		if ($attribute->type == 'numberRange') {
-			return array(
-				'uri' => $this->buildUriGuidance(),
-				'parameters' => array(
-					'nattradd' => array($attribute->property => implode('|', $value->data))
-				)
-			);
-		}
-		throw new Exception();
-	}
-
-	private function buildAttributeSetAction($attribute, $parents, $value) {
-		if ($attribute->type == 'text') {
-			if (in_array('hierarchical', $attribute->propertyFlags)) {
-				$mode = 'thattr';
-				$data = array();
-				foreach ($parents as $parent) {
-					$data[] = $parent->data[0];
-				}
-				$data[] = $value->data[0];
-			} else {
-				$mode = 'tattr';
-				$data = $value->data;
-			}
-			if (isset($this->seoPropertyMapping[$attribute->property])) {
-				return array(
-					'uri' => $this->buildUriGuidance(array($attribute->property => $data)),
-					'uriParameters' => array($mode),
-					'parameters' => array(
-						$mode => array($attribute->property => $this->optimizeArray($value->data))
-					)
-				);
-			}
-			return array(
-				'uri' => $this->buildUriGuidance(),
-				'parameters' => array(
-					$mode => array($attribute->property => $this->optimizeArray($data))
-				)
-			);
-		}
-		if ($attribute->type == 'dateRange') {
-			return array(
-				'uri' => $this->buildUriGuidance(),
-				'parameters' => array(
-					'dattr' => array($attribute->property => implode('|', $value->data))
-				)
-			);
-		}
-		if ($attribute->type == 'numberRange') {
-			return array(
-				'uri' => $this->buildUriGuidance(),
-				'parameters' => array(
-					'nattr' => array($attribute->property => implode('|', $value->data))
-				)
-			);
-		}
-		throw new Exception();
-	}
-
-	private function buildAttributeRemoveAction($attribute) {
-		if (isset($this->seoPropertyMapping[$attribute->property])) {
-			return array(
-				'uri' => $this->buildUriGuidance(array(), array($attribute->property)),
-				'uriParameters' => array('attrdel'),
-				'parameters' => array(
-					'attrdel' => $attribute->property
-				)
-			);
-		}
-		return array(
-			'uri' => $this->buildUriGuidance(),
-			'parameters' => array(
-				'attrdel' => $attribute->property
-			)
-		);
-	}
-
-	private function buildUriGuidance($included = array(), $excluded = array()) {
-		if (sizeof($included) == 0 && sizeof($excluded) == 0 && $this->_uriGuidancesCache) {
-			return $this->_uriGuidancesCache;
-		}
-
-		$guidances = array();
-		foreach ($this->_uriGuidances as $property => $value) {
-			if (in_array($property, $excluded)) {
-				continue;
-			}
-			$guidances[$property] = $value;
-		}
-		foreach ($included as $property => $value) {
-			if (in_array($property, $excluded)) {
-				continue;
-			}
-			$guidances[$property] = $value;
-		}
-		uksort($guidances, array($this, 'sortSEOGuidance'));
-
-		$uri = array();
-		foreach ($guidances as $property => $value) {
-			$uri[] = urlencode($this->seoPropertyMapping[$property]['map']);
-			foreach ($value as $item) {
-				$uri[] = urlencode($item);
-			}
-		}
-		if (sizeof($uri) > 0) {
-			$uri = implode('/', $uri).'/';
-		} else {
-			$uri = '';
-		}
-		if (sizeof($included) == 0 && sizeof($excluded) == 0) {
-			$this->_uriGuidancesCache = $uri;
-		}
-		return $uri;
 	}
 
 
@@ -1988,19 +1672,6 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 		return $list;
 	}
 
-	/**
-	 * Optimize array encoding
-	 *
-	 * @param $list input list
-	 * @return optimized list
-	 */
-	private function optimizeArray($list) {
-		if (sizeof($list) == 1) {
-			return $list[0];
-		}
-		return $list;
-	}
-
 
 	/**
 	 * Called to sort object by weight
@@ -2024,22 +1695,6 @@ class CEM_GS_Interaction extends CEM_AbstractWebHandler {
 			return -1;
 		} else if ($a['distance'] > $b['distance']) {
 			return 1;
-		}
-		return 0;
-	}
-
-	/**
-	 * Called to sort SEO properties
-	 *
-	 */
-	private function sortSEOGuidance($a, $b) {
-		foreach ($this->seoPropertyMapping as $src => $dst) {
-			if ($a == $src) {
-				return -1;
-			}
-			if ($b == $src) {
-				return 1;
-			}
 		}
 		return 0;
 	}

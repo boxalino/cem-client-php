@@ -21,9 +21,14 @@
  */
 class CEM_WebController {
 	/**
-	 * Encryption facility
+	 * State handler
 	 */
-	protected $crypto;
+	protected $stateHandler;
+
+	/**
+	 * Action encoder
+	 */
+	protected $encoder;
 
 	/**
 	 * Value formatter
@@ -41,9 +46,19 @@ class CEM_WebController {
 	protected $gsUrl = NULL;
 
 	/**
+	 * G-S interaction class
+	 */
+	protected $gsInteractionClass = 'CEM_GS_Interaction';
+
+	/**
 	 * CEM server url (pr)
 	 */
 	protected $prUrl = NULL;
+
+	/**
+	 * P-R interaction class
+	 */
+	protected $prInteractionClass = 'CEM_PR_Interaction';
 
 	/**
 	 * Customer account (defaults to 'default')
@@ -61,54 +76,9 @@ class CEM_WebController {
 	protected $language = 'en';
 
 	/**
-	 * Dialog (defaults to 'search')
+	 * Dialog (defaults to 'standard')
 	 */
 	protected $dialog = 'standard';
-
-	/**
-	 * SEO enabled
-	 */
-	protected $seoEnabled = FALSE;
-
-	/**
-	 * SEO property mapping
-	 */
-	protected $seoPropertyMapping = array();
-
-	/**
-	 * State handler
-	 */
-	protected $stateHandler = NULL;
-
-	/**
-	 * Request handler
-	 */
-	protected $requestHandler = NULL;
-
-	/**
-	 * Response handler
-	 */
-	protected $responseHandler = NULL;
-
-	/**
-	 * Connection timeout [ms]
-	 */
-	protected $connectionTimeout = 10000;
-
-	/**
-	 * Read timeout [ms]
-	 */
-	protected $readTimeout = 15000;
-
-	/**
-	 * G-S interaction class
-	 */
-	protected $gsInteractionClass = 'CEM_GS_Interaction';
-
-	/**
-	 * P-R interaction class
-	 */
-	protected $prInteractionClass = 'CEM_PR_Interaction';
 
 	/**
 	 * Last interaction
@@ -119,18 +89,18 @@ class CEM_WebController {
 	/**
 	 * Constructor
 	 *
-	 * @param $crypto encryption facility
+	 * @param $stateHandler state handler
+	 * @param $encoder action encoder
+	 * @param $formatter value formatter
+	 * @param $connectionTimeout connection timeout in milliseconds
+	 * @param $readTimeout read timeout in milliseconds
 	 * @param $options options map
 	 */
-	public function __construct($crypto, $options = array()) {
-		$this->crypto = $crypto;
-		$this->formatter = new CEM_WebFormatter(Locale::getDefault(), NULL, NULL);
-		$this->client = new CEM_GatewayClient($this->connectionTimeout, $this->readTimeout);
-		foreach ($options as $key => $value) {
-			if (property_exists($this, $key)) {
-				$this->$key = $value;
-			}
-		}
+	public function __construct($stateHandler, $encoder, $formatter, $connectionTimeout = 5000, $readTimeout = 15000, $options = array()) {
+		$this->stateHandler = $stateHandler;
+		$this->encoder = $encoder;
+		$this->formatter = $formatter;
+		$this->client = new CEM_GatewayClient($connectionTimeout, $readTimeout);
 		if (isset($options['url']) && strlen($options['url']) > 0) {
 			$this->gsUrl = $options['url'].'/gs/gateway/client-1.4';
 			$this->prUrl = $options['url'].'/pr/gateway/client-1.4';
@@ -138,6 +108,39 @@ class CEM_WebController {
 			$this->gsUrl = $options['routerUrl'].'/cem/client/gs';
 			$this->prUrl = $options['routerUrl'].'/cem/client/pr';
 		}
+		foreach ($options as $key => $value) {
+			if (property_exists($this, $key)) {
+				$this->$key = $value;
+			}
+		}
+	}
+
+
+	/**
+	 * Get state handler
+	 *
+	 * @return state handler
+	 */
+	public function getStateHandler() {
+		return $this->stateHandler;
+	}
+
+	/**
+	 * Get encoder
+	 *
+	 * @return encoder
+	 */
+	public function getEncoder() {
+		return $this->encoder;
+	}
+
+	/**
+	 * Get formatter
+	 *
+	 * @return formatter
+	 */
+	public function getFormatter() {
+		return $this->formatter;
 	}
 
 
@@ -249,86 +252,6 @@ class CEM_WebController {
 		$this->dialog = $dialog;
 	}
 
-	/**
-	 * Get state handler
-	 *
-	 * @return state handler
-	 */
-	public function getStateHandler() {
-		return $this->stateHandler;
-	}
-
-	/**
-	 * Get request handler
-	 *
-	 * @return request handler
-	 */
-	public function getRequestHandler() {
-		return $this->requestHandler;
-	}
-
-	/**
-	 * Get response handler
-	 *
-	 * @return response handler
-	 */
-	public function getResponseHandler() {
-		return $this->responseHandler;
-	}
-
-
-	/**
-	 * Get current client state
-	 *
-	 * @return client state or NULL if none
-	 */
-	public function currentState() {
-		if ($this->stateHandler) {
-			return $this->stateHandler->read();
-		}
-		return NULL;
-	}
-
-
-
-	/**
-	 * Enable SEO-friendly urls
-	 *
-	 * @param $uri guidance path
-	 */
-	public function enableSeo($uri = '') {
-		if ($this->requestHandler) {
-			$this->requestHandler->parseSEO($this->seoPropertyMapping, $uri);
-		}
-		$this->seoEnabled = TRUE;
-	}
-
-
-	/**
-	 * Destroy client state gracefully if any
-	 *
-	 */
-	public function destroy() {
-		// get cem state
-		list($state, $created) = $this->getState();
-
-		if ($created) {
-			return;
-		}
-
-		// process interaction
-		$request = new CEM_GS_GatewayRequest($this->customer, $this->dialog, $this->language);
-		$request->appendFreeRequest();
-		$response = new CEM_GS_GatewayResponse();
-
-		$this->gs($request, $response);
-		$this->lastInteraction = NULL;
-
-		// clear client state
-		if ($this->stateHandler) {
-			$this->stateHandler->remove($state);
-		}
-	}
 
 	/**
 	 * Process client interaction
@@ -348,20 +271,15 @@ class CEM_WebController {
 
 		$request = new CEM_GS_GatewayRequest($this->customer, $this->dialog, $this->language);
 		if ($created) {
-			if ($this->requestHandler) {
-				if (!$this->requestHandler->onInit($state, $request)) {
-					return;
-				}
-			} else {
-				$request->appendInitRequest();
-			}
+			$request->appendInitRequest();
 		}
 		$response = new CEM_GS_GatewayResponse();
 
 		// process interaction
 		$this->gs($request, $response, $options, $useCache);
 
-		$interaction = new $this->gsInteractionClass($this->crypto, $request, $response, $options, $this->formatter, $this->seoEnabled ? $this->seoPropertyMapping : array());
+		// wrap response
+		$interaction = new $this->gsInteractionClass($this->encoder, $this->formatter, $request, $response, $options);
 		if ($useCache) {
 			$this->lastInteraction = $interaction;
 		}
@@ -377,6 +295,7 @@ class CEM_WebController {
 	 * @return wrapped cem response
 	 */
 	public function interactDetail($sourceIds = array(), $options = array(), $useCache = TRUE) {
+		// build request batch
 		$ids = array();
 		foreach ($sourceIds as $sourceId) {
 			$ids[] = '"'.addcslashes($sourceId, '"').'"';
@@ -404,6 +323,32 @@ class CEM_WebController {
 			$this->lastInteraction = $lastInteraction;
 		}
 		return $this->lastInteraction;
+	}
+
+	/**
+	 * Destroy client state gracefully if any
+	 *
+	 */
+	public function destroy() {
+		// get cem state
+		list($state, $created) = $this->getState();
+
+		if ($created) {
+			return;
+		}
+
+		// prepare interaction
+		$request = new CEM_GS_GatewayRequest($this->customer, $this->dialog, $this->language);
+		$request->appendFreeRequest();
+		$response = new CEM_GS_GatewayResponse();
+
+		// process interaction
+		$this->gs($request, $response);
+
+		// clear client state
+		$this->stateHandler->remove($state);
+
+		$this->lastInteraction = NULL;
 	}
 
 
@@ -441,7 +386,7 @@ class CEM_WebController {
 		// process interaction
 		$this->pr($request, $response, $options);
 
-		return new $this->prInteractionClass($this->crypto, $request, $response, $options, $this->formatter);
+		return new $this->prInteractionClass($this->encoder, $this->formatter, $request, $response, $options);
 	}
 
 	/**
@@ -557,25 +502,28 @@ class CEM_WebController {
 	 * @param $saveState save state
 	 */
 	public function gs($request, $response, $options = array(), $saveState = TRUE) {
+		if (strlen($this->gsUrl) == 0) {
+			throw new Exception("Cannot send request: gsUrl is empty");
+		}
+
 		// get cem state
 		list($state, $created) = $this->getState();
 
+		$this->encoder->buildStateContexts($state, $options);
+
+		// build request
+		$this->encoder->buildInteractionRequest($state, $request, $options);
+
 		// process interaction
-		if ($this->requestHandler && !$this->requestHandler->onInteraction($state, $request, $options)) {
-			return;
-		}
-		if (strlen($this->gsUrl) > 0 && $this->client->exec($this->gsUrl, $state, $request, $response)) {
-			if ($this->responseHandler) {
-				$this->responseHandler->onInteraction($state, $request, $response, $options);
-			}
-		} else {
-			if ($this->responseHandler) {
-				$this->responseHandler->onError($state, $request, $options);
-			}
+		if (!$this->client->exec($this->gsUrl, $state, $request, $response)) {
+			throw new Exception("Cannot process request: ".$this->client->getError());
 		}
 
+		// build response
+		$this->encoder->buildInteractionResponse($state, $response, $options);
+
 		// write client state
-		if ($this->stateHandler && $saveState) {
+		if ($saveState) {
 			$this->stateHandler->write($state);
 		}
 	}
@@ -588,22 +536,27 @@ class CEM_WebController {
 	 * @param $options recommendation options
 	 */
 	public function pr($request, $response, $options = array()) {
+		if (strlen($this->prUrl) == 0) {
+			throw new Exception("Cannot send request: prUrl is empty");
+		}
+
 		// build cem state
 		list($state, $created) = $this->getState();
 
 		// process recommendation
-		if ($this->requestHandler && !$this->requestHandler->onRecommendation($state, $request, $options)) {
-			return;
+		if (!$this->client->exec($this->prUrl, $state, $request, $response)) {
+			throw new Exception("Cannot process request: ".$this->client->getError());
 		}
-		if (strlen($this->prUrl) > 0 && $this->client->exec($this->prUrl, $state, $request, $response)) {
-			if ($this->responseHandler) {
-				$this->responseHandler->onRecommendation($state, $request, $response, $options);
-			}
-		} else {
-			if ($this->responseHandler) {
-				$this->responseHandler->onError($state, $request, $options);
-			}
-		}
+	}
+
+
+	/**
+	 * Get current client state
+	 *
+	 * @return client state or NULL if none
+	 */
+	public function currentState() {
+		return $this->stateHandler->read();
 	}
 
 
@@ -613,16 +566,14 @@ class CEM_WebController {
 	 * @return list(client state, created flag)
 	 */
 	protected function getState() {
-		if ($this->stateHandler) {
-			$state = $this->stateHandler->read();
-			if ($state != NULL) {
-				return array($state, FALSE);
-			}
+		$state = $this->stateHandler->read();
+		if ($state != NULL) {
+			return array($state, FALSE);
+		}
 
-			$state = $this->stateHandler->create();
-			if ($state != NULL) {
-				return array($state, TRUE);
-			}
+		$state = $this->stateHandler->create();
+		if ($state != NULL) {
+			return array($state, TRUE);
 		}
 		return array(new CEM_GatewayState(), TRUE);
 	}

@@ -35,6 +35,11 @@ class CEM_GatewayState {
 	 */
 	protected $data = array();
 
+	/**
+	 * Json decoded contexts (cache)
+	 */
+	private $_jsonContexts = array();
+
 
 	/**
 	 * Constructor
@@ -204,6 +209,53 @@ class CEM_GatewayState {
 			}
 		}
 		$this->data = $map;
+	}
+
+
+	/**
+	 * Get context scopes
+	 *
+	 * @return context scopes
+	 */
+	public function getContexts() {
+		return $this->get('context', array());
+	}
+
+	/**
+	 * Get context data
+	 *
+	 * @param $name context name
+	 * @return context data
+	 */
+	public function getContextData($name) {
+		$scopes = $this->getContexts();
+		if (isset($scopes[$name])) {
+			return $scopes[$name]['data'];
+		}
+		return '';
+	}
+
+	/**
+	 * Get context data from json
+	 *
+	 * @param $name context name
+	 * @return context data (decoded)
+	 */
+	public function getContextJson($name) {
+		if (!isset($this->_jsonContexts[$name])) {
+			$this->_jsonContexts[$name] = json_decode($this->getContextData($name));
+		}
+		return $this->_jsonContexts[$name];
+	}
+
+	/**
+	 * Set context scopes
+	 *
+	 * @param $contexts context scopes
+	 */
+	public function setContexts($contexts) {
+		$this->set('context', $contexts);
+		$this->_jsonContexts = array();
 	}
 }
 

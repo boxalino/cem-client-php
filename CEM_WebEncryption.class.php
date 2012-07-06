@@ -152,6 +152,68 @@ class CEM_WebEncryption {
 		mcrypt_module_close($td);
 		return $data;
 	}
+
+
+	/**
+	 * Encrypt/deflate data with base64 encoding
+	 *
+	 * @param $data plain data
+	 * @return encrypted data (or FALSE if none)
+	 */
+	public function encrypt64($data) {
+		if (strlen($data) > 0) {
+			$data = $this->encrypt('cem'.@gzdeflate($data, 9));
+			if ($data) {
+				return base64_encode($data);
+			}
+		}
+		return FALSE;
+	}
+
+	/**
+	 * Decrypt/inflate data with base64 encoding
+	 *
+	 * @param $data encrypted data
+	 * @return plain data (or FALSE if none)
+	 */
+	public function decrypt64($data) {
+		if (strlen($data) > 0) {
+			$data = $this->decrypt(base64_decode($data));
+			if ($data && strpos($data, 'cem') === 0) {
+				return @gzinflate(substr($data, 3));
+			}
+		}
+		return FALSE;
+	}
+
+
+	/**
+	 * Escape value ('%' <> '%25', ';' <> '%3B', '=' <> '%3D')
+	 *
+	 * @param $value input value
+	 * @return escaped value
+	 */
+	public function escapeValue($value) {
+		return str_replace(
+			array('%', ';', '='),
+			array('%25', '%3B', '%3D'),
+			$value
+		);
+	}
+
+	/**
+	 * Unescape value ('%' <> '%25', ';' <> '%3B', '=' <> '%3D')
+	 *
+	 * @param $value input value
+	 * @return escaped value
+	 */
+	public function unescapeValue($value) {
+		return str_replace(
+			array('%25', '%3B', '%3D'),
+			array('%', ';', '='),
+			$value
+		);
+	}
 }
 
 /**
