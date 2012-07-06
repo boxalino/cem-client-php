@@ -1105,7 +1105,7 @@ class CEM_GS_Interaction {
 		foreach ($this->getGroups() as $id => $scope) {
 			CEM_WebFormatter::printJsonBlock('response.'.$id, $scope);
 		}
-		foreach ($this->getContext() as $name => $scope) {
+		foreach ($this->getContexts() as $name => $scope) {
 			CEM_WebFormatter::printJsonScope($name, $scope);
 		}
 	}
