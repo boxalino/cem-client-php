@@ -237,16 +237,13 @@ class CEM_GS_GatewayRequest extends CEM_GatewayRequest {
 			}
 		}
 
-		$context = $state->get('context');
-		if (sizeof($context) > 0) {
-			foreach ($context as $id => $item) {
-				$context = $doc->createElement('context');
-				$context->setAttribute('id', $id);
-				$context->setAttribute('level', $item['level']);
-				$context->setAttribute('mode', $item['mode']);
-				$context->appendChild($doc->createCDATASection($item['data']));
-				$root->appendChild($context);
-			}
+		foreach ($state->getContext() as $id => $item) {
+			$context = $doc->createElement('context');
+			$context->setAttribute('id', $id);
+			$context->setAttribute('level', $item['level']);
+			$context->setAttribute('mode', $item['mode']);
+			$context->appendChild($doc->createCDATASection($item['data']));
+			$root->appendChild($context);
 		}
 
 		$doc->appendChild($root);

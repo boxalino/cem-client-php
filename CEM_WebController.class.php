@@ -509,7 +509,7 @@ class CEM_WebController {
 		// get cem state
 		list($state, $created) = $this->getState();
 
-		$this->encoder->buildStateContexts($state, $options);
+		$this->encoder->buildStateContext($state, $options);
 
 		// build request
 		$this->encoder->buildInteractionRequest($state, $request, $options);

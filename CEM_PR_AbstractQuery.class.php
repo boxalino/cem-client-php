@@ -87,17 +87,9 @@ abstract class CEM_PR_AbstractQuery {
 	public function build($state) {
 		if ($this->personalized) {
 			$indexPreferences = array();
-			$context = $state->get('context');
-			if (is_array($context)) {
-				foreach ($context as $key => $item) {
-					if ($key == 'profile') {
-						$data = json_decode($item['data']);
-						if (isset($data->preferences)) {
-							$indexPreferences = $data->preferences;
-						}
-						break;
-					}
-				}
+			$profile = $state->getContextJson('profile');
+			if (isset($profile->preferences)) {
+				$indexPreferences = $profile->preferences;
 			}
 			return array(
 				'strategy' => $this->strategy,

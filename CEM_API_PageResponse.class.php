@@ -112,16 +112,6 @@ class CEM_API_PageResponse extends CEM_GatewayResponse {
 	}
 
 	/**
-	 * Get decoded cem context
-	 *
-	 * @return decoded cem context
-	 */
-	public function decodeContext() {
-		$handler = new CEM_WebRequestHandler($this->getCrypto());
-		return $handler->getSequentialContexts();
-	}
-
-	/**
 	 * Get cem query
 	 *
 	 * @return cem query

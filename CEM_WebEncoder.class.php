@@ -54,22 +54,22 @@ class CEM_WebEncoder {
 
 
 	/**
-	 * Get contexts
+	 * Get context scopes
 	 *
-	 * @return contexts
+	 * @return context scopes
 	 */
-	public function getContexts() {
+	public function getContext() {
 		// TODO: implement this in a sub-class
 		return array();
 	}
 
 	/**
-	 * Set contexts
+	 * Set context scopes
 	 *
-	 * @param $contexts contexts
+	 * @param $context context scopes
 	 * @return this
 	 */
-	public function setContexts($contexts) {
+	public function setContext($context) {
 		// TODO: implement this in a sub-class
 		return $this;
 	}
@@ -254,10 +254,10 @@ class CEM_WebEncoder {
 	 * @param $name context name
 	 * @return context data or empty string if none
 	 */
-	public function getContext($name) {
-		$contexts = $this->getContexts();
-		if (isset($contexts[$name])) {
-			return $contexts[$name]['data'];
+	public function getContextData($name) {
+		$context = $this->getContext();
+		if (isset($context[$name])) {
+			return $context[$name]['data'];
 		}
 		return '';
 	}
@@ -268,29 +268,29 @@ class CEM_WebEncoder {
 	 * @param $name context name
 	 * @param $data context data
 	 */
-	public function setContext($name, $data) {
-		$contexts = $this->getContexts();
-		if (isset($contexts[$name])) {
-			$contexts[$name]['data'] = $data;
+	public function setContextData($name, $data) {
+		$context = $this->getContext();
+		if (isset($context[$name])) {
+			$context[$name]['data'] = $data;
 		} else {
-			$contexts[$name] = array(
+			$context[$name] = array(
 				'level' => 'search',
 				'mode' => 'sequential',
 				'data' => $data
 			);
 		}
-		$this->setContexts($contexts);
+		$this->setContext($context);
 	}
 
 	/**
 	 * Encode sequential context
 	 *
-	 * @param $contexts contexts
-	 * @return encoded sequential contexts or FALSE if none
+	 * @param $context context scopes
+	 * @return encoded sequential context scopes or FALSE if none
 	 */
-	public function encodeSequentialContexts($contexts) {
+	public function encodeSequentialContext($context) {
 		$data = '';
-		foreach ($contexts as $name => $scope) {
+		foreach ($context as $name => $scope) {
 			if ($scope['mode'] != 'sequential') {
 				continue;
 			}
@@ -312,57 +312,57 @@ class CEM_WebEncoder {
 	 * Decode sequential context
 	 *
 	 * @param $key context key
-	 * @return sequential contexts
+	 * @return sequential context
 	 */
-	public function decodeSequentialContexts($value) {
-		// decrypt/deflate contexts
+	public function decodeSequentialContext($value) {
+		// decrypt/deflate context scopes
 		$value = $this->crypto->decrypt64($value);
 		if (!$value) {
 			return array();
 		}
 
 		// decode sequential context states
-		$contexts = array();
+		$context = array();
 		foreach (explode(';', $value) as $scope) {
 			list($name, $level, $data) = explode('=', $scope);
 
 			$name = $this->crypto->unescapeValue($name);
 			$level = $this->crypto->unescapeValue($level);
 			$data = $this->crypto->unescapeValue($data);
-			$contexts[$name] = array(
+			$context[$name] = array(
 				'level' => $level,
 				'mode' => 'sequential',
 				'data' => $data
 			);
 		}
-		return $contexts;
+		return $context;
 	}
 
 
 	/**
-	 * Called each client interaction to build state contexts
+	 * Called each client interaction to build state context scopes
 	 *
 	 * @param $state client state reference
 	 * @param $options options passed for interaction
 	 */
-	public function buildStateContexts($state, $options) {
-		$contexts = array();
-		foreach ($state->getContexts() as $name => $value) {
-			$contexts[$name] = $value;
+	public function buildStateContext($state, $options) {
+		$context = array();
+		foreach ($state->getContext() as $name => $value) {
+			$context[$name] = $value;
 		}
-		foreach ($this->getContexts() as $name => $value) {
-			$contexts[$name] = $value;
+		foreach ($this->getContext() as $name => $value) {
+			$context[$name] = $value;
 		}
-		if (isset($options['contexts'])) {
-			foreach ($options['contexts'] as $name => $value) {
+		if (isset($options['context'])) {
+			foreach ($options['context'] as $name => $value) {
 				if ($value) {
-					$contexts[$name] = $value;
-				} else if (isset($contexts[$name])) {
-					unset($contexts[$name]);
+					$context[$name] = $value;
+				} else if (isset($context[$name])) {
+					unset($context[$name]);
 				}
 			}
 		}
-		$state->setContexts($contexts);
+		$state->setContext($context);
 	}
 
 	/**

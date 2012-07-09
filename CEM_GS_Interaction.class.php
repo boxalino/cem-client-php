@@ -46,14 +46,9 @@ class CEM_GS_Interaction {
 	protected $options;
 
 	/**
-	 * Json decoded contexts (cache)
+	 * Encoded sequential context scopes
 	 */
-	private $_jsonContexts = array();
-
-	/**
-	 * Encoded sequential contexts
-	 */
-	private $_sequentialContexts = NULL;
+	private $_sequentialContext = NULL;
 
 	/**
 	 * Current ambiguities (cache)
@@ -211,7 +206,7 @@ class CEM_GS_Interaction {
 	 *
 	 * @return context scopes
 	 */
-	public function getContexts() {
+	public function getContext() {
 		return $this->response->getContext();
 	}
 
@@ -222,11 +217,7 @@ class CEM_GS_Interaction {
 	 * @return context data
 	 */
 	public function getContextData($name) {
-		$scopes = $this->response->getContext();
-		if (isset($scopes[$name])) {
-			return $scopes[$name]['data'];
-		}
-		return '';
+		return $this->response->getContextData($name);
 	}
 
 	/**
@@ -236,23 +227,20 @@ class CEM_GS_Interaction {
 	 * @return context data (decoded)
 	 */
 	public function getContextJson($name) {
-		if (!isset($this->_jsonContexts[$name])) {
-			$this->_jsonContexts[$name] = json_decode($this->getContextData($name));
-		}
-		return $this->_jsonContexts[$name];
+		return $this->response->getContextJson($name);
 	}
 
 
 	/**
 	 * Encode sequential context
 	 *
-	 * @return encoded sequential contexts or FALSE if none
+	 * @return encoded sequential context scopes or FALSE if none
 	 */
-	public function encodeSequentialContexts() {
-		if ($this->_sequentialContexts === NULL) {
-			$this->_sequentialContexts = $this->encoder->encodeSequentialContexts($this->getContexts());
+	public function encodeSequentialContext() {
+		if ($this->_sequentialContext === NULL) {
+			$this->_sequentialContext = $this->encoder->encodeSequentialContext($this->getContext());
 		}
-		return $this->_sequentialContexts;
+		return $this->_sequentialContext;
 	}
 
 	/**
@@ -263,7 +251,7 @@ class CEM_GS_Interaction {
 	 * @return encoded url query
 	 */
 	public function encodeQuery($parameters = array(), $appendContext = FALSE) {
-		return $this->encoder->encodeQuery($parameters, $appendContext ? $this->encodeSequentialContexts() : FALSE);
+		return $this->encoder->encodeQuery($parameters, $appendContext ? $this->encodeSequentialContext() : FALSE);
 	}
 
 	/**
@@ -273,7 +261,7 @@ class CEM_GS_Interaction {
 	 * @return encoded url query
 	 */
 	public function encodeAction($uri, $action, $appendContext = FALSE) {
-		return $this->encoder->encodeAction($uri, $action, $appendContext ? $this->encodeSequentialContexts() : FALSE);
+		return $this->encoder->encodeAction($uri, $action, $appendContext ? $this->encodeSequentialContext() : FALSE);
 	}
 
 
@@ -1105,7 +1093,7 @@ class CEM_GS_Interaction {
 		foreach ($this->getGroups() as $id => $scope) {
 			CEM_WebFormatter::printJsonBlock('response.'.$id, $scope);
 		}
-		foreach ($this->getContexts() as $name => $scope) {
+		foreach ($this->getContext() as $name => $scope) {
 			CEM_WebFormatter::printJsonScope($name, $scope);
 		}
 	}

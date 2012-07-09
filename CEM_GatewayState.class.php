@@ -31,14 +31,14 @@ class CEM_GatewayState {
 	protected $changedCookies = array();
 
 	/**
-	 * State data
+	 * State context scopes
 	 */
-	protected $data = array();
+	protected $context = array();
 
 	/**
-	 * Json decoded contexts (cache)
+	 * Json decoded context scopes (cache)
 	 */
-	private $_jsonContexts = array();
+	protected $_jsonContext = array();
 
 
 	/**
@@ -48,50 +48,6 @@ class CEM_GatewayState {
 	public function __construct() {
 	}
 
-
-	/**
-	 * Reset changed cookies
-	 *
-	 */
-	public function resetChangedCookies() {
-		$this->changedCookies = array();
-	}
-
-	/**
-	 * Get cookies
-	 *
-	 * @param $changedOnly only return changed cookies
-	 * @return cookies
-	 */
-	public function getCookies($changedOnly = FALSE) {
-		if ($changedOnly) {
-			$cookies = array();
-			foreach ($this->changedCookies as $name) {
-				$cookies[$name] = $this->cookies[$name];
-			}
-			return $cookies;
-		}
-		return $this->cookies;
-	}
-
-	/**
-	 * Get cookie header
-	 *
-	 * @return cookie header (or FALSE if none)
-	 */
-	public function getCookieHeader() {
-		if (sizeof($this->cookies) > 0) {
-			$text = '';
-			foreach ($this->cookies as $name => $cookie) {
-				if (strlen($text) > 0) {
-					$text .= ';';
-				}
-				$text .= urlencode($name) . '=' . urlencode($cookie['value']);
-			}
-			return $text;
-		}
-		return FALSE;
-	}
 
 	/**
 	 * Get a cookie
@@ -137,78 +93,48 @@ class CEM_GatewayState {
 		}
 	}
 
-
 	/**
-	 * List state data
+	 * Get cookies
 	 *
-	 * @return data list
+	 * @param $changedOnly only return changed cookies
+	 * @return cookies
 	 */
-	public function getAll() {
-		return $this->data;
-	}
-
-	/**
-	 * Get state data
-	 *
-	 * @param $key data key
-	 * @param $default default value
-	 * @return data value
-	 */
-	public function get($key, $default = FALSE) {
-		if (isset($this->data[$key])) {
-			return $this->data[$key];
-		}
-		return $default;
-	}
-
-	/**
-	 * Find state data
-	 *
-	 * @param $keyPrefix data key prefix
-	 * @return map of data value
-	 */
-	public function find($keyPrefix) {
-		$map = array();
-		foreach ($this->data as $key => $value) {
-			if (strpos($key, $keyPrefix) === 0) {
-				$map[substr($key, strlen($keyPrefix))] = $value;
+	public function getCookies($changedOnly = FALSE) {
+		if ($changedOnly) {
+			$cookies = array();
+			foreach ($this->changedCookies as $name) {
+				$cookies[$name] = $this->cookies[$name];
 			}
+			return $cookies;
 		}
-		return $map;
+		return $this->cookies;
 	}
 
 	/**
-	 * Set state data
+	 * Get cookie header
 	 *
-	 * @param $key data key
-	 * @param $value data value
+	 * @return cookie header (or FALSE if none)
 	 */
-	public function set($key, $value) {
-		$this->data[$key] = $value;
-	}
-
-	/**
-	 * Remove state data
-	 *
-	 * @param $key data key
-	 */
-	public function remove($key) {
-		unset($this->data[$key]);
-	}
-
-	/**
-	 * Remove state data
-	 *
-	 * @param $keyPrefix data key prefix
-	 */
-	public function removeAll($keyPrefix) {
-		$map = array();
-		foreach ($this->data as $key => $value) {
-			if (strpos($key, $keyPrefix) < 0) {
-				$map[$key] = $value;
+	public function getCookieHeader() {
+		if (sizeof($this->cookies) > 0) {
+			$text = '';
+			foreach ($this->cookies as $name => $cookie) {
+				if (strlen($text) > 0) {
+					$text .= ';';
+				}
+				$text .= urlencode($name) . '=' . urlencode($cookie['value']);
 			}
+			return $text;
 		}
-		$this->data = $map;
+		return FALSE;
+	}
+
+	/**
+	 * Reset changed cookies
+	 *
+	 */
+	public function resetChangedCookies() {
+		$this->changedCookies = array();
 	}
 
 
@@ -217,45 +143,65 @@ class CEM_GatewayState {
 	 *
 	 * @return context scopes
 	 */
-	public function getContexts() {
-		return $this->get('context', array());
+	public function getContext() {
+		return $this->context;
 	}
 
 	/**
-	 * Get context data
+	 * Get context scope data
 	 *
-	 * @param $name context name
-	 * @return context data
+	 * @param $name context scope name
+	 * @return context scope data or '' if none
 	 */
 	public function getContextData($name) {
-		$scopes = $this->getContexts();
-		if (isset($scopes[$name])) {
-			return $scopes[$name]['data'];
+		if (isset($this->context[$name])) {
+			return $this->context[$name]['data'];
 		}
 		return '';
 	}
 
 	/**
-	 * Get context data from json
+	 * Get context scope data as json
 	 *
-	 * @param $name context name
-	 * @return context data (decoded)
+	 * @param $name context scope name
+	 * @return context scope data (decoded)
 	 */
 	public function getContextJson($name) {
-		if (!isset($this->_jsonContexts[$name])) {
-			$this->_jsonContexts[$name] = json_decode($this->getContextData($name));
+		if (!isset($this->_jsonContext[$name])) {
+			$this->_jsonContext[$name] = @json_decode($this->getContextData($name));
 		}
-		return $this->_jsonContexts[$name];
+		return $this->_jsonContext[$name];
+	}
+
+	/**
+	 * Set context scope data
+	 *
+	 * @param $name context scope name
+	 * @param $data context scope data
+	 */
+	public function setContextData($name, $data) {
+		if (isset($this->context[$name])) {
+			$this->context[$name]['data'] = $data;
+		} else {
+			$this->context[$name] = array(
+				'level' => 'search',
+				'mode' => 'sequential',
+				'data' => $data
+			);
+		}
+		if (isset($this->_jsonContext[$name])) {
+			unset($this->_jsonContext[$name]);
+		}
 	}
 
 	/**
 	 * Set context scopes
 	 *
-	 * @param $contexts context scopes
+	 * @param $context context scopes
 	 */
-	public function setContexts($contexts) {
-		$this->set('context', $contexts);
-		$this->_jsonContexts = array();
+	public function setContext($context) {
+		$this->context = $context;
+		$this->_jsonContext = array();
 	}
 }
 

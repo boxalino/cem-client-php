@@ -76,8 +76,7 @@ class CEM_WebStateCookieHandler extends CEM_WebStateHandler {
 		$visitor = $this->readCookies($this->prefix.'b');
 		$session = $this->readCookies($this->prefix.'c');
 		$search = $this->readCookies($this->prefix.'d');
-		$data = $this->readCookies($this->prefix.'e');
-		if ($cem != null || $visitor != NULL || $session != NULL || $search != NULL || $data != NULL) {
+		if ($cem != null || $visitor != NULL || $session != NULL || $search != NULL) {
 			$this->state = new CEM_GatewayState();
 
 			// decode cem client cookies
@@ -132,21 +131,7 @@ class CEM_WebStateCookieHandler extends CEM_WebStateHandler {
 					}
 				}
 			}
-			$this->state->set('context', $context);
-
-			// decode other state data
-			if (strlen($data) > 0) {
-				foreach (explode(';', $data) as $item) {
-					list($name, $value) = explode('=', $item);
-
-					if (strlen($name) > 0) {
-						$this->state->set(
-							$this->crypto->unescapeValue($name),
-							json_decode($this->crypto->unescapeValue($value))
-						);
-					}
-				}
-			}
+			$this->state->setContext($context);
 		}
 	}
 
@@ -161,11 +146,10 @@ class CEM_WebStateCookieHandler extends CEM_WebStateHandler {
 		$this->writeCookies($this->prefix.'a', $state->getCookieHeader(), FALSE);
 
 		// write levels cookies
-		$context = $state->get('context', array());
 		$visitor = '';
 		$session = '';
 		$search = '';
-		foreach ($context as $key => $item) {
+		foreach ($state->getContext() as $key => $item) {
 			if ($item['mode'] == 'aggregate') {
 				switch ($item['level']) {
 				case 'visitor':
@@ -194,18 +178,6 @@ class CEM_WebStateCookieHandler extends CEM_WebStateHandler {
 		$this->writeCookies($this->prefix.'b', $visitor, TRUE);
 		$this->writeCookies($this->prefix.'c', $session, FALSE);
 		$this->writeCookies($this->prefix.'d', $search, FALSE);
-
-		// write state data cookies
-		$data = '';
-		foreach ($state->getAll() as $key => $value) {
-			if ($key != 'context') {
-				if (strlen($data) > 0) {
-					$data .= ';';
-				}
-				$data .= $this->crypto->escapeValue($key) . '=' . $this->crypto->escapeValue(json_encode($value));
-			}
-		}
-		$this->writeCookies($this->prefix.'e', $data, FALSE);
 
 		parent::write($state);
 	}

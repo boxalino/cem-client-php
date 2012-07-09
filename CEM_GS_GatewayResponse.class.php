@@ -53,7 +53,12 @@ class CEM_GS_GatewayResponse extends CEM_GatewayResponse {
 	/**
 	 * Context scopes
 	 */
-	protected $context = NULL;
+	protected $context = array();
+
+	/**
+	 * Json decoded context scopes (cache)
+	 */
+	protected $_jsonContext = array();
 
 
 	/**
@@ -125,7 +130,33 @@ class CEM_GS_GatewayResponse extends CEM_GatewayResponse {
 	 * @return context scopes
 	 */
 	public function getContext() {
-		return $this->context;
+		return ($this->context ? $this->context : array());
+	}
+
+	/**
+	 * Get context data
+	 *
+	 * @param $name context name
+	 * @return context data
+	 */
+	public function getContextData($name) {
+		if (isset($this->context[$name])) {
+			return $this->context[$name]['data'];
+		}
+		return '';
+	}
+
+	/**
+	 * Get context data from json
+	 *
+	 * @param $name context name
+	 * @return context data (decoded)
+	 */
+	public function getContextJson($name) {
+		if (!isset($this->_jsonContext[$name])) {
+			$this->_jsonContext[$name] = json_decode($this->getContextData($name));
+		}
+		return $this->_jsonContext[$name];
 	}
 
 
@@ -143,7 +174,7 @@ class CEM_GS_GatewayResponse extends CEM_GatewayResponse {
 			return FALSE;
 		}
 		if ($this->visitResponse($doc->documentElement)) {
-			$state->set('context', $this->context);
+			$state->setContext($this->context);
 			return TRUE;
 		}
 		return FALSE;
@@ -177,6 +208,7 @@ class CEM_GS_GatewayResponse extends CEM_GatewayResponse {
 		$this->message = NULL;
 		$this->responses = array();
 		$this->context = array();
+		$this->_jsonContext = array();
 		for ($i = 0; $i < $node->childNodes->length; $i++) {
 			$child = $node->childNodes->item($i);
 			switch ($child->nodeType) {
