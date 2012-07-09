@@ -292,6 +292,7 @@ class CEM_Analytics extends CEM_HttpClient {
 	 * @param $description event parameters or description (optional)
 	 */
 	public function trackEvent($name, $description = array()) {
+		// wrap description
 		if (is_array($description)) {
 			$parameters = array();
 			foreach ($description as $k => $v) {
