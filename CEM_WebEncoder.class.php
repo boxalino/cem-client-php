@@ -315,25 +315,24 @@ class CEM_WebEncoder {
 	 * @return sequential context
 	 */
 	public function decodeSequentialContext($value) {
+		$context = array();
+
 		// decrypt/deflate context scopes
 		$value = $this->crypto->decrypt64($value);
-		if (!$value) {
-			return array();
-		}
+		if ($value) {
+			// decode sequential context states
+			foreach (explode(';', $value) as $scope) {
+				list($name, $level, $data) = explode('=', $scope);
 
-		// decode sequential context states
-		$context = array();
-		foreach (explode(';', $value) as $scope) {
-			list($name, $level, $data) = explode('=', $scope);
-
-			$name = $this->crypto->unescapeValue($name);
-			$level = $this->crypto->unescapeValue($level);
-			$data = $this->crypto->unescapeValue($data);
-			$context[$name] = array(
-				'level' => $level,
-				'mode' => 'sequential',
-				'data' => $data
-			);
+				$name = $this->crypto->unescapeValue($name);
+				$level = $this->crypto->unescapeValue($level);
+				$data = $this->crypto->unescapeValue($data);
+				$context[$name] = array(
+					'level' => $level,
+					'mode' => 'sequential',
+					'data' => $data
+				);
+			}
 		}
 		return $context;
 	}
