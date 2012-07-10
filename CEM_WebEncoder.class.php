@@ -423,20 +423,6 @@ class CEM_WebEncoder {
 		foreach ($this->variables as $key => $value) {
 			$variables[$key] = $value;
 		}
-
-		// user state parameters
-		$userState = $state->getContextJson('userState');
-		if (isset($userState->pageSize)) {
-			$variables['pageSize'] = $userState->pageSize;
-		}
-		if (isset($userState->ranking)) {
-			$query = isset($variables['query']) ? $variables['query'] : array();
-			$query['ranking'] = $userState->ranking;
-			$variables['query'] = $query;
-		}
-		if (isset($userState->scenario)) {
-			$variables['scenario'] = $userState->scenario;
-		}
 		return $variables;
 	}
 
