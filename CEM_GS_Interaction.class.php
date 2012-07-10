@@ -547,6 +547,15 @@ class CEM_GS_Interaction {
 	 * @return TRUE if query filters results
 	 */
 	public function isQueryFiltering() {
+		$query = FALSE;
+		foreach ($this->request->getRequests() as $request) {
+			if ($request['type'] == 'action' && $request['action'] == 'query') {
+				$query = TRUE;
+			}
+		}
+		if (!$query) {
+			return TRUE;
+		}
 		$model = $this->getContextJson('model');
 		if (!isset($model->queryText) || !isset($model->queryTerms) || strlen($model->queryText) == 0 || sizeof($model->queryTerms) == 0) {
 			return TRUE;

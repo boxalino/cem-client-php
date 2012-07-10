@@ -128,7 +128,7 @@ class CEM_GS_GatewayRequest extends CEM_GatewayRequest {
 	 * @param $variables request variables hashmap
 	 */
 	public function insertRequest($action, $variables = array()) {
-		array_unshift($this->requests, array('type' => 'request', 'action' => $action, 'variables' => $variables));
+		array_unshift($this->requests, array('type' => 'action', 'action' => $action, 'variables' => $variables));
 	}
 
 	/**
