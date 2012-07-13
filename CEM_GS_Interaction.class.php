@@ -1086,7 +1086,7 @@ class CEM_GS_Interaction {
 			'time'    => $this->response->getTime(),
 			'message' => $this->response->getMessage()
 		);
-		echo('<div id="cem-debug" class="cem-debug-block cem-debug-spacer"><h1>Debug: info (');
+		echo('<div class="cem-debug-block cem-debug-spacer"><h1>Debug: info (');
 		printf("%.02f [kb] in %.02f [s]", $this->response->getResponseSize() / 1024, $this->response->getTotalTime());
 		echo(')</h1><div class="json-visible">');
 		CEM_WebFormatter::printJsonObject($info);

@@ -460,7 +460,7 @@ class CEM_WebFormatter {
 	 * @param $visibleDepth initial visible depth
 	 */
 	public static function printJsonBlock($name, $object, $visibleDepth = 0) {
-		echo('<div id="cem-debug" class="cem-debug-block cem-debug-spacer"><h1>Debug: '.$name.' (');
+		echo('<div class="cem-debug-block cem-debug-spacer"><h1>Debug: '.$name.' (');
 		printf("%.02f [kb]", strlen(json_encode($object)) / 1024);
 		echo(')</h1><div class="json-visible">');
 		self::printJsonObject($object, $visibleDepth);
@@ -492,9 +492,9 @@ class CEM_WebFormatter {
 	 * @param $depth current depth
 	 */
 	public static function printJsonArray($array, $visibleDepth = 0, $depth = 0) {
-		for ($i = 0; $i < sizeof($array); $i++) {
+		foreach ($array as $k => $v) {
 			echo('<div class="json-array">');
-			self::printJsonValue("$i.", $array[$i], $visibleDepth, $depth);
+			self::printJsonValue("key:$k", $v, $visibleDepth, $depth);
 			echo('</div>');
 		}
 	}
