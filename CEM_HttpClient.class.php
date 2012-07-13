@@ -455,8 +455,8 @@ class CEM_HttpClient {
 	public function postFields($url, $parameters, $charset = 'UTF-8', $referer = FALSE, $headers = array()) {
 		return $this->post(
 			$url,
-			'multipart/form-data; charset='.$charset,
-			self::convertParametersEncoding(self::expandKVList($parameters), $charset),
+			'application/x-www-form-urlencoded; charset='.$charset,
+			self::buildKVList(self::convertParametersEncoding($parameters, $charset)),
 			$referer,
 			$headers
 		);
@@ -473,13 +473,13 @@ class CEM_HttpClient {
 	 * @return http code
 	 */
 	public function postFieldsAndSave($url, $parameters, $charset = 'UTF-8', $referer = FALSE, $headers = array()) {
-		$headers[] = array('Content-Type', 'multipart/form-data; charset='.$charset);
+		$headers[] = array('Content-Type', 'application/x-www-form-urlencoded; charset='.$charset);
 		return $this->processAndSave(
 			'POST',
 			$url,
 			$referer,
 			$headers,
-			self::convertParametersEncoding(self::expandKVList($parameters), $charset)
+			self::buildKVList(self::convertParametersEncoding($parameters, $charset))
 		);
 	}
 
