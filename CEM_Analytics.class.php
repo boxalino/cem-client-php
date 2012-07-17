@@ -78,6 +78,9 @@ class CEM_Analytics extends CEM_HttpClient {
 	 * @param $widget optional widget identifier
 	 */
 	public function trackQuery($query, $source = '', $widget = '') {
+		if (strlen($widget) == 0 && isset($_REQUEST['widget'])) {
+			$widget = $_REQUEST['widget'];
+		}
 		return $this->trackEvent(
 			'query',
 			array(
@@ -97,6 +100,9 @@ class CEM_Analytics extends CEM_HttpClient {
 	 * @param $widget optional widget identifier
 	 */
 	public function trackRefineQuery($term, $property, $value, $widget = '') {
+		if (strlen($widget) == 0 && isset($_REQUEST['widget'])) {
+			$widget = $_REQUEST['widget'];
+		}
 		return $this->trackEvent(
 			'refineQuery',
 			array(
@@ -116,6 +122,9 @@ class CEM_Analytics extends CEM_HttpClient {
 	 * @param $widget optional widget identifier
 	 */
 	public function trackSetGuidance($property, $value, $widget = '') {
+		if (strlen($widget) == 0 && isset($_REQUEST['widget'])) {
+			$widget = $_REQUEST['widget'];
+		}
 		return $this->trackEvent(
 			'setGuidance',
 			array(
@@ -133,6 +142,9 @@ class CEM_Analytics extends CEM_HttpClient {
 	 * @param $widget optional widget identifier
 	 */
 	public function trackRemoveGuidance($property, $widget = '') {
+		if (strlen($widget) == 0 && isset($_REQUEST['widget'])) {
+			$widget = $_REQUEST['widget'];
+		}
 		return $this->trackEvent(
 			'removeGuidance',
 			array(
@@ -149,6 +161,9 @@ class CEM_Analytics extends CEM_HttpClient {
 	 * @param $widget optional widget identifier
 	 */
 	public function trackPage($page, $widget = '') {
+		if (strlen($widget) == 0 && isset($_REQUEST['widget'])) {
+			$widget = $_REQUEST['widget'];
+		}
 		return $this->trackEvent(
 			'page',
 			array(
@@ -169,6 +184,9 @@ class CEM_Analytics extends CEM_HttpClient {
 		foreach ($products as $productId => $strategy) {
 			$payload[] = urlencode($productId).'='.urlencode($strategy);
 		}
+		if (strlen($widget) == 0 && isset($_REQUEST['widget'])) {
+			$widget = $_REQUEST['widget'];
+		}
 		return $this->trackEvent(
 			'recommendationView',
 			array(
@@ -187,6 +205,9 @@ class CEM_Analytics extends CEM_HttpClient {
 	 * @param $widget optional widget identifier
 	 */
 	public function trackRecommendationClick($product, $position, $strategy, $widget = '') {
+		if (strlen($widget) == 0 && isset($_REQUEST['widget'])) {
+			$widget = $_REQUEST['widget'];
+		}
 		return $this->trackEvent(
 			'recommendationClick',
 			array(
@@ -206,6 +227,9 @@ class CEM_Analytics extends CEM_HttpClient {
 	 * @param $widget optional widget identifier
 	 */
 	public function trackCategoryView($id, $name = '', $widget = '') {
+		if (strlen($widget) == 0 && isset($_REQUEST['widget'])) {
+			$widget = $_REQUEST['widget'];
+		}
 		return $this->trackEvent(
 			'categoryView',
 			array(
@@ -224,6 +248,9 @@ class CEM_Analytics extends CEM_HttpClient {
 	 * @param $widget optional widget identifier
 	 */
 	public function trackProductView($id, $name = '', $widget = '') {
+		if (strlen($widget) == 0 && isset($_REQUEST['widget'])) {
+			$widget = $_REQUEST['widget'];
+		}
 		return $this->trackEvent(
 			'productView',
 			array(
@@ -241,6 +268,9 @@ class CEM_Analytics extends CEM_HttpClient {
 	 * @param $widget optional widget identifier
 	 */
 	public function trackAddToBasket($item, $widget = '') {
+		if (strlen($widget) == 0 && isset($_REQUEST['widget'])) {
+			$widget = $_REQUEST['widget'];
+		}
 		return $this->trackEvent(
 			'addToBasket',
 			array(
@@ -344,19 +374,29 @@ class CEM_Analytics extends CEM_HttpClient {
 		} else if (isset($_SERVER['REMOTE_ADDR'])) {
 			$parameters['clientAddress'] = $_SERVER['REMOTE_ADDR'];
 		}
-		if (isset($_SERVER['HTTP_USER_AGENT'])) {
+		if (isset($_REQUEST['clientAgent'])) {
+			$parameters['clientAgent'] = $_REQUEST['clientAgent'];
+		} else if (isset($_SERVER['HTTP_USER_AGENT'])) {
 			$parameters['clientAgent'] = $_SERVER['HTTP_USER_AGENT'];
 		}
-		if (isset($_SERVER['HTTP_REFERER'])) {
+		if (isset($_REQUEST['clientReferer'])) {
+			$parameters['clientReferer'] = $_REQUEST['clientReferer'];
+		} else if (isset($_SERVER['HTTP_REFERER'])) {
 			$parameters['clientReferer'] = $_SERVER['HTTP_REFERER'];
 		}
-		if (isset($_SERVER['SERVER_ADDR'])) {
+		if (isset($_REQUEST['serverAddress'])) {
+			$parameters['serverAddress'] = $_REQUEST['serverAddress'];
+		} else if (isset($_SERVER['SERVER_ADDR'])) {
 			$parameters['serverAddress'] = $_SERVER['SERVER_ADDR'];
 		}
-		if (isset($_SERVER['HTTP_HOST'])) {
+		if (isset($_REQUEST['serverHost'])) {
+			$parameters['serverHost'] = $_REQUEST['serverHost'];
+		} else if (isset($_SERVER['HTTP_HOST'])) {
 			$parameters['serverHost'] = $_SERVER['HTTP_HOST'];
 		}
-		if (isset($_SERVER['REQUEST_URI'])) {
+		if (isset($_REQUEST['serverUri'])) {
+			$parameters['serverUri'] = $_REQUEST['serverUri'];
+		} else if (isset($_SERVER['REQUEST_URI'])) {
 			$parameters['serverUri'] = $_SERVER['REQUEST_URI'];
 		}
 		return $parameters;
