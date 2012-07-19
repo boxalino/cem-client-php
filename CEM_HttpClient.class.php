@@ -259,6 +259,14 @@ class CEM_HttpClient {
 		$this->readTimeout = $readTimeout;
 	}
 
+	/**
+	 * Destructor
+	 *
+	 */
+	public function __destruct() {
+		$this->removeFile();
+	}
+
 
 	/**
 	 * Get last error
@@ -606,16 +614,11 @@ class CEM_HttpClient {
 		}
 
 		// set timeout if supported
-		if (defined('CURLOPT_CONNECTTIMEOUT_MS') && defined('CURLOPT_TIMEOUT_MS')) {
-			if (!curl_setopt_array(
-				$curl,
-				array(
-					CURLOPT_CONNECTTIMEOUT_MS => $this->connectionTimeout,
-					CURLOPT_TIMEOUT_MS => $this->readTimeout
-				)
-			)) {
-				throw new Exception("Cannot configure cURL (timeout)");
-			}
+		if (defined('CURLOPT_CONNECTTIMEOUT_MS') && $this->connectionTimeout > 0 && !curl_setopt($curl, CURLOPT_CONNECTTIMEOUT_MS, $this->connectionTimeout)) {
+			throw new Exception("Cannot configure cURL (connect timeout)");
+		}
+		if (defined('CURLOPT_TIMEOUT_MS') && $this->readTimeout > 0 && !curl_setopt($curl, CURLOPT_TIMEOUT_MS, $this->readTimeout)) {
+			throw new Exception("Cannot configure cURL (read timeout)");
 		}
 
 		// set http authentication
