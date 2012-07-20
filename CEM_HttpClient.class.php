@@ -602,7 +602,7 @@ class CEM_HttpClient {
 		if (!curl_setopt_array(
 			$curl,
 			array(
-				CURLOPT_FILE => fopen('php://stdout', 'w'),
+				CURLOPT_FILE => fopen('php://output', 'w'),
 				CURLOPT_RETURNTRANSFER => TRUE,
 				CURLOPT_ENCODING => 'identity',
 				CURLOPT_HEADER => FALSE,
