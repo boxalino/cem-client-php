@@ -23,10 +23,10 @@ class CEM_GatewayClient extends CEM_HttpClient {
 	/**
 	 * Constructor
 	 *
-	 * @param $connectionTimeout connection timeout (defaults to 10[s])
+	 * @param $connectionTimeout connection timeout (defaults to 2[s])
 	 * @param $readTimeout read timeout (defaults to 15[s])
 	 */
-	public function __construct($connectionTimeout = 10000, $readTimeout = 15000) {
+	public function __construct($connectionTimeout = 5000, $readTimeout = 15000) {
 		parent::__construct(FALSE, FALSE, $connectionTimeout, $readTimeout);
 	}
 

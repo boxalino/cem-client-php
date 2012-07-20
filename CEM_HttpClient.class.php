@@ -252,7 +252,7 @@ class CEM_HttpClient {
 	 * @param $connectionTimeout connect timeout in ms (optional)
 	 * @param $readTimeout read timeout in ms (optional)
 	 */
-	public function __construct($username = FALSE, $password = FALSE, $connectionTimeout = 1000, $readTimeout = 15000) {
+	public function __construct($username = FALSE, $password = FALSE, $connectionTimeout = 0, $readTimeout = 0) {
 		$this->username = $username;
 		$this->password = $password;
 		$this->connectionTimeout = $connectionTimeout;
