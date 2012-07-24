@@ -86,15 +86,11 @@ abstract class CEM_PR_AbstractQuery {
 	 */
 	public function build($state) {
 		if ($this->personalized) {
-			$indexPreferences = array();
 			$profile = $state->getContextJson('profile');
-			if (isset($profile->preferences)) {
-				$indexPreferences = $profile->preferences;
-			}
 			return array(
 				'strategy' => $this->strategy,
 				'operation' => $this->operation,
-				'indexPreferences' => $indexPreferences
+				'indexPreferences' => isset($profile->p) ? $profile->p : array()
 			);
 		}
 		return array(

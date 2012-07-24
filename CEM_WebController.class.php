@@ -305,7 +305,8 @@ class CEM_WebController {
 		$batch[] = array(
 			'action' => 'detail',
 			'variables' => array(
-				'sourceFilter' => '@type:instance&@id:('.implode(',', $ids).')'
+				'sourceFilter' => '@type:instance&@id:('.implode(',', $ids).')',
+				'instances' => $sourceIds
 			)
 		);
 		$options['batch'] = $batch;

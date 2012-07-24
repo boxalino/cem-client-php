@@ -1012,15 +1012,15 @@ class CEM_GS_Interaction {
 	public function getPreferredProperties($index = 'default') {
 		$list = array();
 		$profile = $this->getContextJson('profile');
-		if (isset($profile->preferences)) {
-			foreach ($profile->preferences as $preferences) {
-				if ($preferences->index != $index || !isset($preferences->properties)) {
+		if (isset($profile->p)) {
+			foreach ($profile->p as $preferences) {
+				if ($preferences->idx != $index || !isset($preferences->p)) {
 					continue;
 				}
 				$sum = 0;
-				foreach ($preferences->properties as $property) {
-					$list[$property->value] = $property->weight;
-					$sum += $property->weight;
+				foreach ($preferences->p as $property) {
+					$list[$property->value] = $property->f;
+					$sum += $property->f;
 				}
 				if ($sum > 0) {
 					foreach ($list as $key => $value) {
@@ -1042,31 +1042,31 @@ class CEM_GS_Interaction {
 	public function getPreferredPropertyValues($index = 'default') {
 		$list = array();
 		$profile = $this->getContextJson('profile');
-		if (isset($profile->preferences)) {
-			foreach ($profile->preferences as $preferences) {
-				if ($preferences->index != $index || !isset($preferences->propertyValues)) {
+		if (isset($profile->p)) {
+			foreach ($profile->p as $preferences) {
+				if ($preferences->idx != $index || !isset($preferences->pv)) {
 					continue;
 				}
-				foreach ($preferences->propertyValues as $property) {
+				foreach ($preferences->pv as $property) {
 					$sum = 0;
-					$list[$property->property] = array();
-					foreach ($property->values as $value) {
-						if (!isset($list[$property->property][$value->data])) {
-							$list[$property->property][$value->data] = array('offset' => 0, 'weight' => 0);
+					$list[$property->p] = array();
+					foreach ($property->v as $value) {
+						if (!isset($list[$property->p][$value->value])) {
+							$list[$property->p][$value->value] = array('offset' => 0, 'weight' => 0);
 						}
-						$list[$property->property][$value->data]['weight'] += $value->weight;
-						$sum += $value->weight;
+						$list[$property->p][$value->value]['weight'] += $value->f;
+						$sum += $value->f;
 					}
 					if ($sum > 0) {
-						foreach ($list[$property->property] as $key => $value) {
-							$list[$property->property][$key]['weight'] /= $sum;
+						foreach ($list[$property->p] as $key => $value) {
+							$list[$property->p][$key]['weight'] /= $sum;
 						}
 					}
-					uasort($list[$property->property], array($this, 'sortByWeight'));
+					uasort($list[$property->p], array($this, 'sortByWeight'));
 
 					$offset = 1;
-					foreach ($list[$property->property] as $key => $value) {
-						$list[$property->property][$key]['offset'] = $offset++;
+					foreach ($list[$property->p] as $key => $value) {
+						$list[$property->p][$key]['offset'] = $offset++;
 					}
 				}
 			}
