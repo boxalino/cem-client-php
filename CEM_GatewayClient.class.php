@@ -68,6 +68,20 @@ class CEM_GatewayClient extends CEM_HttpClient {
 		}
 		return FALSE;
 	}
+
+
+	/**
+	 * Set request's target cluster
+	 *
+	 * @param $cluster cluster identifier (NULL to remove)
+	 */
+	public function setRequestCluster($cluster) {
+		if ($cluster) {
+			$this->setRequestHeader('X-Cem-Cluster', $cluster);
+		} else {
+			$this->removeRequestHeader('X-Cem-Cluster');
+		}
+	}
 }
 
 /**

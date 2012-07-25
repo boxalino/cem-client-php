@@ -194,14 +194,19 @@ class CEM_HttpClient {
 	private $password;
 
 	/**
-	 * @internal cURL connection timeout
+	 * @internal cURL connect timeout
 	 */
-	private $connectionTimeout;
+	private $connectTimeout;
 
 	/**
 	 * @internal cURL read timeout
 	 */
 	private $readTimeout;
+
+	/**
+	 * @internal Default request headers
+	 */
+	private $requestHeaders = array();
 
 	/**
 	 * @internal Last cURL info
@@ -249,13 +254,13 @@ class CEM_HttpClient {
 	 *
 	 * @param $username tracker username for authentication (optional)
 	 * @param $password tracker password for authentication (optional)
-	 * @param $connectionTimeout connect timeout in ms (optional)
+	 * @param $connectTimeout connect timeout in ms (optional)
 	 * @param $readTimeout read timeout in ms (optional)
 	 */
-	public function __construct($username = FALSE, $password = FALSE, $connectionTimeout = 0, $readTimeout = 0) {
+	public function __construct($username = FALSE, $password = FALSE, $connectTimeout = 0, $readTimeout = 0) {
 		$this->username = $username;
 		$this->password = $password;
-		$this->connectionTimeout = $connectionTimeout;
+		$this->connectTimeout = $connectTimeout;
 		$this->readTimeout = $readTimeout;
 	}
 
@@ -265,6 +270,78 @@ class CEM_HttpClient {
 	 */
 	public function __destruct() {
 		$this->removeFile();
+	}
+
+
+	/**
+	 * Get connect timeout
+	 *
+	 * @return connect timeout
+	 */
+	public function getConnectTimeout() {
+		return $this->connectTimeout;
+	}
+
+	/**
+	 * Set connect timeout
+	 *
+	 * @param $timeout connect timeout
+	 */
+	public function setConnectTimeout($timeout = 0) {
+		$this->connectTimeout = $timeout;
+	}
+
+	/**
+	 * Get read timeout
+	 *
+	 * @return read timeout
+	 */
+	public function getReadTimeout() {
+		return $this->readTimeout;
+	}
+
+	/**
+	 * Set read timeout
+	 *
+	 * @param $timeout read timeout
+	 */
+	public function setReadTimeout($timeout = 0) {
+		$this->readTimeout = $timeout;
+	}
+
+
+	/**
+	 * Add a request header
+	 *
+	 * @param $key header key
+	 * @param $value header value
+	 */
+	public function addRequestHeader($key, $value) {
+		if (!isset($this->requestHeaders[$key])) {
+			$this->requestHeaders[$key] = array();
+		}
+		$this->requestHeaders[$key][] = $value;
+	}
+
+	/**
+	 * Set a request header
+	 *
+	 * @param $key header key
+	 * @param $value header value
+	 */
+	public function setRequestHeader($key, $value) {
+		$this->requestHeaders[$key] = array($value);
+	}
+
+	/**
+	 * Remove a request header
+	 *
+	 * @param $key header key
+	 */
+	public function removeRequestHeader($key) {
+		if (isset($this->requestHeaders[$key])) {
+			unset($this->requestHeaders[$key]);
+		}
 	}
 
 
@@ -614,7 +691,7 @@ class CEM_HttpClient {
 		}
 
 		// set timeout if supported
-		if (defined('CURLOPT_CONNECTTIMEOUT_MS') && $this->connectionTimeout > 0 && !curl_setopt($curl, CURLOPT_CONNECTTIMEOUT_MS, $this->connectionTimeout)) {
+		if (defined('CURLOPT_CONNECTTIMEOUT_MS') && $this->connectTimeout > 0 && !curl_setopt($curl, CURLOPT_CONNECTTIMEOUT_MS, $this->connectTimeout)) {
 			throw new Exception("Cannot configure cURL (connect timeout)");
 		}
 		if (defined('CURLOPT_TIMEOUT_MS') && $this->readTimeout > 0 && !curl_setopt($curl, CURLOPT_TIMEOUT_MS, $this->readTimeout)) {
@@ -644,6 +721,9 @@ class CEM_HttpClient {
 
 		// set headers
 		$headerLines = array();
+		foreach ($this->requestHeaders as $key => $values) {
+			$headerLines[] = $key.': '.$value;
+		}
 		foreach ($headers as $header) {
 			$headerLines[] = $header[0].': '.$header[1];
 		}
