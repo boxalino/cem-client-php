@@ -516,6 +516,14 @@ class CEM_GS_Interaction {
 	 * @return page size
 	 */
 	public function activePageSize() {
+		$group = $this->getGroup();
+		if (isset($group->query->parameters)) {
+			foreach ($group->query->parameters as $parameter) {
+				if ($parameter->name == 'pageSize') {
+					return intval($parameter->value);
+				}
+			}
+		}
 		$state = $this->getContextJson('userState');
 		return (isset($state->pageSize) ? $state->pageSize : 10);
 	}
