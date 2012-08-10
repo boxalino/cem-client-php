@@ -879,10 +879,11 @@ class CEM_GS_Interaction {
 		$group = $this->getGroup($groupId);
 		if (isset($group->search->results)) {
 			foreach ($group->search->results as $index => $result) {
-				if (!isset($result->views) || sizeof($result->views) == 0) {
-					continue;
+				if (isset($result->views) && sizeof($result->views) > 0) {
+					$resource = $this->buildResource($result->views[0]);
+				} else {
+					$resource = array('id' => $result->id);
 				}
-				$resource = $this->buildResource($result->views[0]);
 				if (isset($result->score)) {
 					$resource['score'] = $result->score;
 				} else {

@@ -352,6 +352,24 @@ class CEM_WebController {
 		$this->lastInteraction = NULL;
 	}
 
+	/**
+	 * Clear client state if any
+	 *
+	 */
+	public function clearState() {
+		// get cem state
+		list($state, $created) = $this->getState();
+
+		if ($created) {
+			return;
+		}
+
+		// clear client state
+		$this->stateHandler->remove($state);
+
+		$this->lastInteraction = NULL;
+	}
+
 
 	/**
 	 * Do query completion suggestion
