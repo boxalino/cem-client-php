@@ -382,9 +382,18 @@ class CEM_HttpClient {
 	}
 
 	/**
-	 * Get cookies (remote)
+	 * Get last http response headers
 	 *
-	 * @return cookies (remote)
+	 * @return last http response headers
+	 */
+	public function getHeaders() {
+		return $this->responseHeaders;
+	}
+
+	/**
+	 * Get last response cookies (remote-only)
+	 *
+	 * @return last response cookies (remote-only)
 	 */
 	public function getCookies() {
 		$cookies = array();
@@ -398,12 +407,12 @@ class CEM_HttpClient {
 	}
 
 	/**
-	 * Get last http response headers
+	 * Get last response size
 	 *
-	 * @return last http response headers
+	 * @return last response size
 	 */
-	public function getHeaders() {
-		return $this->responseHeaders;
+	public function getSize() {
+		return strlen($this->responseBody);
 	}
 
 	/**
@@ -437,7 +446,7 @@ class CEM_HttpClient {
 
 
 	/**
-	 * Get cookie
+	 * Get current cookie
 	 *
 	 * @param $name cookie name
 	 * @return cookie object or NULL if none
@@ -447,7 +456,7 @@ class CEM_HttpClient {
 	}
 
 	/**
-	 * Set cookie
+	 * Set current cookie
 	 *
 	 * @param $name cookie name
 	 * @param $value cookie value
@@ -460,7 +469,7 @@ class CEM_HttpClient {
 	}
 
 	/**
-	 * Remove cookie
+	 * Remove current cookie
 	 *
 	 * @param $name cookie name
 	 */
@@ -722,7 +731,9 @@ class CEM_HttpClient {
 		// set headers
 		$headerLines = array();
 		foreach ($this->requestHeaders as $key => $values) {
-			$headerLines[] = $key.': '.$value;
+			foreach ($values as $value) {
+				$headerLines[] = $key.': '.$value;
+			}
 		}
 		foreach ($headers as $header) {
 			$headerLines[] = $header[0].': '.$header[1];

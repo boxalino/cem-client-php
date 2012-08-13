@@ -19,7 +19,7 @@
  *
  * @author nitro@boxalino.com
  */
-class CEM_SimpleProxy {
+class CEM_SimpleProxy extends CEM_HttpClient {
 	/**
 	 * @internal Proxy headers to drop
 	 */
@@ -45,12 +45,6 @@ class CEM_SimpleProxy {
 
 
 	/**
-	 * @internal Http client
-	 */
-	private $client = NULL;
-
-
-	/**
 	 * Proxy current request to remote server
 	 *
 	 * @param $url destination url
@@ -59,18 +53,14 @@ class CEM_SimpleProxy {
 	 * @param $connectionTimeout connect timeout ms (optional)
 	 * @param $readTimeout read timeout ms (optional)
 	 * @param $allowedCookies allowed cookies (optional, regexp if '/.../')
+	 * @param $headers additional headers (optional)
 	 */
-	public function __construct($url, $username = FALSE, $password = FALSE, $connectionTimeout = 1000, $readTimeout = 15000, $allowedCookies = array()) {
+	public function __construct($url, $username = FALSE, $password = FALSE, $connectionTimeout = 1000, $readTimeout = 15000, $allowedCookies = array(), $headers = array()) {
+		parent::__construct($username, $password, $connectionTimeout, $readTimeout);
 		try {
-			// build client
-			$this->client = new CEM_HttpClient($username, $password, $connectionTimeout, $readTimeout);
-
 			// forward http headers
 			$requestContentType = FALSE;
-			$urlParts = parse_url($url);
 			$requestHeaders = array();
-			$requestHeaders[] = array('Host', $urlParts['host']);
-			$requestHeaders[] = array('Via', '1.1 (Proxy)');
 			if (function_exists('apache_request_headers')) {
 				foreach (apache_request_headers() as $name => $value) {
 					$key = strtolower($name);
@@ -87,13 +77,19 @@ class CEM_SimpleProxy {
 					}
 				}
 			}
+			foreach ($headers as $key => $value) {
+				$requestHeaders[] = array($key, $value);
+			}
+			$urlParts = parse_url($url);
+			$requestHeaders[] = array('Host', $urlParts['host']);
+			$requestHeaders[] = array('Via', '1.1 (Proxy)');
 
 			// forward http cookies
 			foreach ($_COOKIE as $name => $value) {
 				foreach ($allowedCookies as $allowedCookie) {
 					if ($name == $allowedCookie ||
 						(strpos($allowedCookie, '/') === 0 && preg_match($allowedCookie, $name))) {
-						$this->client->setCookie($name, $value);
+						$this->setCookie($name, $value);
 						break;
 					}
 				}
@@ -103,32 +99,32 @@ class CEM_SimpleProxy {
 			if (isset($_SERVER['REQUEST_METHOD'])) {
 				switch ($_SERVER['REQUEST_METHOD']) {
 				case 'GET':
-					$this->client->get($url, $_GET, FALSE, $requestHeaders);
+					$this->get($url, $_GET, FALSE, $requestHeaders);
 					break;
 
 				case 'POST':
 					if (sizeof($_POST) > 0) {
-						$this->client->postFields($url, $_POST, 'UTF-8', FALSE, $requestHeaders);
+						$this->postFields($url, $_POST, 'UTF-8', FALSE, $requestHeaders);
 						break;
 					}
 					if (!$requestContentType) {
 						throw new Exception("Invalid content-type");
 					}
-					$this->client->post($url, $requestContentType, file_get_contents("php://input"), FALSE, $requestHeaders);
+					$this->post($url, $requestContentType, file_get_contents("php://input"), FALSE, $requestHeaders);
 					break;
 
 				case 'PUT':
 					if (!$requestContentType) {
 						throw new Exception("Invalid content-type");
 					}
-					$this->client->put($url, $requestContentType, file_get_contents("php://input"), FALSE, $requestHeaders);
+					$this->put($url, $requestContentType, file_get_contents("php://input"), FALSE, $requestHeaders);
 					break;
 
 				default:
 					throw new Exception("Unsupported http method: ".$_SERVER['REQUEST_METHOD']);
 				}
 			} else {
-				$this->client->get($url, array(), FALSE, $requestHeaders);
+				$this->get($url, array(), FALSE, $requestHeaders);
 			}
 		} catch (Exception $e) {
 		}
@@ -141,9 +137,8 @@ class CEM_SimpleProxy {
 	 * @return response code
 	 */
 	public function getCode() {
-		$code = $this->client->getCode();
+		$code = parent::getCode();
 		return ($code > 0 ? $code : 500);
-
 	}
 
 	/**
@@ -152,81 +147,8 @@ class CEM_SimpleProxy {
 	 * @return response status
 	 */
 	public function getStatus() {
-		$status = $this->client->getStatus();
+		$status = parent::getStatus();
 		return ($status ? $status : 'HTTP/1.0 500 Internal Server Error');
-	}
-
-	/**
-	 * Get response cookies
-	 *
-	 * @param $allowedCookies allowed cookies (optional, regexp if '/.../')
-	 * @return response cookies
-	 */
-	public function getCookies($allowedCookies = array()) {
-		$cookies = array();
-		foreach ($this->client->getCookies() as $name => $cookie) {
-			foreach ($allowedCookies as $allowedCookie) {
-				if ($name == $allowedCookie ||
-					(strpos($allowedCookie, '/') === 0 && preg_match($allowedCookie, $name))) {
-					$cookies[$name] = $cookie;
-					break;
-				}
-			}
-		}
-		return $cookies;
-	}
-
-	/**
-	 * Get response headers
-	 *
-	 * @param $allowedCookies allowed cookies (optional, regexp if '/.../')
-	 * @param $cookiePath cookie path (optional)
-	 * @return response headers
-	 */
-	public function getHeaders($allowedCookies = array(), $cookiePath = '/') {
-		// rewrite headers
-		$headers = array();
-		foreach ($this->client->getHeaders() as $entry) {
-			switch ($entry['key']) {
-			case 'content-length':
-				$headers[] = array(
-					'key' => $entry['key'],
-					'name' => $entry['name'],
-					'value' => strlen($this->getBody())
-				);
-				break;
-
-			default:
-				if (!in_array($entry['key'], self::$proxyHideHeaders)) {
-					$headers[] = $entry;
-				}
-				break;
-			}
-		}
-
-		// append cookies
-		foreach ($this->getCookies($allowedCookies) as $cookie) {
-			$header = urlencode($cookie['name']).'='.urlencode($cookie['value']);
-			if (isset($cookie['expires'])) {
-				$header .= '; expires='.$cookie['expires'];
-			}
-			$header .= '; path='.$cookiePath;
-			$headers[] = array(
-				'key' => 'set-cookie',
-				'name' => 'Set-Cookie',
-				'value' => $header
-			);
-		}
-		return $headers;
-	}
-
-	/**
-	 * Get response body
-	 *
-	 * @return response body
-	 */
-	public function getBody() {
-		return $this->client->getBody();
 	}
 
 
@@ -247,15 +169,36 @@ class CEM_SimpleProxy {
 		}
 
 		// forward response status
-		if ($this->getCode() > 0) {
-			header($this->getStatus(), TRUE, $this->getCode());
-		} else {
-			header($this->getStatus());
+		header($this->getStatus(), TRUE, $this->getCode());
+
+		// forward response headers with rewrite
+		foreach ($this->getHeaders() as $entry) {
+			switch ($entry['key']) {
+			case 'content-length':
+				header($entry['name'].': '.$this->getSize(), FALSE);
+				break;
+
+			default:
+				if (!in_array($entry['key'], self::$proxyHideHeaders)) {
+					header($entry['name'].': '.$entry['value'], FALSE);
+				}
+				break;
+			}
 		}
 
-		// forward response headers
-		foreach ($this->getHeaders($allowedCookies, $cookiePath) as $entry) {
-			header($entry['name'].': '.$entry['value'], FALSE);
+		// forward response cookies
+		foreach ($this->getCookies() as $name => $cookie) {
+			foreach ($allowedCookies as $allowedCookie) {
+				if ($name == $allowedCookie ||
+					(strpos($allowedCookie, '/') === 0 && preg_match($allowedCookie, $name))) {
+					$header = urlencode($cookie['name']).'='.urlencode($cookie['value']);
+					if (isset($cookie['expires'])) {
+						$header .= '; expires='.$cookie['expires'];
+					}
+					$header .= '; path='.$cookiePath;
+					header('Set-Cookie: '.$header, FALSE);
+				}
+			}
 		}
 
 		// forward response body
