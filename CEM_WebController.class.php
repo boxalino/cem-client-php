@@ -92,15 +92,19 @@ class CEM_WebController {
 	 * @param $stateHandler state handler
 	 * @param $encoder action encoder
 	 * @param $formatter value formatter
-	 * @param $connectionTimeout connection timeout in milliseconds
+	 * @param $connectTimeout connection timeout in milliseconds
 	 * @param $readTimeout read timeout in milliseconds
 	 * @param $options options map
 	 */
-	public function __construct($stateHandler, $encoder, $formatter, $connectionTimeout = 5000, $readTimeout = 15000, $options = array()) {
+	public function __construct($stateHandler, $encoder, $formatter, $connectTimeout = 1000, $readTimeout = 15000, $options = array()) {
 		$this->stateHandler = $stateHandler;
 		$this->encoder = $encoder;
 		$this->formatter = $formatter;
-		$this->client = new CEM_GatewayClient($connectionTimeout, $readTimeout);
+		$this->client = new CEM_GatewayClient(
+			$connectTimeout,
+			$readTimeout,
+			isset($options['connectTries']) ? $options['connectTries'] : 3
+		);
 		if (isset($options['url']) && strlen($options['url']) > 0) {
 			$this->gsUrl = $options['url'].'/gs/gateway/client-1.4';
 			$this->prUrl = $options['url'].'/pr/gateway/client-1.4';
@@ -295,6 +299,9 @@ class CEM_WebController {
 	 * @return wrapped cem response
 	 */
 	public function interactDetail($sourceIds = array(), $options = array(), $useCache = TRUE) {
+		// find property
+		$property = isset($options['idProperty']) ? $options['idProperty'] : '@id';
+
 		// build request batch
 		$ids = array();
 		foreach ($sourceIds as $sourceId) {
@@ -305,7 +312,7 @@ class CEM_WebController {
 		$batch[] = array(
 			'action' => 'detail',
 			'variables' => array(
-				'sourceFilter' => '@type:instance&@id:('.implode(',', $ids).')',
+				'sourceFilter' => '@type:instance&'.$property.':('.implode(',', $ids).')',
 				'instances' => $sourceIds
 			)
 		);

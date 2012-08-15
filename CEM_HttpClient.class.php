@@ -199,6 +199,11 @@ class CEM_HttpClient {
 	private $connectTimeout;
 
 	/**
+	 * @internal cURL connect tries
+	 */
+	private $connectTries;
+
+	/**
 	 * @internal cURL read timeout
 	 */
 	private $readTimeout;
@@ -256,12 +261,14 @@ class CEM_HttpClient {
 	 * @param $password tracker password for authentication (optional)
 	 * @param $connectTimeout connect timeout in ms (optional)
 	 * @param $readTimeout read timeout in ms (optional)
+	 * @param $connectTries connect tries
 	 */
-	public function __construct($username = FALSE, $password = FALSE, $connectTimeout = 0, $readTimeout = 0) {
+	public function __construct($username = FALSE, $password = FALSE, $connectTimeout = 0, $readTimeout = 0, $connectTries = 3) {
 		$this->username = $username;
 		$this->password = $password;
 		$this->connectTimeout = $connectTimeout;
 		$this->readTimeout = $readTimeout;
+		$this->connectTries = $connectTries;
 	}
 
 	/**
@@ -289,6 +296,24 @@ class CEM_HttpClient {
 	 */
 	public function setConnectTimeout($timeout = 0) {
 		$this->connectTimeout = $timeout;
+	}
+
+	/**
+	 * Get connect tries
+	 *
+	 * @return connect tries
+	 */
+	public function getConnectTries() {
+		return $this->connectTries;
+	}
+
+	/**
+	 * Set connect tries
+	 *
+	 * @param $tries connect tries
+	 */
+	public function setConnectTries($tries = 0) {
+		$this->connectTries = $tries;
 	}
 
 	/**
@@ -589,18 +614,24 @@ class CEM_HttpClient {
 	 * @return http code
 	 */
 	public function process($method, $url, $referer = FALSE, $headers = array(), $postData = FALSE) {
+		$this->removeFile();
+
 		$beginTime = microtime(TRUE);
 
 		// init curl
 		$curl = $this->preprocess($method, $url, $referer, $headers, $postData);
 
 		// execute curl request
-		$this->responseStatus = NULL;
-		$this->responseHeaders = array();
-		$this->responseBody = curl_exec($curl);
+		$try = 0;
+		do {
+			$try++;
+
+			$this->responseStatus = NULL;
+			$this->responseHeaders = array();
+			$this->responseBody = curl_exec($curl);
+		} while (curl_errno($curl) == CURLE_COULDNT_CONNECT && $try < $this->connectTries);
 		$this->curlInfo = curl_getinfo($curl);
 		$this->curlError = curl_error($curl);
-
 		$redirectUrl = $this->postprocess($method, $url, $referer, $headers, $postData);
 
 		// close curl
@@ -629,18 +660,19 @@ class CEM_HttpClient {
 	 * @return http code
 	 */
 	public function processAndSave($method, $url, $referer = FALSE, $headers = array(), $postData = FALSE) {
+		$this->removeFile();
+
 		$beginTime = microtime(TRUE);
 
-		// init curl
-		$curl = $this->preprocess($method, $url, $referer, $headers, $postData);
-
-		// set file options
+		// open temporary file
 		$this->responseFile = tempnam('/tmp', 'CEM_HttpClient');
 		$f = fopen($this->responseFile, 'w');
 		if (!$f) {
-			curl_close($curl);
 			throw new Exception("Cannot open temporary file");
 		}
+
+		// init curl
+		$curl = $this->preprocess($method, $url, $referer, $headers, $postData);
 		if (!curl_setopt($curl, CURLOPT_FILE, $f)) {
 			fclose($f);
 			curl_close($curl);
@@ -648,17 +680,24 @@ class CEM_HttpClient {
 		}
 
 		// execute curl request
-		$this->responseStatus = NULL;
-		$this->responseHeaders = array();
-		curl_exec($curl);
+		$try = 0;
+		do {
+			$try++;
+
+			$this->responseStatus = NULL;
+			$this->responseHeaders = array();
+			$this->responseBody = NULL;
+			curl_exec($curl);
+		} while (curl_errno($curl) == CURLE_COULDNT_CONNECT && $try < $this->connectTries);
 		$this->curlInfo = curl_getinfo($curl);
 		$this->curlError = curl_error($curl);
-		fclose($f);
-
 		$redirectUrl = $this->postprocess($method, $url, $referer, $headers, $postData);
 
 		// close curl
 		curl_close($curl);
+
+		// close temporary file
+		fclose($f);
 
 		// fetch time
 		$this->time += microtime(TRUE) - $beginTime;
