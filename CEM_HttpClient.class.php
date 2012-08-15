@@ -201,7 +201,7 @@ class CEM_HttpClient {
 	/**
 	 * @internal cURL connect tries
 	 */
-	private $connectTries;
+	private $connectMaxTries;
 
 	/**
 	 * @internal cURL read timeout
@@ -227,6 +227,11 @@ class CEM_HttpClient {
 	 * @internal Last request time
 	 */
 	private $time = 0;
+
+	/**
+	 * @internal cURL connect tries
+	 */
+	private $connectTries = 0;
 
 	/**
 	 * @internal Last response status line
@@ -261,14 +266,14 @@ class CEM_HttpClient {
 	 * @param $password tracker password for authentication (optional)
 	 * @param $connectTimeout connect timeout in ms (optional)
 	 * @param $readTimeout read timeout in ms (optional)
-	 * @param $connectTries connect tries
+	 * @param $connectMaxTries connect tries (optional, 0 means no retry)
 	 */
-	public function __construct($username = FALSE, $password = FALSE, $connectTimeout = 0, $readTimeout = 0, $connectTries = 3) {
+	public function __construct($username = FALSE, $password = FALSE, $connectTimeout = 0, $readTimeout = 0, $connectMaxTries = 0) {
 		$this->username = $username;
 		$this->password = $password;
 		$this->connectTimeout = $connectTimeout;
 		$this->readTimeout = $readTimeout;
-		$this->connectTries = $connectTries;
+		$this->connectMaxTries = $connectMaxTries;
 	}
 
 	/**
@@ -299,21 +304,21 @@ class CEM_HttpClient {
 	}
 
 	/**
-	 * Get connect tries
+	 * Get maximum connect tries
 	 *
 	 * @return connect tries
 	 */
-	public function getConnectTries() {
-		return $this->connectTries;
+	public function getConnectMaxTries() {
+		return $this->connectMaxTries;
 	}
 
 	/**
-	 * Set connect tries
+	 * Set maximum connect tries
 	 *
 	 * @param $tries connect tries
 	 */
-	public function setConnectTries($tries = 0) {
-		$this->connectTries = $tries;
+	public function setConnectMaxTries($tries = 0) {
+		$this->connectMaxTries = $tries;
 	}
 
 	/**
@@ -371,6 +376,20 @@ class CEM_HttpClient {
 
 
 	/**
+	 * Set request's target cluster
+	 *
+	 * @param $cluster cluster identifier ('' to remove)
+	 */
+	public function setRequestCluster($cluster) {
+		if (strlen($cluster) > 0) {
+			$this->setRequestHeader('X-Cem-Cluster', $cluster);
+		} else {
+			$this->removeRequestHeader('X-Cem-Cluster');
+		}
+	}
+
+
+	/**
 	 * Get last error
 	 *
 	 * @return last error
@@ -386,6 +405,15 @@ class CEM_HttpClient {
 	 */
 	public function getTime() {
 		return $this->time;
+	}
+
+	/**
+	 * Get connect tries
+	 *
+	 * @return connect tries
+	 */
+	public function getConnectTries() {
+		return $this->connectTries;
 	}
 
 	/**
@@ -437,6 +465,9 @@ class CEM_HttpClient {
 	 * @return last response size
 	 */
 	public function getSize() {
+		if ($this->responseFile) {
+			return filesize($this->responseFile);
+		}
 		return strlen($this->responseBody);
 	}
 
@@ -618,24 +649,28 @@ class CEM_HttpClient {
 
 		$beginTime = microtime(TRUE);
 
-		// init curl
-		$curl = $this->preprocess($method, $url, $referer, $headers, $postData);
-
-		// execute curl request
-		$try = 0;
+		// perform request/response
+		$this->connectTries = 0;
 		do {
-			$try++;
+			$this->connectTries++;
 
+			// init curl
+			$curl = $this->preprocess($method, $url, $referer, $headers, $postData);
+
+			// execute curl request
 			$this->responseStatus = NULL;
 			$this->responseHeaders = array();
 			$this->responseBody = curl_exec($curl);
-		} while (curl_errno($curl) == CURLE_COULDNT_CONNECT && $try < $this->connectTries);
-		$this->curlInfo = curl_getinfo($curl);
-		$this->curlError = curl_error($curl);
-		$redirectUrl = $this->postprocess($method, $url, $referer, $headers, $postData);
+			$this->curlInfo = curl_getinfo($curl);
+			$this->curlError = curl_error($curl);
+			$lastError = curl_errno($curl);
 
-		// close curl
-		curl_close($curl);
+			// close curl
+			curl_close($curl);
+		} while ($this->isConnectTimeout($lastError, $this->curlError) && $this->connectTries <= $this->connectMaxTries);
+
+		// parse response
+		$redirectUrl = $this->postprocess($method, $url, $referer, $headers, $postData);
 
 		// fetch time
 		$this->time += microtime(TRUE) - $beginTime;
@@ -671,30 +706,37 @@ class CEM_HttpClient {
 			throw new Exception("Cannot open temporary file");
 		}
 
-		// init curl
-		$curl = $this->preprocess($method, $url, $referer, $headers, $postData);
-		if (!curl_setopt($curl, CURLOPT_FILE, $f)) {
-			fclose($f);
-			curl_close($curl);
-			throw new Exception("Cannot configure cURL (file)");
-		}
-
-		// execute curl request
-		$try = 0;
+		// perform request/response
+		$this->connectTries = 0;
 		do {
-			$try++;
+			$this->connectTries++;
 
+			// init curl
+			$curl = $this->preprocess($method, $url, $referer, $headers, $postData);
+
+			fseek($f, 0);
+			ftruncate($f, 0);
+			if (!curl_setopt($curl, CURLOPT_FILE, $f)) {
+				fclose($f);
+				curl_close($curl);
+				throw new Exception("Cannot configure cURL (file)");
+			}
+
+			// execute curl request
 			$this->responseStatus = NULL;
 			$this->responseHeaders = array();
 			$this->responseBody = NULL;
 			curl_exec($curl);
-		} while (curl_errno($curl) == CURLE_COULDNT_CONNECT && $try < $this->connectTries);
-		$this->curlInfo = curl_getinfo($curl);
-		$this->curlError = curl_error($curl);
-		$redirectUrl = $this->postprocess($method, $url, $referer, $headers, $postData);
+			$this->curlInfo = curl_getinfo($curl);
+			$this->curlError = curl_error($curl);
+			$lastError = curl_errno($curl);
 
-		// close curl
-		curl_close($curl);
+			// close curl
+			curl_close($curl);
+		} while ($this->isConnectTimeout($lastError, $this->curlError) && $this->connectTries <= $this->connectMaxTries);
+
+		// parse response
+		$redirectUrl = $this->postprocess($method, $url, $referer, $headers, $postData);
 
 		// close temporary file
 		fclose($f);
@@ -861,9 +903,30 @@ class CEM_HttpClient {
 
 
 	/**
-	 * @internal Called by CURL to parse http header
+	 * @internal Check if cURL did a connect timeout
 	 *
-	 * @param $h CURL handle
+	 * @param $errno last cURL error code
+	 * @param $message last cURL error message
+	 * @return TRUE if cURL did connect() timeout
+	 */
+	private function isConnectTimeout($errno, $message) {
+		switch ($errno) {
+		case CURLE_COULDNT_CONNECT:
+			return TRUE;
+
+		case CURLE_OPERATION_TIMEOUTED:
+			if (stripos($message, 'connect()') !== FALSE) {
+				return TRUE;
+			}
+			break;
+		}
+		return FALSE;
+	}
+
+	/**
+	 * @internal Called by cURL to parse http header
+	 *
+	 * @param $h cURL handle
 	 * @param $data header line
 	 * @return line size
 	 */

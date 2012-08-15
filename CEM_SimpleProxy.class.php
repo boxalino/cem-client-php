@@ -54,7 +54,7 @@ class CEM_SimpleProxy extends CEM_HttpClient {
 	 * @param $connectTries connect tries (optional)
 	 */
 	public function __construct($username = FALSE, $password = FALSE, $connectionTimeout = 1000, $readTimeout = 15000, $connectTries = 3) {
-		parent::__construct($password, $connectionTimeout, $readTimeout, $connectTries);
+		parent::__construct($username, $password, $connectionTimeout, $readTimeout, $connectTries);
 	}
 
 

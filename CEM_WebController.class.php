@@ -103,7 +103,7 @@ class CEM_WebController {
 		$this->client = new CEM_GatewayClient(
 			$connectTimeout,
 			$readTimeout,
-			isset($options['connectTries']) ? $options['connectTries'] : 3
+			isset($options['connectMaxTries']) ? $options['connectMaxTries'] : 3
 		);
 		if (isset($options['url']) && strlen($options['url']) > 0) {
 			$this->gsUrl = $options['url'].'/gs/gateway/client-1.4';

@@ -25,10 +25,10 @@ class CEM_GatewayClient extends CEM_HttpClient {
 	 *
 	 * @param $connectionTimeout connection timeout (defaults to 1[s])
 	 * @param $readTimeout read timeout (defaults to 15[s])
-	 * @param $connectTries connect tries (defaults to 3)
+	 * @param $connectMaxTries connect tries (defaults to 3)
 	 */
-	public function __construct($connectionTimeout = 1000, $readTimeout = 15000, $connectTries = 3) {
-		parent::__construct(FALSE, FALSE, $connectionTimeout, $readTimeout, $connectTries);
+	public function __construct($connectionTimeout = 1000, $readTimeout = 15000, $connectMaxTries = 3) {
+		parent::__construct(FALSE, FALSE, $connectionTimeout, $readTimeout, $connectMaxTries);
 	}
 
 
@@ -68,20 +68,6 @@ class CEM_GatewayClient extends CEM_HttpClient {
 			return $response->read($state, $this->getBody());
 		}
 		return FALSE;
-	}
-
-
-	/**
-	 * Set request's target cluster
-	 *
-	 * @param $cluster cluster identifier ('' to remove)
-	 */
-	public function setRequestCluster($cluster) {
-		if (strlen($cluster) > 0) {
-			$this->setRequestHeader('X-Cem-Cluster', $cluster);
-		} else {
-			$this->removeRequestHeader('X-Cem-Cluster');
-		}
 	}
 }
 

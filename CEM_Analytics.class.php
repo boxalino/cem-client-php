@@ -32,11 +32,12 @@ class CEM_Analytics extends CEM_HttpClient {
 	 * @param $url tracker url
 	 * @param $username tracker username for authentication (optional)
 	 * @param $password tracker password for authentication (optional)
-	 * @param $connectionTimeout connect timeout ms (optional)
+	 * @param $connectTimeout connect timeout ms (optional)
 	 * @param $readTimeout read timeout ms (optional)
+	 * @param $connectMaxTries connect tries (optional, 0 means no retry)
 	 */
-	public function __construct($url, $username = FALSE, $password = FALSE, $connectionTimeout = 1000, $readTimeout = 1000) {
-		parent::__construct(FALSE, FALSE, $connectionTimeout, $readTimeout);
+	public function __construct($url, $username = FALSE, $password = FALSE, $connectTimeout = 1000, $readTimeout = 1000, $connectMaxTries = 1) {
+		parent::__construct(FALSE, FALSE, $connectionTimeout, $readTimeout, $connectMaxTries);
 		$this->url = $url;
 	}
 
