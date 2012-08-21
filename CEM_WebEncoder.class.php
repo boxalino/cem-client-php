@@ -38,7 +38,7 @@ class CEM_WebEncoder {
 	/**
 	 * User state keys
 	 */
-	protected $userStateKeys = array('pageSize' => 'number', 'ranking' => 'string', 'scenario' => 'string');
+	protected $userStateKeys = array();
 
 
 	/**
@@ -194,11 +194,11 @@ class CEM_WebEncoder {
 	 * Set user state
 	 *
 	 * @param $key state key
-	 * @param $type state type
+	 * @param $info state info
 	 * @return this
 	 */
-	public function setUserState($key, $type) {
-		$this->userStateKeys[$key] = $type;
+	public function setUserState($key, $info) {
+		$this->userStateKeys[$key] = $info;
 		return $this;
 	}
 
@@ -227,12 +227,12 @@ class CEM_WebEncoder {
 	/**
 	 * Set user states
 	 *
-	 * @param $states state key/type
+	 * @param $states state key/info
 	 * @return this
 	 */
 	public function setUserStates($states) {
-		foreach ($states as $key => $type) {
-			$this->userStateKeys[$key] = $type;
+		foreach ($states as $key => $info) {
+			$this->userStateKeys[$key] = $info;
 		}
 		return $this;
 	}
@@ -372,16 +372,29 @@ class CEM_WebEncoder {
 	 * @param $options options passed for interaction
 	 */
 	public function buildInteractionRequest($state, $request, $options) {
+		$userState = $state->getContextJson('userState');
+		$userStateChanged = FALSE;
+
 		// add state request
-		$userState = array();
-		foreach ($this->userStateKeys as $key => $type) {
-			$value = $this->buildUserState($state, $request, $options, $key, $type);
+		$userStateVariables = array();
+		foreach ($this->userStateKeys as $key => $info) {
+			$value = $this->buildUserState($state, $request, $options, $key, $info);
 			if ($value) {
-				$userState[$key] = $value;
+				$userStateVariables[$key] = $value;
+
+				// unset from stored user state
+				if ($userState && isset($userState->$key)) {
+					unset($userState->$key);
+					$userStateChanged = TRUE;
+				}
 			}
 		}
-		if (sizeof($userState) > 0) {
-			$request->appendRequest('setUserState', array('userState' => $userState));
+		if (sizeof($userStateVariables) > 0) {
+			$request->appendRequest('setUserState', array('userState' => $userStateVariables));
+
+			if ($userStateChanged) {
+				$state->setContextData('userState', @json_encode($userState));
+			}
 		}
 	}
 
@@ -402,10 +415,10 @@ class CEM_WebEncoder {
 	 * @param $request client request reference
 	 * @param $options options passed for interaction
 	 * @param $key user state key
-	 * @param $type user state type
+	 * @param $info user state info
 	 * @return user state value if any, FALSE otherwise
 	 */
-	public function buildUserState($state, $request, $options, $key, $type) {
+	public function buildUserState($state, $request, $options, $key, $info) {
 		return FALSE;
 	}
 

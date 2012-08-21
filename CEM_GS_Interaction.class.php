@@ -534,6 +534,10 @@ class CEM_GS_Interaction {
 	 * @return ranking
 	 */
 	public function activeRanking() {
+		$group = $this->getGroup();
+		if (isset($group->query->ranking)) {
+			return $group->query->ranking;
+		}
 		$state = $this->getContextJson('userState');
 		return (isset($state->ranking) ? $state->ranking : '@score desc,@random asc');
 	}
@@ -883,6 +887,9 @@ class CEM_GS_Interaction {
 					$resource = $this->buildResource($result->views[0]);
 				} else {
 					$resource = array('id' => $result->id);
+				}
+				if (isset($result->resources)) {
+					$resource['resources'] = $result->resources;
 				}
 				if (isset($result->score)) {
 					$resource['score'] = $result->score;
