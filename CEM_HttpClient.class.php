@@ -224,6 +224,11 @@ class CEM_HttpClient {
 	private $curlError = NULL;
 
 	/**
+	 * @internal Last cURL code
+	 */
+	private $curlCode = NULL;
+
+	/**
 	 * @internal Last request time
 	 */
 	private $time = 0;
@@ -662,12 +667,12 @@ class CEM_HttpClient {
 			$this->responseHeaders = array();
 			$this->responseBody = curl_exec($curl);
 			$this->curlInfo = curl_getinfo($curl);
+			$this->curlCode = curl_errno($curl);
 			$this->curlError = curl_error($curl);
-			$lastError = curl_errno($curl);
 
 			// close curl
 			curl_close($curl);
-		} while ($this->isConnectTimeout($lastError, $this->curlError) && $this->connectTries <= $this->connectMaxTries);
+		} while ($this->isConnectTimeout($this->curlCode, $this->curlError) && $this->connectTries <= $this->connectMaxTries);
 
 		// parse response
 		$redirectUrl = $this->postprocess($method, $url, $referer, $headers, $postData);
@@ -728,12 +733,12 @@ class CEM_HttpClient {
 			$this->responseBody = NULL;
 			curl_exec($curl);
 			$this->curlInfo = curl_getinfo($curl);
+			$this->curlCode = curl_errno($curl);
 			$this->curlError = curl_error($curl);
-			$lastError = curl_errno($curl);
 
 			// close curl
 			curl_close($curl);
-		} while ($this->isConnectTimeout($lastError, $this->curlError) && $this->connectTries <= $this->connectMaxTries);
+		} while ($this->isConnectTimeout($this->curlCode, $this->curlError) && $this->connectTries <= $this->connectMaxTries);
 
 		// parse response
 		$redirectUrl = $this->postprocess($method, $url, $referer, $headers, $postData);
@@ -783,8 +788,12 @@ class CEM_HttpClient {
 		// set timeout if supported
 		if (defined('CURLOPT_CONNECTTIMEOUT_MS') && $this->connectTimeout > 0 && !curl_setopt($curl, CURLOPT_CONNECTTIMEOUT_MS, $this->connectTimeout)) {
 			throw new Exception("Cannot configure cURL (connect timeout)");
+		} else if ($this->connectTimeout > 0 && !curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, intval(min(1, $this->connectTimeout / 1000)))) {
+			throw new Exception("Cannot configure cURL (connect timeout)");
 		}
 		if (defined('CURLOPT_TIMEOUT_MS') && $this->readTimeout > 0 && !curl_setopt($curl, CURLOPT_TIMEOUT_MS, $this->readTimeout)) {
+			throw new Exception("Cannot configure cURL (read timeout)");
+		} else if ($this->readTimeout > 0 && !curl_setopt($curl, CURLOPT_TIMEOUT, intval(min(1, $this->readTimeout / 1000)))) {
 			throw new Exception("Cannot configure cURL (read timeout)");
 		}
 
