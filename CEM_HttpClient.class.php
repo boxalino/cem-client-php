@@ -785,16 +785,24 @@ class CEM_HttpClient {
 			throw new Exception("Cannot configure cURL (base)");
 		}
 
-		// set timeout if supported
-		if (defined('CURLOPT_CONNECTTIMEOUT_MS') && $this->connectTimeout > 0 && !curl_setopt($curl, CURLOPT_CONNECTTIMEOUT_MS, $this->connectTimeout)) {
-			throw new Exception("Cannot configure cURL (connect timeout)");
-		} else if ($this->connectTimeout > 0 && !curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, intval(min(1, $this->connectTimeout / 1000)))) {
-			throw new Exception("Cannot configure cURL (connect timeout)");
+		// set timeouts
+		if ($this->connectTimeout > 0) {
+			if (defined('CURLOPT_CONNECTTIMEOUT_MS')) {
+				if (!curl_setopt($curl, CURLOPT_CONNECTTIMEOUT_MS, $this->connectTimeout)) {
+					throw new Exception("Cannot configure cURL (connect timeout)");
+				}
+			} else if (!curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, intval(max(1, $this->connectTimeout / 1000)))) {
+				throw new Exception("Cannot configure cURL (connect timeout)");
+			}
 		}
-		if (defined('CURLOPT_TIMEOUT_MS') && $this->readTimeout > 0 && !curl_setopt($curl, CURLOPT_TIMEOUT_MS, $this->readTimeout)) {
-			throw new Exception("Cannot configure cURL (read timeout)");
-		} else if ($this->readTimeout > 0 && !curl_setopt($curl, CURLOPT_TIMEOUT, intval(min(1, $this->readTimeout / 1000)))) {
-			throw new Exception("Cannot configure cURL (read timeout)");
+		if ($this->readTimeout > 0) {
+			if (defined('CURLOPT_TIMEOUT_MS')) {
+				if (!curl_setopt($curl, CURLOPT_TIMEOUT_MS, $this->readTimeout)) {
+					throw new Exception("Cannot configure cURL (read timeout)");
+				}
+			} else if (!curl_setopt($curl, CURLOPT_TIMEOUT, intval(max(1, $this->readTimeout / 1000)))) {
+				throw new Exception("Cannot configure cURL (read timeout)");
+			}
 		}
 
 		// set http authentication
