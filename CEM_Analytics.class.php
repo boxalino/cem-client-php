@@ -37,7 +37,7 @@ class CEM_Analytics extends CEM_HttpClient {
 	 * @param $connectMaxTries connect tries (optional, 0 means no retry)
 	 */
 	public function __construct($url, $username = FALSE, $password = FALSE, $connectTimeout = 1000, $readTimeout = 1000, $connectMaxTries = 1) {
-		parent::__construct(FALSE, FALSE, $connectionTimeout, $readTimeout, $connectMaxTries);
+		parent::__construct(FALSE, FALSE, $connectTimeout, $readTimeout, $connectMaxTries);
 		$this->url = $url;
 	}
 

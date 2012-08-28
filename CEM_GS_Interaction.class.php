@@ -896,6 +896,11 @@ class CEM_GS_Interaction {
 				} else {
 					$resource['score'] = 0;
 				}
+				if (isset($result->explanation)) {
+					$resource['explanation'] = $result->explanation;
+				} else {
+					$resource['explanation'] = '';
+				}
 				$resource['offset'] = $group->search->offset + $index;
 				$this->_results[$groupId][] = $resource;
 			}
