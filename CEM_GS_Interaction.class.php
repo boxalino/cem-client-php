@@ -439,7 +439,7 @@ class CEM_GS_Interaction {
 						}
 						$this->_filters[$groupId][$refinement->property][] = array(
 							'mode' => 'term',
-							'index' => -($index + 1),
+							'index' => $index,
 							'property' => $guidance->property,
 							'guidance' => $guidance
 						);
