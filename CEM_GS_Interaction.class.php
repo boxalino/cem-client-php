@@ -1249,6 +1249,7 @@ class CEM_GS_Interaction {
 		$nonFiltering = array();
 		$totalSelected = 0;
 		$totalFiltering = 0;
+		$termFilters = 0;
 		$previews = array();
 		$list = array();
 		foreach ($values as $index => $value) {
@@ -1276,6 +1277,9 @@ class CEM_GS_Interaction {
 					}
 				}
 				if ($selected) {
+					if ($filter['mode'] == 'term') {
+						$termFilters++;
+					}
 					$selectedFilter = $filter;
 					break;
 				}
@@ -1401,6 +1405,7 @@ class CEM_GS_Interaction {
 				'valuesSelected' => $totalSelected,
 				'valuesFiltering' => $totalFiltering,
 				'valuesWithPreview' => sizeof($previews),
+				'termFilters' => $termFilters,
 				'attribute' => $this->buildAttributeView($attribute, $parentValues, $list)
 			);
 		}
@@ -1464,6 +1469,7 @@ class CEM_GS_Interaction {
 		$nonFiltering = array();
 		$totalSelected = 0;
 		$totalFiltering = 0;
+		$termFilters = 0;
 		$previews = array();
 		$list = array();
 		foreach ($values as $index => $value) {
@@ -1497,6 +1503,9 @@ class CEM_GS_Interaction {
 					}
 				}
 				if ($selected) {
+					if ($filter['mode'] == 'term') {
+						$termFilters++;
+					}
 					$selectedFilter = $filter;
 					break;
 				}
@@ -1623,6 +1632,7 @@ class CEM_GS_Interaction {
 				'valuesSelected' => $totalSelected,
 				'valuesFiltering' => $totalFiltering,
 				'valuesWithPreview' => sizeof($previews),
+				'termFilters' => $termFilters,
 				'attribute' => $this->buildAttributeView($attribute, $parentValues, $list)
 			);
 		}
