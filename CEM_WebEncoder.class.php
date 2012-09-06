@@ -374,9 +374,12 @@ class CEM_WebEncoder {
 	public function buildInteractionRequest($state, $request, $options) {
 		$userState = $state->getContextJson('userState');
 		$userStateChanged = FALSE;
+		$model = $state->getContextJson('model');
+		$modelChanged = FALSE;
 
 		// add state request
 		$userStateVariables = array();
+		$modelStateVariables = array();
 		foreach ($this->userStateKeys as $key => $info) {
 			$value = $this->buildUserState($state, $request, $options, $key, $info);
 			if ($value) {
@@ -388,12 +391,31 @@ class CEM_WebEncoder {
 					$userStateChanged = TRUE;
 				}
 			}
+			$value = $this->buildModelState($state, $request, $options, $key, $info);
+			if ($value) {
+				$modelStateVariables[$key] = $value;
+
+				// unset from stored model state
+				if ($model && isset($model->state->$key)) {
+					unset($model->state->$key);
+					$modelChanged = TRUE;
+				}
+			}
 		}
-		if (sizeof($userStateVariables) > 0) {
-			$request->appendRequest('setUserState', array('userState' => $userStateVariables));
+		if (sizeof($userStateVariables) + sizeof($modelStateVariables) > 0) {
+			$request->appendRequest(
+				'setUserState',
+				array(
+					'userState' => $userStateVariables,
+					'modelState' => $modelStateVariables
+				)
+			);
 
 			if ($userStateChanged) {
 				$state->setContextData('userState', @json_encode($userState));
+			}
+			if ($modelChanged) {
+				$state->setContextData('model', @json_encode($model));
 			}
 		}
 	}
@@ -419,6 +441,20 @@ class CEM_WebEncoder {
 	 * @return user state value if any, FALSE otherwise
 	 */
 	public function buildUserState($state, $request, $options, $key, $info) {
+		return FALSE;
+	}
+
+	/**
+	 * Build model state if any
+	 *
+	 * @param $state client state reference
+	 * @param $request client request reference
+	 * @param $options options passed for interaction
+	 * @param $key user state key
+	 * @param $info user state info
+	 * @return model state value if any, FALSE otherwise
+	 */
+	public function buildModelState($state, $request, $options, $key, $info) {
 		return FALSE;
 	}
 
