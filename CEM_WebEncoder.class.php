@@ -531,10 +531,11 @@ class CEM_WebEncoder {
 	/**
 	 * Called to build a guidance remove action
 	 *
-	 * @param $property guidance property identifier or numeric index
+	 * @param $property guidance property identifier
+	 * @param $value optional value
 	 * @return action
 	 */
-	public function buildGuidanceRemoveAction($property) {
+	public function buildGuidanceRemoveAction($property, $value = NULL) {
 		return array(
 			'uri' => '',
 			'parameters' => array()
@@ -563,6 +564,21 @@ class CEM_WebEncoder {
 	 * @return action
 	 */
 	public function buildAttributeAddAction($attribute, $parents, $value) {
+		return array(
+			'uri' => '',
+			'parameters' => array()
+		);
+	}
+
+	/**
+	 * Called to build a merge guidance attribute action
+	 *
+	 * @param $attribute guidance attribute
+	 * @param $parents list of parent values
+	 * @param $value value
+	 * @return action
+	 */
+	public function buildAttributeMergeAction($attribute, $parents, $value) {
 		return array(
 			'uri' => '',
 			'parameters' => array()

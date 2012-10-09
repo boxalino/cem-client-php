@@ -494,8 +494,8 @@ class CEM_GS_Interaction {
 
 				if ($filter['mode'] == 'term' && $filter['index'] >= 0) {
 					$this->_filters[$groupId][$propertyId][$index]['removeAction'] = $this->encoder->buildRefineAction($filter['index']);
-				} else if (sizeof($filters) > 1 && $filter['mode'] == 'guidance' && $filter['index'] >= 0) {
-					$this->_filters[$groupId][$propertyId][$index]['removeAction'] = $this->encoder->buildGuidanceRemoveAction($filter['index']);
+				} else if ($filter['mode'] == 'guidance' && $filter['guidance']->type == 'text' && $filter['guidance']->mode == 'guidance') {
+					$this->_filters[$groupId][$propertyId][$index]['removeAction'] = $this->encoder->buildGuidanceRemoveAction($propertyId, end($filter['guidance']->data));
 				} else {
 					$this->_filters[$groupId][$propertyId][$index]['removeAction'] = $this->encoder->buildGuidanceRemoveAction($propertyId);
 				}
@@ -1268,12 +1268,18 @@ class CEM_GS_Interaction {
 					}
 					$selected = $selected && ($filter['guidance']->data[$depth] === $value->data[0]);
 				} else {
-					if (sizeof($filter['guidance']->data) != sizeof($value->data)) {
-						$selected = FALSE;
-						continue;
-					}
-					for ($i = 0; $i < sizeof($value->data); $i++) {
-						$selected = $selected && ($filter['guidance']->data[$i] === $value->data[$i]);
+					if ($attribute->type == 'dateRange' || $attribute->type == 'numberRange') {
+						if (sizeof($filter['guidance']->data) == sizeof($value->data)) {
+							for ($i = 0; $i < sizeof($value->data); $i++) {
+								$selected = $selected && ($filter['guidance']->data[$i] == $value->data[$i]);
+							}
+						} else {
+							$selected = FALSE;
+						}
+					} else {
+						for ($i = 0; $i < sizeof($value->data); $i++) {
+							$selected = $selected && in_array($value->data[$i], $filter['guidance']->data);
+						}
 					}
 				}
 				if ($selected) {
@@ -1335,6 +1341,7 @@ class CEM_GS_Interaction {
 				'selected' => $selected,
 				'filtering' => $value->population < $this->getResultsTotal(),
 				'addAction' => $this->encoder->buildAttributeAddAction($attribute, array_slice($parents, 0, $depth), $value),
+				'mergeAction' => $this->encoder->buildAttributeMergeAction($attribute, array_slice($parents, 0, $depth), $value),
 				'setAction' => $this->encoder->buildAttributeSetAction($attribute, array_slice($parents, 0, $depth), $value),
 				'removeAction' => $selectedFilter ? $selectedFilter['removeAction'] : $this->encoder->buildAttributeRemoveAction($attribute),
 				'preference' => isset($preferences[$name]) && $preferences[$name]['weight'] > 0.1 ? $preferences[$name]['offset'] : 0,
@@ -1374,6 +1381,7 @@ class CEM_GS_Interaction {
 					'selected' => TRUE,
 					'filtering' => FALSE,
 					'addAction' => $this->encoder->buildAttributeAddAction($attribute, array_slice($parents, 0, $parentDepth), $parent),
+					'mergeAction' => $this->encoder->buildAttributeMergeAction($attribute, array_slice($parents, 0, $parentDepth), $parent),
 					'setAction' => $this->encoder->buildAttributeSetAction($attribute, array_slice($parents, 0, $parentDepth), $parent),
 					'removeAction' => $this->encoder->buildAttributeRemoveAction($attribute),
 					'preference' => isset($preferences[$name]) && $preferences[$name]['weight'] > 0.1 ? $preferences[$name]['offset'] : 0,
@@ -1488,17 +1496,17 @@ class CEM_GS_Interaction {
 					}
 					$selected = $selected && ($filter['guidance']->data[$depth] === $value->data[0]);
 				} else {
-					if (sizeof($filter['guidance']->data) != sizeof($value->data)) {
-						$selected = FALSE;
-						continue;
-					}
-					if ($attribute->type == 'numberRange') {
-						for ($i = 0; $i < sizeof($value->data); $i++) {
-							$selected = $selected && ($filter['guidance']->data[$i] == $value->data[$i]);
+					if ($attribute->type == 'dateRange' || $attribute->type == 'numberRange') {
+						if (sizeof($filter['guidance']->data) == sizeof($value->data)) {
+							for ($i = 0; $i < sizeof($value->data); $i++) {
+								$selected = $selected && ($filter['guidance']->data[$i] == $value->data[$i]);
+							}
+						} else {
+							$selected = FALSE;
 						}
 					} else {
 						for ($i = 0; $i < sizeof($value->data); $i++) {
-							$selected = $selected && ($filter['guidance']->data[$i] === $value->data[$i]);
+							$selected = $selected && in_array($value->data[$i], $filter['guidance']->data);
 						}
 					}
 				}
@@ -1561,6 +1569,7 @@ class CEM_GS_Interaction {
 				'selected' => $selected,
 				'filtering' => !$selected,
 				'addAction' => $this->encoder->buildAttributeAddAction($attribute, array_slice($parents, 0, $depth), $value),
+				'mergeAction' => $this->encoder->buildAttributeMergeAction($attribute, array_slice($parents, 0, $depth), $value),
 				'setAction' => $this->encoder->buildAttributeSetAction($attribute, array_slice($parents, 0, $depth), $value),
 				'removeAction' => $selectedFilter ? $selectedFilter['removeAction'] : $this->encoder->buildAttributeRemoveAction($attribute),
 				'preference' => isset($preferences[$name]) && $preferences[$name]['weight'] > 0.1 && $preferences[$name]['offset'] < 3,
@@ -1601,6 +1610,7 @@ class CEM_GS_Interaction {
 					'filtering' => FALSE,
 					'last' => sizeof($parentValues) == sizeof($parents) - 1,
 					'addAction' => $this->encoder->buildAttributeAddAction($attribute, array_slice($parents, 0, $parentDepth), $parent),
+					'mergeAction' => $this->encoder->buildAttributeMergeAction($attribute, array_slice($parents, 0, $parentDepth), $parent),
 					'setAction' => $this->encoder->buildAttributeSetAction($attribute, array_slice($parents, 0, $parentDepth), $parent),
 					'removeAction' => $this->encoder->buildAttributeRemoveAction($attribute),
 					'preference' => isset($preferences[$name]) && $preferences[$name]['weight'] > 0.1 && $preferences[$name]['offset'] < 3,
