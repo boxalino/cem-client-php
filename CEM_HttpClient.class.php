@@ -291,9 +291,20 @@ class CEM_HttpClient {
 
 
 	/**
+	 * Set authentication
+	 *
+	 * @param $username username (optional)
+	 * @param $password password (optional)
+	 */
+	public function setAuthentication($username = FALSE, $password = FALSE) {
+		$this->username = $username;
+		$this->password = $password;
+	}
+
+	/**
 	 * Get connect timeout
 	 *
-	 * @return connect timeout
+	 * @return connect timeout [ms]
 	 */
 	public function getConnectTimeout() {
 		return $this->connectTimeout;
@@ -302,7 +313,7 @@ class CEM_HttpClient {
 	/**
 	 * Set connect timeout
 	 *
-	 * @param $timeout connect timeout
+	 * @param $timeout connect timeout [ms]
 	 */
 	public function setConnectTimeout($timeout = 0) {
 		$this->connectTimeout = $timeout;
@@ -329,7 +340,7 @@ class CEM_HttpClient {
 	/**
 	 * Get read timeout
 	 *
-	 * @return read timeout
+	 * @return read timeout [ms]
 	 */
 	public function getReadTimeout() {
 		return $this->readTimeout;
@@ -338,7 +349,7 @@ class CEM_HttpClient {
 	/**
 	 * Set read timeout
 	 *
-	 * @param $timeout read timeout
+	 * @param $timeout read timeout [ms]
 	 */
 	public function setReadTimeout($timeout = 0) {
 		$this->readTimeout = $timeout;

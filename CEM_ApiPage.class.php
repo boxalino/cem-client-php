@@ -15,11 +15,41 @@
 
 
 /**
- * Frontend API page response
+ * Page content
  *
  * @author nitro@boxalino.com
  */
-class CEM_API_PageResponse extends CEM_GatewayResponse {
+class CEM_ApiPage {
+	/**
+	 * Server error
+	 */
+	protected $transport = NULL;
+
+	/**
+	 * Server version
+	 */
+	protected $version = '';
+
+	/**
+	 * Response status
+	 */
+	protected $status = FALSE;
+
+	/**
+	 * Response message
+	 */
+	protected $message = '';
+
+	/**
+	 * Response time
+	 */
+	protected $time = 0;
+
+	/**
+	 * Cryptographic parameters
+	 */
+	protected $crypto = array('key' => '', 'iv' => '');
+
 	/**
 	 * Response size
 	 */
@@ -79,28 +109,90 @@ class CEM_API_PageResponse extends CEM_GatewayResponse {
 	/**
 	 * Constructor
 	 *
+	 * @param $data response data
 	 */
-	public function __construct() {
-		parent::__construct();
+	public function __construct($data = NULL) {
+		$this->responseSize = strlen($data);
+		if ($this->responseSize > 0) {
+			$doc = new DOMDocument("1.0", 'UTF-8');
+			if (@$doc->loadXML($data)) {
+				$this->visitResponse($doc->documentElement);
+			}
+		}
 	}
 
 
 	/**
-	 * Called to read the response
+	 * Get processing time
 	 *
-	 * @param $state client state reference
-	 * @param $data response raw body
-	 * @return TRUE on success, FALSE otherwise
+	 * @return processing time (in seconds)
 	 */
-	public function read($state, $data) {
-		$this->responseSize = strlen($data);
-		$doc = new DOMDocument("1.0", 'UTF-8');
-		if (!@$doc->loadXML($data)) {
-			return FALSE;
-		}
-		return $this->visitResponse($doc->documentElement);
+	public function getTotalTime() {
+		return isset($this->transport['time']) ? $this->transport['time'] : 0;
 	}
 
+	/**
+	 * Get server transport information
+	 *
+	 * @return server transport information
+	 */
+	public function getTransport() {
+		return $this->transport;
+	}
+
+	/**
+	 * Called to set server transport information
+	 *
+	 * @param $code http code
+	 * @param $message http error message
+	 * @param $time total transport time
+	 * @param $data body data
+	 */
+	public function setTransport($code, $message, $time, $data) {
+		$this->transport = array(
+			'code' => $code,
+			'message' => $message,
+			'time' => $time,
+			'data' => $data
+		);
+	}
+
+
+	/**
+	 * Get server version
+	 *
+	 * @return server version
+	 */
+	public function getVersion() {
+		return $this->version;
+	}
+
+	/**
+	 * Get status
+	 *
+	 * @return status
+	 */
+	public function getStatus() {
+		return $this->status;
+	}
+
+	/**
+	 * Get response message
+	 *
+	 * @return response message
+	 */
+	public function getMessage() {
+		return $this->message;
+	}
+
+	/**
+	 * Get remote time
+	 *
+	 * @return remote time (in seconds)
+	 */
+	public function getTime() {
+		return ($this->time / 1000.0);
+	}
 
 	/**
 	 * Get cem context
