@@ -299,7 +299,7 @@ class CEM_ApiClient extends CEM_HttpClient {
 					break;
 
 				default:
-					if (!in_array($key, self::$proxyHideHeaders)) {
+					if (!in_array($key, CEM_ApiClient::$proxyHideHeaders)) {
 						$requestHeaders[] = array($name, $value);
 					}
 					break;
@@ -397,7 +397,7 @@ class CEM_ApiClient extends CEM_HttpClient {
 				break;
 
 			default:
-				if (!in_array($entry['key'], self::$proxyHideHeaders)) {
+				if (!in_array($entry['key'], CEM_ApiClient::$proxyHideHeaders)) {
 					header($entry['name'].': '.$entry['value'], FALSE);
 				}
 				break;

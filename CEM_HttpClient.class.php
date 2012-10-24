@@ -32,18 +32,18 @@ class CEM_HttpClient {
 	 * @return encoded value
 	 */
 	public static function convertEncoding($value, $charset = 'UTF-8') {
-		if (self::$allowedEncodings == NULL) {
-			self::$allowedEncodings = array(mb_internal_encoding());
+		if (CEM_HttpClient::$allowedEncodings == NULL) {
+			CEM_HttpClient::$allowedEncodings = array(mb_internal_encoding());
 			foreach (array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14, 15) as $i) {
-				self::$allowedEncodings[] = sprintf('ISO-8859-%d', $i);
+				CEM_HttpClient::$allowedEncodings[] = sprintf('ISO-8859-%d', $i);
 			}
-			self::$allowedEncodings = array_unique(self::$allowedEncodings);
+			CEM_HttpClient::$allowedEncodings = array_unique(CEM_HttpClient::$allowedEncodings);
 		}
 		if (is_array($value)) {
 			foreach ($value as $key => $item) {
-				$value[$key] = self::convertEncoding($item, $charset);
+				$value[$key] = CEM_HttpClient::convertEncoding($item, $charset);
 			}
-		} else if (strcasecmp(mb_detect_encoding($value, array_unique(array_merge(array($charset), self::$allowedEncodings))), $charset) != 0) {
+		} else if (strcasecmp(mb_detect_encoding($value, array_unique(array_merge(array($charset), CEM_HttpClient::$allowedEncodings))), $charset) != 0) {
 			$value = mb_convert_encoding($value, $charset, mb_internal_encoding());
 		}
 		return $value;
@@ -59,7 +59,7 @@ class CEM_HttpClient {
 	public static function convertParametersEncoding($parameters, $charset = 'UTF-8') {
 		$list = array();
 		foreach ($parameters as $key => $value) {
-			$list[$key] = self::convertEncoding($value, $charset);
+			$list[$key] = CEM_HttpClient::convertEncoding($value, $charset);
 		}
 		return $list;
 	}
@@ -93,7 +93,7 @@ class CEM_HttpClient {
 			if (strpos($k, '__') === 0 && is_array($v) && sizeof($v) == 2) {
 				$list[$v[0]] = $v[1];
 			} else if (is_array($v)) {
-				foreach (self::expandKVList($v, TRUE) as $sk => $sv) {
+				foreach (CEM_HttpClient::expandKVList($v, TRUE) as $sk => $sv) {
 					$list[$k.$sk] = $sv;
 				}
 			} else {
@@ -111,7 +111,7 @@ class CEM_HttpClient {
 	 */
 	public static function buildKVList($parameters) {
 		$list = array();
-		foreach (self::expandKVList($parameters) as $k => $v) {
+		foreach (CEM_HttpClient::expandKVList($parameters) as $k => $v) {
 			$list[] = urlencode($k).'='.urlencode($v);
 		}
 		return implode('&', $list);
@@ -163,7 +163,7 @@ class CEM_HttpClient {
 			}
 			if (sizeof($parameters) > 0) {
 				$url[] = '?';
-				$url[] = self::buildKVList(self::convertParametersEncoding($parameters));
+				$url[] = CEM_HttpClient::buildKVList(CEM_HttpClient::convertParametersEncoding($parameters));
 			}
 			if (strlen($fragment) > 0) {
 				$url[] = '#'.urlencode($fragment);
@@ -174,7 +174,7 @@ class CEM_HttpClient {
 		}
 		$url = '';
 		if (sizeof($parameters) > 0) {
-			$url .= '?'.self::buildKVList(self::convertParametersEncoding($parameters));
+			$url .= '?'.CEM_HttpClient::buildKVList(CEM_HttpClient::convertParametersEncoding($parameters));
 		}
 		if (strlen($fragment) > 0) {
 			$url .= '#'.urlencode($fragment);
@@ -622,7 +622,7 @@ class CEM_HttpClient {
 		return $this->post(
 			$url,
 			'application/x-www-form-urlencoded; charset='.$charset,
-			self::buildKVList(self::convertParametersEncoding($parameters, $charset)),
+			CEM_HttpClient::buildKVList(CEM_HttpClient::convertParametersEncoding($parameters, $charset)),
 			$referer,
 			$headers
 		);
@@ -645,7 +645,7 @@ class CEM_HttpClient {
 			$url,
 			$referer,
 			$headers,
-			self::buildKVList(self::convertParametersEncoding($parameters, $charset))
+			CEM_HttpClient::buildKVList(CEM_HttpClient::convertParametersEncoding($parameters, $charset))
 		);
 	}
 
