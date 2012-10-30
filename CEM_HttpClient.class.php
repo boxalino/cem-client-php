@@ -43,7 +43,7 @@ class CEM_HttpClient {
 			foreach ($value as $key => $item) {
 				$value[$key] = CEM_HttpClient::convertEncoding($item, $charset);
 			}
-		} else if (strcasecmp(mb_detect_encoding($value, array_unique(array_merge(array($charset), CEM_HttpClient::$allowedEncodings))), $charset) != 0) {
+		} else if ($value !== NULL && strcasecmp(mb_detect_encoding($value, array_unique(array_merge(array($charset), CEM_HttpClient::$allowedEncodings))), $charset) != 0) {
 			$value = mb_convert_encoding($value, $charset, mb_internal_encoding());
 		}
 		return $value;
@@ -112,7 +112,9 @@ class CEM_HttpClient {
 	public static function buildKVList($parameters) {
 		$list = array();
 		foreach (CEM_HttpClient::expandKVList($parameters) as $k => $v) {
-			$list[] = urlencode($k).'='.urlencode($v);
+			if ($v !== NULL) {
+				$list[] = urlencode($k).'='.urlencode($v);
+			}
 		}
 		return implode('&', $list);
 	}
@@ -156,7 +158,7 @@ class CEM_HttpClient {
 						continue;
 					}
 					$k = urldecode($kv[0]);
-					if (!isset($parameters[$k])) {
+					if (!array_key_exists($k, $parameters)) {
 						$parameters[$k] = urldecode($kv[1]);
 					}
 				}
@@ -781,11 +783,17 @@ class CEM_HttpClient {
 			throw new Exception("Cannot initialize cURL");
 		}
 
+		// reset output
+		if (version_compare(PHP_VERSION, '5.3.0') >= 0) {
+			if (!curl_setopt($curl, CURLOPT_FILE, fopen('php://output', 'w'))) {
+				throw new Exception("Cannot configure cURL (output)");
+			}
+		}
+
 		// set base options
 		if (!curl_setopt_array(
 			$curl,
 			array(
-				CURLOPT_FILE => fopen('php://output', 'w'),
 				CURLOPT_RETURNTRANSFER => TRUE,
 				CURLOPT_ENCODING => 'identity',
 				CURLOPT_HEADER => FALSE,
