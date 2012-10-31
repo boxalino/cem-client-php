@@ -98,7 +98,7 @@ class CEM_ApiClient extends CEM_HttpClient {
 		}
 
 		// prepare http headers
-		list($requestHeaders, $requestContentType) = $this->extractHeaders();
+		list($requestHeaders, $requestContentType, $requestContentLength) = $this->extractHeaders();
 
 		$urlParts = parse_url($this->url.$uri);
 		$requestHeaders[] = array('Host', $urlParts['host']);
@@ -114,21 +114,33 @@ class CEM_ApiClient extends CEM_HttpClient {
 			break;
 
 		case 'POST':
-			if (sizeof($_POST) > 0) {
-				$this->postFields($this->url.$uri, $_POST, 'UTF-8', FALSE, $requestHeaders);
+			if (!$requestContentType) {
+				throw new Exception("Invalid content-type");
+			}
+			if (sizeof($_POST) > 0 || sizeof($_FILES) > 0) {
+				$fields = array();
+				foreach (CEM_HttpClient::expandKVList($_POST) as $k => $v) {
+					if (is_array($v) || strpos($v, '@') !== 0) {
+						$fields[$k] = $v;
+					}
+				}
+				foreach ($_FILES as $k => $v) {
+					$fields[$k] = '@'.$v['tmp_name'].';type='.$v['type'].';filename='.$v['name'];
+				}
+				$this->post(CEM_HttpClient::buildUrl($this->url.$uri, $_GET), 'multipart/form-data', $fields, FALSE, $requestHeaders);
 				break;
 			}
-			if (!$requestContentType) {
-				return FALSE;
-			}
-			$this->post($this->url.$uri, $requestContentType, file_get_contents("php://input"), FALSE, $requestHeaders);
+			$this->post(CEM_HttpClient::buildUrl($this->url.$uri, $_GET), $requestContentType, file_get_contents("php://input"), FALSE, $requestHeaders);
 			break;
 
 		case 'PUT':
 			if (!$requestContentType) {
-				return FALSE;
+				throw new Exception("Invalid content-type");
 			}
-			$this->put($this->url.$uri, $requestContentType, file_get_contents("php://input"), FALSE, $requestHeaders);
+			if ($requestContentLength) {
+				$requestHeaders[] = array('Content-Length', $requestContentLength);
+			}
+			$this->put(CEM_HttpClient::buildUrl($this->url.$uri, $_GET), $requestContentType, file_get_contents("php://input"), FALSE, $requestHeaders);
 			break;
 
 		default:
@@ -285,10 +297,11 @@ class CEM_ApiClient extends CEM_HttpClient {
 	/**
 	 * Called to extract request headers
 	 *
-	 * @return request headers, content-type
+	 * @return request headers, content-type, content-length
 	 */
 	protected function extractHeaders() {
 		$requestContentType = FALSE;
+		$requestContentLength = FALSE;
 		$requestHeaders = array();
 		if (function_exists('apache_request_headers')) {
 			foreach (apache_request_headers() as $name => $value) {
@@ -296,6 +309,10 @@ class CEM_ApiClient extends CEM_HttpClient {
 				switch ($key) {
 				case 'content-type':
 					$requestContentType = $value;
+					break;
+
+				case 'content-length':
+					$requestContentLength = $value;
 					break;
 
 				default:
@@ -306,7 +323,7 @@ class CEM_ApiClient extends CEM_HttpClient {
 				}
 			}
 		}
-		return array($requestHeaders, $requestContentType);
+		return array($requestHeaders, $requestContentType, $requestContentLength);
 	}
 
 	/**

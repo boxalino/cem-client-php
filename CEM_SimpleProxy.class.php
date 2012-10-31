@@ -89,6 +89,7 @@ class CEM_SimpleProxy extends CEM_HttpClient {
 	public function sendRequest($url, $allowedCookies = array(), $headers = array()) {
 		// prepare http headers
 		$requestContentType = FALSE;
+		$requestContentLength = FALSE;
 		$requestHeaders = array();
 		if (function_exists('apache_request_headers')) {
 			foreach (apache_request_headers() as $name => $value) {
@@ -96,6 +97,10 @@ class CEM_SimpleProxy extends CEM_HttpClient {
 				switch ($key) {
 				case 'content-type':
 					$requestContentType = $value;
+					break;
+
+				case 'content-length':
+					$requestContentLength = $value;
 					break;
 
 				default:
@@ -131,20 +136,32 @@ class CEM_SimpleProxy extends CEM_HttpClient {
 				return $this->get($url, $_GET, FALSE, $requestHeaders);
 
 			case 'POST':
-				if (sizeof($_POST) > 0) {
-					$this->postFields($url, $_POST, 'UTF-8', FALSE, $requestHeaders);
-					break;
-				}
 				if (!$requestContentType) {
 					throw new Exception("Invalid content-type");
 				}
-				return $this->post($url, $requestContentType, file_get_contents("php://input"), FALSE, $requestHeaders);
+				if (sizeof($_POST) > 0 || sizeof($_FILES) > 0) {
+					$fields = array();
+					foreach (CEM_HttpClient::expandKVList($_POST) as $k => $v) {
+						if (is_array($v) || strpos($v, '@') !== 0) {
+							$fields[$k] = $v;
+						}
+					}
+					foreach ($_FILES as $k => $v) {
+						$fields[$k] = '@'.$v['tmp_name'].';type='.$v['type'].';filename='.$v['name'];
+					}
+					$this->post(CEM_HttpClient::buildUrl($url, $_GET), 'multipart/form-data', $fields, FALSE, $requestHeaders);
+					break;
+				}
+				return $this->post(CEM_HttpClient::buildUrl($url, $_GET), $requestContentType, file_get_contents("php://input"), FALSE, $requestHeaders);
 
 			case 'PUT':
 				if (!$requestContentType) {
 					throw new Exception("Invalid content-type");
 				}
-				return $this->put($url, $requestContentType, file_get_contents("php://input"), FALSE, $requestHeaders);
+				if ($requestContentLength) {
+					$requestHeaders[] = array('Content-Length', $requestContentLength);
+				}
+				return $this->put(CEM_HttpClient::buildUrl($url, $_GET), $requestContentType, file_get_contents("php://input"), FALSE, $requestHeaders);
 
 			default:
 				throw new Exception("Unsupported http method: ".$_SERVER['REQUEST_METHOD']);
