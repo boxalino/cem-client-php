@@ -479,12 +479,13 @@ class CEM_WebEncoder {
 	/**
 	 * Encode parameters and state into url
 	 *
+	 * @param $uri query uri
 	 * @param $parameters additional query parameters
 	 * @param $context encoded context or FALSE if none
 	 * @return encoded url query
 	 */
-	public function encodeQuery($parameters = array(), $context = FALSE) {
-		return $this->formatter->formatUrl('', $parameters);
+	public function encodeQuery($uri = '', $parameters = array(), $context = FALSE) {
+		return $this->formatter->formatUrl($uri, $parameters);
 	}
 
 	/**

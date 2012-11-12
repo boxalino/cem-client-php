@@ -246,12 +246,13 @@ class CEM_GS_Interaction {
 	/**
 	 * Encode parameters and state into url
 	 *
+	 * @param $uri query uri
 	 * @param $parameters additional query parameters
 	 * @param $appendContext append context parameter
 	 * @return encoded url query
 	 */
-	public function encodeQuery($parameters = array(), $appendContext = FALSE) {
-		return $this->encoder->encodeQuery($parameters, $appendContext ? $this->encodeSequentialContext() : FALSE);
+	public function encodeQuery($uri = '', $parameters = array(), $appendContext = FALSE) {
+		return $this->encoder->encodeQuery($uri, $parameters, $appendContext ? $this->encodeSequentialContext() : FALSE);
 	}
 
 	/**
