@@ -71,68 +71,7 @@ class CEM_WebStateCookieHandler extends CEM_WebStateHandler {
 		$this->expiry = $expiry;
 		$this->chunkLength = $chunkLength;
 
-		// parse cem, levels, state data cookies
-		$cem = $this->readCookies($this->prefix.'a');
-		$visitor = $this->readCookies($this->prefix.'b');
-		$session = $this->readCookies($this->prefix.'c');
-		$search = $this->readCookies($this->prefix.'d');
-		if ($cem != null || $visitor != NULL || $session != NULL || $search != NULL) {
-			$this->state = new CEM_GatewayState();
-
-			// decode cem client cookies
-			if (strlen($cem) > 0) {
-				foreach (explode(';', $cem) as $item) {
-					list($name, $value) = explode('=', $item);
-
-					if (strlen($name) > 0) {
-						$this->state->setCookie(urldecode($name), urldecode($value));
-					}
-				}
-			}
-
-			// decode context levels
-			$context = array();
-			if (strlen($visitor) > 0) {
-				foreach (explode(';', $visitor) as $item) {
-					list($name, $value) = explode('=', $item);
-
-					if (strlen($name) > 0) {
-						$context[$this->crypto->unescapeValue($name)] = array(
-							'level' => 'visitor',
-							'mode' => 'aggregate',
-							'data' => $this->crypto->unescapeValue($value)
-						);
-					}
-				}
-			}
-			if (strlen($session) > 0) {
-				foreach (explode(';', $session) as $item) {
-					list($name, $value) = explode('=', $item);
-
-					if (strlen($name) > 0) {
-						$context[$this->crypto->unescapeValue($name)] = array(
-							'level' => 'session',
-							'mode' => 'aggregate',
-							'data' => $this->crypto->unescapeValue($value)
-						);
-					}
-				}
-			}
-			if (strlen($search) > 0) {
-				foreach (explode(';', $search) as $item) {
-					list($name, $value) = explode('=', $item);
-
-					if (strlen($name) > 0) {
-						$context[$this->crypto->unescapeValue($name)] = array(
-							'level' => 'search',
-							'mode' => 'aggregate',
-							'data' => $this->crypto->unescapeValue($value)
-						);
-					}
-				}
-			}
-			$this->state->setContext($context);
-		}
+		$this->state = $this->readFromRequest();
 	}
 
 
@@ -196,6 +135,79 @@ class CEM_WebStateCookieHandler extends CEM_WebStateHandler {
 		$this->writeCookies($this->prefix.'e');
 
 		parent::remove($state);
+	}
+
+
+	/**
+	 * Read client state from storage
+	 *
+	 * @return client state or NULL if none
+	 */
+	public function readFromRequest() {
+		// parse cem, levels, state data cookies
+		$cem = $this->readCookies($this->prefix.'a');
+		$visitor = $this->readCookies($this->prefix.'b');
+		$session = $this->readCookies($this->prefix.'c');
+		$search = $this->readCookies($this->prefix.'d');
+		if ($cem != null || $visitor != NULL || $session != NULL || $search != NULL) {
+			$state = new CEM_GatewayState();
+
+			// decode cem client cookies
+			if (strlen($cem) > 0) {
+				foreach (explode(';', $cem) as $item) {
+					list($name, $value) = explode('=', $item);
+
+					if (strlen($name) > 0) {
+						$state->setCookie(urldecode($name), urldecode($value));
+					}
+				}
+			}
+
+			// decode context levels
+			$context = array();
+			if (strlen($visitor) > 0) {
+				foreach (explode(';', $visitor) as $item) {
+					list($name, $value) = explode('=', $item);
+
+					if (strlen($name) > 0) {
+						$context[$this->crypto->unescapeValue($name)] = array(
+							'level' => 'visitor',
+							'mode' => 'aggregate',
+							'data' => $this->crypto->unescapeValue($value)
+						);
+					}
+				}
+			}
+			if (strlen($session) > 0) {
+				foreach (explode(';', $session) as $item) {
+					list($name, $value) = explode('=', $item);
+
+					if (strlen($name) > 0) {
+						$context[$this->crypto->unescapeValue($name)] = array(
+							'level' => 'session',
+							'mode' => 'aggregate',
+							'data' => $this->crypto->unescapeValue($value)
+						);
+					}
+				}
+			}
+			if (strlen($search) > 0) {
+				foreach (explode(';', $search) as $item) {
+					list($name, $value) = explode('=', $item);
+
+					if (strlen($name) > 0) {
+						$context[$this->crypto->unescapeValue($name)] = array(
+							'level' => 'search',
+							'mode' => 'aggregate',
+							'data' => $this->crypto->unescapeValue($value)
+						);
+					}
+				}
+			}
+			$state->setContext($context);
+			return $state;
+		}
+		return NULL;
 	}
 
 

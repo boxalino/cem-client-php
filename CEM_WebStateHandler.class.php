@@ -76,6 +76,16 @@ class CEM_WebStateHandler {
 	public function remove($state) {
 		$this->state = NULL;
 	}
+
+
+	/**
+	 * Read client state from storage
+	 *
+	 * @return client state or NULL if none
+	 */
+	public function readFromRequest() {
+		return NULL;
+	}
 }
 
 /**

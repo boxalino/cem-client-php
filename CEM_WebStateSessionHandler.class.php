@@ -36,13 +36,7 @@ class CEM_WebStateSessionHandler extends CEM_WebStateHandler {
 		parent::__construct($crypto);
 		$this->name = $name;
 
-		// start session if necessary
-		if (strlen(session_id()) == 0) {
-			session_start();
-		}
-		if (isset($_SESSION[$this->name])) {
-			$this->state = $_SESSION[$this->name];
-		}
+		$this->state = $this->readFromRequest();
 	}
 
 
@@ -68,6 +62,23 @@ class CEM_WebStateSessionHandler extends CEM_WebStateHandler {
 		}
 
 		parent::remove($state);
+	}
+
+
+	/**
+	 * Read client state from storage
+	 *
+	 * @return client state or NULL if none
+	 */
+	public function readFromRequest() {
+		// start session if necessary
+		if (strlen(session_id()) == 0) {
+			session_start();
+		}
+		if (isset($_SESSION[$this->name])) {
+			return $_SESSION[$this->name];
+		}
+		return NULL;
 	}
 }
 

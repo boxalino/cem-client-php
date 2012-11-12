@@ -478,7 +478,7 @@ class CEM_WebFormatter {
 		$level = $scope['level'];
 		$mode = $scope['mode'];
 		$size = strlen($scope['data']);
-		$object = json_decode($scope['data']);
+		$object = @json_decode($scope['data']);
 		if ($object && sizeof(get_object_vars($object)) > 0) {
 			self::printJsonBlock($level.'::'.$mode.'::'.$name, $object, $visibleDepth);
 		}
