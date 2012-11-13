@@ -859,11 +859,6 @@ class CEM_HttpClient {
 			throw new Exception("Cannot configure cURL (headers)");
 		}
 
-		// set post fields
-		if ($postData !== FALSE && !curl_setopt($curl, CURLOPT_POSTFIELDS, $postData)) {
-			throw new Exception("Cannot configure cURL (post fields)");
-		}
-
 		// set cookies
 		$cookieHeader = '';
 		foreach ($this->cookies as $cookie) {
@@ -879,6 +874,11 @@ class CEM_HttpClient {
 		// set referer
 		if (strlen($referer) > 0 && !curl_setopt($curl, CURLOPT_REFERER, $referer)) {
 			throw new Exception("Cannot configure cURL (referer)");
+		}
+
+		// set post fields
+		if ($postData !== FALSE && !curl_setopt($curl, CURLOPT_POSTFIELDS, $postData)) {
+			throw new Exception("Cannot configure cURL (post fields)");
 		}
 		return $curl;
 	}
