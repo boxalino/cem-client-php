@@ -1247,6 +1247,7 @@ class CEM_GS_Interaction {
 		}
 
 		// find valid values
+		$filtering = array();
 		$nonFiltering = array();
 		$totalSelected = 0;
 		$totalFiltering = 0;
@@ -1335,7 +1336,7 @@ class CEM_GS_Interaction {
 				$nonFiltering[] = $value;
 			}
 			$name = $this->formatter->formatAttributeValue($attribute, $index, $value);
-			$list[] = array(
+			$item = array(
 				'index' => $index,
 				'name' => $name,
 				'population' => $value->population,
@@ -1351,6 +1352,10 @@ class CEM_GS_Interaction {
 				'resources' => $resources,
 				'value' => $value
 			);
+			$list[] = $item;
+			if ($value->population < $this->getResultsTotal()) {
+				$filtering[] = $item;
+			}
 		}
 
 		// skip node if one node has all results
@@ -1366,6 +1371,9 @@ class CEM_GS_Interaction {
 				$parents
 			);
 			if ($refinement) {
+				foreach ($filtering as $item) {
+					$refinement['values'][] = $item;
+				}
 				return $refinement;
 			}
 			array_pop($parents);
