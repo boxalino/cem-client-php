@@ -146,10 +146,20 @@ class CEM_SimpleProxy extends CEM_HttpClient {
 							$fields[$k] = $v;
 						}
 					}
-					foreach ($_FILES as $k => $v) {
-						$fields[$k] = '@'.$v['tmp_name'].';type='.$v['type'].';filename='.$v['name'];
+					if ($requestContentType == 'multipart/form-data' || sizeof($_FILES) > 0) {
+						foreach ($_FILES as $k => $v) {
+							$fields[$k] = '@'.$v['tmp_name'].';type='.$v['type'].';filename='.$v['name'];
+						}
+						$this->post(CEM_HttpClient::buildUrl($url, $_GET), 'multipart/form-data', $fields, FALSE, $requestHeaders);
+					} else {
+						$this->post(
+							CEM_HttpClient::buildUrl($url, $_GET),
+							'application/x-www-form-urlencoded',
+							CEM_HttpClient::buildKVList($fields),
+							FALSE,
+							$requestHeaders
+						);
 					}
-					$this->post(CEM_HttpClient::buildUrl($url, $_GET), 'multipart/form-data', $fields, FALSE, $requestHeaders);
 					break;
 				}
 				return $this->post(CEM_HttpClient::buildUrl($url, $_GET), $requestContentType, file_get_contents("php://input"), FALSE, $requestHeaders);
