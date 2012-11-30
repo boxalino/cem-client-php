@@ -23,7 +23,7 @@ class CEM_ApiClient extends CEM_HttpClient {
 	/**
 	 * @internal Proxy headers to drop
 	 */
-	private static $proxyHideHeaders = array(
+	protected static $proxyHideHeaders = array(
 		'authenticate',
 		'connection',
 		'content-encoding',
@@ -49,6 +49,11 @@ class CEM_ApiClient extends CEM_HttpClient {
 	 */
 	protected $url;
 
+	/**
+	 * @internal API charset (display)
+	 */
+	protected $displayCharset = 'UTF-8';
+
 
 	/**
 	 * Constructor
@@ -58,6 +63,25 @@ class CEM_ApiClient extends CEM_HttpClient {
 	public function __construct($url) {
 		parent::__construct(FALSE, FALSE, 1000, 15000, 5);
 		$this->url = $url;
+	}
+
+
+	/**
+	 * Get display charset
+	 *
+	 * @return display charset
+	 */
+	public function getDisplayCharset() {
+		return $this->displayCharset;
+	}
+
+	/**
+	 * Set display charset
+	 *
+	 * @param $charset charset
+	 */
+	public function setDisplayCharset($charset) {
+		$this->displayCharset = $charset;
 	}
 
 
@@ -186,6 +210,11 @@ class CEM_ApiClient extends CEM_HttpClient {
 		// parse response
 		$page = new CEM_ApiPage($this->getBody());
 		$page->setTransport($this->getCode(), $this->getError(), $this->getTime(), $this->getBody());
+
+		// convert response charset
+		if ($this->displayCharset != 'UTF-8') {
+			mb_convert_variables($this->displayCharset, 'UTF-8', $page);
+		}
 		return $page;
 	}
 
