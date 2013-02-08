@@ -313,6 +313,7 @@ class CEM_WebController {
 			'action' => 'detail',
 			'variables' => array(
 				'sourceFilter' => '@type:instance&'.$property.':('.implode(',', $ids).')',
+				'maximumSources' => sizeof($ids),
 				'instances' => $sourceIds
 			)
 		);
