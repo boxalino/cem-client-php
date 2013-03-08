@@ -1,0 +1,30 @@
+<?xml version="1.0" ?>
+
+<project name="CEM-PHP-CLIENT" default="help" basedir=".">
+	<target name="build" depends="public-doc"/>
+	<target name="clean-all" depends="clean-doc"/>
+
+
+	<target name="clean-doc">
+		<delete dir="docs"/>
+	</target>
+
+	<target name="public-doc" depends="clean-doc">
+		<exec dir="." executable="doxygen" osfamily="unix">
+			<arg line="doxygen.conf"/>
+		</exec>
+	</target>
+
+
+	<target name="help">
+		<echo>
+Build targets for ${ant.project.name}
+=============
+build        build everything
+clean-all    clean everything
+
+public-doc   build documentation
+clean-doc    clean documentation
+		</echo>
+	</target>
+</project>

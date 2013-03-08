@@ -704,7 +704,6 @@ class CEM_HttpClient {
 	/**
 	 * Process http request (and save response in file)
 	 *
-	 * @param $path target path
 	 * @param $method http method
 	 * @param $url http url
 	 * @param $referer http referer url (optional)
