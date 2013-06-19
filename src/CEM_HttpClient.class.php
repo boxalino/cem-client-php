@@ -784,7 +784,9 @@ class CEM_HttpClient {
 
 		// reset output
 		if (version_compare(PHP_VERSION, '5.3.0') >= 0) {
-			if (!curl_setopt($curl, CURLOPT_FILE, fopen('php://output', 'w'))) {
+			// setting CURLOPT_FILE to fopen('php://output', 'w') fails on windows
+			// disabling CURLOPT_RETURNTRANSFER does also reset output
+			if (!curl_setopt($curl, CURLOPT_RETURNTRANSFER, FALSE)) {
 				throw new Exception("Cannot configure cURL (output)");
 			}
 		}
@@ -923,8 +925,7 @@ class CEM_HttpClient {
 					$cookie['value'] = urldecode(trim($value[1]));
 					$cookie['remote'] = TRUE;
 					if (isset($cookie['expires'])) {
-						$time = strptime($cookie['expires'], '%a, %d-%b-%Y %H:%M:%S GMT');
-						$cookie['expiresTime'] = gmmktime($time['tm_hour'], $time['tm_min'], $time['tm_sec'], $time['tm_mon'] + 1, $time['tm_mday'], $time['tm_year'] + 1900);
+						$cookie['expiresTime'] = strtotime($cookie['expires']);
 					} else {
 						$cookie['expiresTime'] = 0;
 					}
