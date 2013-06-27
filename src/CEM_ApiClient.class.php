@@ -258,6 +258,18 @@ class CEM_ApiClient extends CEM_HttpClient {
 	}
 
 	/**
+	 * This method is called to track an event "login" with Boxalino Analytics.
+	 *
+	 * @param $profileId profile identifier
+	 * @return TRUE on success
+	 */
+	public function trackLogin($profileId) {
+		$description = array();
+		$description['id'] = $profileId;
+		return $this->trackEvent('login', $description);
+	}
+
+	/**
 	 * This method is called to track an event "addToBasket" with Boxalino Analytics.
 	 *
 	 * @param $item transaction item (see CEM_ApiTransactionItem class)
@@ -287,7 +299,6 @@ class CEM_ApiClient extends CEM_HttpClient {
 		$description['items'] = @json_encode($items);
 		return $this->trackEvent('purchaseDone', $description);
 	}
-
 
 	/**
 	 * Track an event with Boxalino Analytics.
