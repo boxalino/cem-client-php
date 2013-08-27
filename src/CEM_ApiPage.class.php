@@ -115,7 +115,7 @@ class CEM_ApiPage {
 		$this->responseSize = strlen($data);
 		if ($this->responseSize > 0) {
 			$doc = new DOMDocument("1.0", 'UTF-8');
-			if (@$doc->loadXML($data)) {
+			if (@$doc->loadXML($data, LIBXML_PARSEHUGE)) {
 				$this->visitResponse($doc->documentElement);
 			}
 		}
