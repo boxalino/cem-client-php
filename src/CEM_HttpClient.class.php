@@ -919,7 +919,7 @@ class CEM_HttpClient {
 					$cookie = array();
 					for ($i = 1; $i < count($parts); $i++) {
 						$parameter = explode('=', $parts[$i]);
-						$cookie[trim($parameter[0])] = trim($parameter[1]);
+						$cookie[trim($parameter[0])] = isset($parameter[1])?trim($parameter[1]):"";
 					}
 					$cookie['name'] = urldecode(trim($value[0]));
 					$cookie['value'] = urldecode(trim($value[1]));
