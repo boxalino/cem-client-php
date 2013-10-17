@@ -53,7 +53,11 @@ class CEM_ApiClient extends CEM_HttpClient {
 	 * @internal API charset (display)
 	 */
 	protected $displayCharset = 'UTF-8';
-
+	
+	/**
+	 * @internal Cookie Domain used for Tracking
+	 */
+	protected $cookieDomain = null;
 
 	/**
 	 * Constructor
@@ -103,6 +107,14 @@ class CEM_ApiClient extends CEM_HttpClient {
 	public function getStatus() {
 		$status = parent::getStatus();
 		return ($status ? $status : 'HTTP/1.0 500 Internal Server Error');
+	}
+	
+	
+	/**
+	 * Sets the Domain used in the cookies
+	 */
+	public function setCookieDomain($domain) {
+		$this->cookieDomain = $domain;
 	}
 
 
@@ -473,6 +485,15 @@ class CEM_ApiClient extends CEM_HttpClient {
 				if (isset($cookie['expires'])) {
 					$header .= '; expires='.$cookie['expires'];
 				}
+				
+				if($this->cookieDomain !== null && strlen($this->cookieDomain) > 0) {
+					$header .= '; domain='.$this->cookieDomain;
+				} else {
+					if (isset($cookie['domain'])) {
+						$header .= '; domain='.$cookie['domain'];
+					}
+				}
+				
 				$header .= '; path=/';
 				header('Set-Cookie: '.$header, FALSE);
 			}
